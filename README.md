@@ -148,17 +148,46 @@ Contributions are welcome! Please see CONTRIBUTING.md for guidelines.
 
 ## Roadmap
 
+### Phase 1: Foundation (Weeks 1-4) - ✅ 80% Complete
 - [x] Project foundation
 - [x] Core infrastructure
 - [x] IPP server implementation
 - [x] Preview application UI
 - [x] Layout engine
 - [x] Plugin system
-- [ ] Comprehensive testing
-- [ ] Documentation completion
+- [x] Configuration management system
+- [ ] Document rendering (poppler integration)
+- [ ] Comprehensive error handling
+- [ ] Basic IPC transport
+- [ ] D-Bus integration
+- [ ] Unit tests
+
+### Phase 2: Core Functionality (Weeks 5-8) - 🚧 60% Complete
+- [ ] Complete document rendering pipeline
+- [ ] Full D-Bus integration
+- [ ] Druid GUI rendering
+- [ ] Document viewer implementation
+- [ ] Navigation and zoom controls
+- [ ] Print dialog UI
+
+### Phase 3: Advanced Features (Weeks 9-12) - 📋 Planned
+- [ ] Systemd integration
+- [ ] Printer management
+- [ ] User experience enhancements
+- [ ] Watermarks, headers/footers
+- [ ] PDF export
+
+### Phase 4: Testing & Quality (Weeks 13-16) - 📋 Planned
+- [ ] Unit testing (>90% coverage)
+- [ ] Integration testing
+- [ ] Performance optimization
+- [ ] Security audit
+
+### Phase 5: Deployment & Documentation (Weeks 17-20) - 📋 Planned
 - [ ] Distribution packages (.deb, .rpm, Flatpak)
+- [ ] Documentation completion
+- [ ] Release preparation
 - [ ] Plugin examples
-- [ ] Advanced features (watermarks, PDF export)
 - [ ] Performance optimization
 
 ## Troubleshooting
