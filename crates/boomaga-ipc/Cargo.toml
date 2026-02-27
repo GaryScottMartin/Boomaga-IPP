@@ -1,0 +1,18 @@
+[package]
+name = "boomaga-ipc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "IPC library for boomaga virtual printer"
+
+[dependencies]
+boomaga-core = { path = "../boomaga-core" }
+tokio = { workspace = true, features = ["full"] }
+serde = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+zbus = { workspace = true }
+tracing = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+nix = { version = "0.29", features = ["socket", "unix"] }

@@ -1,0 +1,31 @@
+[package]
+name = "boomaga-preview"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Preview application for boomaga virtual printer"
+
+[[bin]]
+name = "boomaga-preview"
+path = "src/main.rs"
+
+[dependencies]
+boomaga-core = { path = "../boomaga-core" }
+druid = { workspace = true }
+cairo-rs = { workspace = true }
+poppler = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+anyhow = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+url = "2.5"
+chrono = "0.4"
+tempfile = "3.10"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+xdg-shell = "0.6"
+wayland-backend = "0.3"
+wayland-protocols = { version = "0.3", features = ["client", "staging"] }
+wayland-scanner = "0.3"
+nix = { version = "0.29", features = ["unistd"] }

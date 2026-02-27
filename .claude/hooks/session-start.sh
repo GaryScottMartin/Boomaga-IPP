@@ -1,0 +1,1 @@
+/home/gary/Applications/Boomaga-IPP/Project/Claude/boomaga-ipp/claude-code-handoff/hooks/session-start.sh

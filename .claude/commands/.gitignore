@@ -1,0 +1,7 @@
+
+# Handoff context files (session-specific, not for version control)
+.claude/context.md
+.claude/current-task.md
+.claude/task-history.md
+.claude/current-bug.md
+.claude/mode

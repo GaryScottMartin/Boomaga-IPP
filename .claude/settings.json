@@ -1,0 +1,38 @@
+{
+  "tools": {
+    "AskUserQuestion": {"enabled": true},
+    "Bash": {"enabled": true},
+    "Edit": {"enabled": true},
+    "EnterPlanMode": {"enabled": true},
+    "ExitPlanMode": {"enabled": true},
+    "FileWrite": {"enabled": true},
+    "Glob": {"enabled": true},
+    "Grep": {"enabled": true},
+    "NotebookEdit": {"enabled": true},
+    "Read": {"enabled": true},
+    "Task": {"enabled": true},
+    "TaskCreate": {"enabled": true},
+    "TaskGet": {"enabled": true},
+    "TaskList": {"enabled": true},
+    "TaskStop": {"enabled": true},
+    "TaskOutput": {"enabled": true},
+    "WebFetch": {"enabled": true},
+    "WebSearch": {"enabled": true},
+    "Skill": {"enabled": true},
+    "EnterWorktree": {"enabled": true}
+  },
+  "hooks": [
+    {
+      "name": "SessionStart",
+      "command": ".claude/hooks/session-start.sh",
+      "enabled": true,
+      "description": "Load session context from handoff files"
+    },
+    {
+      "name": "PreCompact",
+      "command": ".claude/hooks/pre-compact.sh",
+      "enabled": true,
+      "description": "Re-inject session context before autocompaction"
+    }
+  ]
+}

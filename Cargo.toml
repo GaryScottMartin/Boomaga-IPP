@@ -1,0 +1,70 @@
+[workspace]
+members = [
+    "crates/boomaga-core",
+    "crates/boomaga-config",
+    "crates/boomaga-ipp-backend",
+    "crates/boomaga-preview",
+    "crates/boomaga-layout-engine",
+    "crates/boomaga-ipc",
+    "crates/boomaga-plugins",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Boomaga Team"]
+license = "GPL-3.0"
+repository = "https://github.com/Boomaga/boomaga-ipp"
+readme = "README.md"
+description = "Modern virtual printer for Linux with native Wayland GUI and IPP Everywhere support"
+
+[workspace.dependencies]
+# GUI
+druid = "0.8"
+cairo-rs = "0.18"
+
+# Document Rendering
+poppler = "0.27"
+libc = "0.2"
+
+# IPC
+zbus = "4.3"
+
+# Async Runtime
+tokio = { version = "1.35", features = ["full"] }
+async-trait = "0.1"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error Handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# Configuration
+config = "0.14"
+directories = "5.0"
+
+# UUID
+uuid = { version = "1.0", features = ["v4", "serde"] }
+
+# System
+sysinfo = "0.30"
+
+# Config crate
+boomaga-config = { path = "crates/boomaga-config" }
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+strip = true
+
+[profile.dev]
+opt-level = 0

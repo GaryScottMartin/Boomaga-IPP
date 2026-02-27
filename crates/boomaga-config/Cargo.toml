@@ -1,0 +1,16 @@
+[package]
+name = "boomaga-config"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Configuration management for boomaga virtual printer"
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+serde_json = "1.0"
+config = "0.14"
+directories = "5.0"
+thiserror.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+boomaga-core.workspace = true

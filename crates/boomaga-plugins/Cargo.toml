@@ -1,0 +1,18 @@
+[package]
+name = "boomaga-plugins"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Plugin system for boomaga virtual printer"
+
+[dependencies]
+boomaga-core = { path = "../boomaga-core" }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+tracing = { workspace = true }
+libloading = "0.8"
+once_cell = "1.19"
+
+[target.'cfg(unix)'.dependencies]
+dylib = "0.3"

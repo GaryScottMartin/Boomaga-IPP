@@ -1,0 +1,21 @@
+[package]
+name = "boomaga-ipp-backend"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "IPP server for boomaga virtual printer"
+
+[[bin]]
+name = "boomaga-ipp-backend"
+path = "src/main.rs"
+
+[dependencies]
+boomaga-core = { path = "../boomaga-core" }
+zbus = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+serde = { workspace = true, features = ["derive"] }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+dirs = { workspace = true }
+nix = { version = "0.29", features = ["socket", "resource"] }
