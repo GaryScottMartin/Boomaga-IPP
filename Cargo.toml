@@ -15,7 +15,7 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Boomaga Team"]
 license = "GPL-3.0"
-repository = "https://github.com/Boomaga/boomaga-ipp"
+repository = "https://github.com/GaryScottMartin/Boomaga-IPP"
 readme = "README.md"
 description = "Modern virtual printer for Linux with native Wayland GUI and IPP Everywhere support"
 

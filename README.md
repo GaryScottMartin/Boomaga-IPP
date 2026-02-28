@@ -40,7 +40,7 @@ boomaga-ipp/
 
 ```bash
 # Clone the repository
-git clone https://github.com/Boomaga/boomaga-ipp.git
+git clone https://github.com/GaryScottMartin/Boomaga-IPP.git
 cd boomaga-ipp
 
 # Build all components
@@ -223,5 +223,5 @@ Developed with ❤️ by the Boomaga-IPP Team
 
 ## Support
 
-- Issues: https://github.com/Boomaga/boomaga-ipp/issues
-- Discussions: https://github.com/Boomaga/boomaga-ipp/discussions
+- Issues: https://github.com/GaryScottMartin/Boomaga-IPP/issues
+- Discussions: https://github.com/GaryScottMartin/Boomaga-IPP/discussions
