@@ -84,14 +84,14 @@ impl Default for Toolbar {
     }
 }
 
-impl Widget<BoomagaApp> for Toolbar {
-    fn event(&mut self, _ctx: &mut druid::EventCtx, _event: &druid::Event, _data: &BoomagaApp, _env: &Env) {}
+impl Widget<ViewerState> for Toolbar {
+    fn event(&mut self, _ctx: &mut druid::EventCtx, _event: &druid::Event, _data: &mut ViewerState, _env: &Env) {}
 
-    fn lifecycle(&mut self, _ctx: &mut druid::LifeCycleCtx, _event: &druid::LifeCycle, _data: &BoomagaApp, _env: &Env) {}
+    fn lifecycle(&mut self, _ctx: &mut druid::LifeCycleCtx, _event: &druid::LifeCycle, _data: &ViewerState, _env: &Env) {}
 
-    fn update(&mut self, _ctx: &mut druid::UpdateCtx, _old_data: &BoomagaApp, _data: &BoomagaApp, _env: &Env) {}
+    fn update(&mut self, _ctx: &mut druid::UpdateCtx, _old_data: &ViewerState, _data: &ViewerState, _env: &Env) {}
 
-    fn layout(&mut self, ctx: &mut druid::LayoutCtx, bc: &druid::BoxConstraints, data: &BoomagaApp, env: &Env) -> druid::Size {
+    fn layout(&mut self, ctx: &mut druid::LayoutCtx, bc: &druid::BoxConstraints, data: &ViewerState, env: &Env) -> druid::Size {
         // Calculate toolbar height
         let toolbar_height = 40.0;
         let size = Size::new(bc.width(), toolbar_height);
@@ -99,7 +99,7 @@ impl Widget<BoomagaApp> for Toolbar {
         ctx.constraints().constrain(size)
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx, _data: &BoomagaApp, _env: &Env) {
+    fn paint(&mut self, ctx: &mut PaintCtx, _data: &ViewerState, _env: &Env) {
         let size = ctx.size();
 
         // Draw toolbar background

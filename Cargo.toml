@@ -54,10 +54,8 @@ directories = "5.0"
 # UUID
 uuid = { version = "1.0", features = ["v4", "serde"] }
 
-# System
-sysinfo = "0.30"
-
-# Config crate
+# Core and Config crates (both need to use path since they don't match workspace naming)
+boomaga-core = { path = "crates/boomaga-core" }
 boomaga-config = { path = "crates/boomaga-config" }
 
 [profile.release]

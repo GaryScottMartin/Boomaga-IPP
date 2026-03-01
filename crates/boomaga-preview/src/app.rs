@@ -2,6 +2,7 @@
 
 use druid::{AppLauncher, Data, Env, Lens};
 use std::path::PathBuf;
+use crate::viewer::{ViewerState, Viewer};
 
 /// Main application state
 #[derive(Clone, Data, Lens)]
@@ -45,13 +46,6 @@ impl BoomagaApp {
     /// Load a document
     pub async fn load_document(&mut self, path: PathBuf) -> anyhow::Result<()> {
         self.document_path = path.clone();
-
-        // TODO: Parse document
-        // In production, this would:
-        // 1. Create Document from path
-        // 2. Parse metadata
-        // 3. Render preview pages
-        // 4. Update current_document
 
         tracing::info!("Loading document: {:?}", path);
 

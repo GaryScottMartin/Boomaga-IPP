@@ -7,7 +7,7 @@ Boomaga-IPP is a rewrite of the classic Boomaga (Booklet Manager) application, r
 ## Features
 
 - **IPP Everywhere Support**: Full CUPS IPP protocol implementation
-- **Native Wayland GUI**: Built with Druid for maximum performance and integration
+- **Native Wayland GUI**: Built with Xilem for maximum performance and integration
 - **Modern Document Rendering**: PDF and PostScript support using Poppler and Ghostscript
 - **Advanced Layout Engine**: N-up printing, booklet creation, custom page layouts
 - **Plugin System**: Extensible architecture for custom functionality

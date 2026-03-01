@@ -4,6 +4,7 @@
 //! using the Druid framework.
 
 mod app;
+mod document_renderer;
 mod viewer;
 mod document_view;
 mod menu_bar;
