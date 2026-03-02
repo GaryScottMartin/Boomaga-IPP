@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::{info, debug, error};
 use boomaga_core::{PageSize, Orientation, Error, Result};
-use crate::imposition::LayoutTemplate;
+use crate::imposition::layout_template::LayoutTemplate;
 
 /// N-up layout result
 pub struct NUpLayout {
@@ -32,7 +32,7 @@ pub struct PageResult {
 }
 
 /// Page position on the output sheet
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PagePosition {
     /// Top-left
     TopLeft,

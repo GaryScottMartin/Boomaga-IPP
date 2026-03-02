@@ -5,10 +5,10 @@
 
 pub mod n_up;
 pub mod booklet;
-pub mod imposition;
 pub mod transforms;
+pub mod imposition;
 
 pub use n_up::*;
 pub use booklet::*;
-pub use imposition::*;
 pub use transforms::*;
+pub use imposition::template::LayoutTemplate;

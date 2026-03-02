@@ -1,11 +1,23 @@
 //! Dynamic library loader for plugins
 
+use std::any::Any;
 use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tracing::{info, warn, error};
-use crate::core::PluginRegistry;
-use crate::core::{Plugin, PluginMetadata, PluginError, PluginInstance, PluginStatus, PluginType, PluginContext, Logger, EventEmitter};
+use crate::core::{
+    PluginRegistry,
+    Plugin,
+    PluginMetadata,
+    PluginError,
+    PluginInstance,
+    PluginStatus,
+    PluginType,
+    PluginContext,
+    Logger,
+    EventEmitter,
+    PluginId,
+};
 
 /// Plugin loader
 pub struct PluginLoader {

@@ -11,7 +11,7 @@ mod defaults;
 pub use backend_config::BackendConfig;
 pub use preview_config::PreviewConfig;
 pub use settings::Settings;
-pub use defaults::*;
+pub use defaults::constants::*;
 
 use std::path::PathBuf;
 use anyhow::Result;

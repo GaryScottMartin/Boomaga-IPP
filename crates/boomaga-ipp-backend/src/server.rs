@@ -227,18 +227,18 @@ impl IppServer {
     async fn handle_create_job(request: IppRequest) -> Result<IppResponse, Error> {
         // Parse job parameters
         // In production, use proper IPP parameter parsing
-        let job_id = JobId::from(Uuid::new_v4());
+        let job_id = JobId(Uuid::new_v4());
 
-        let request = PrintJobRequest {
+        let print_job = PrintJobRequest {
             job_id,
             file_path: std::path::PathBuf::new(),
-            file_type: boomaga_core::FileType::Pdf,
+            file_type: FileType::Pdf,
             printer_name: None,
             options: PrintOptions::default(),
         };
 
         // Add to processor queue
-        self.processor.add_job(request).await?;
+        self.processor.add_job(print_job).await?;
 
         Ok(Self::create_success_response(request.operation_id, request.request_id))
     }

@@ -2,9 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::{Error, Result};
-use crate::document::{Orientation};
-use crate::job::{FileType, PagesPerSheet, MarginMode};
+use crate::{Error, Result, FileType};
+use crate::document::{Orientation, DuplexMode, PagesPerSheet, MarginMode};
 
 /// Unique identifier for a print job
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -137,44 +136,6 @@ pub struct PrintOptions {
     pub pages_per_sheet: PagesPerSheet,
     pub scale: f64,
     pub margins: MarginMode,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub enum DuplexMode {
-    /// No duplex
-    None,
-    /// Long edge binding (standard book)
-    LongEdge,
-    /// Short edge binding (calendar style)
-    ShortEdge,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub enum PagesPerSheet {
-    /// One page per sheet
-    One = 1,
-    /// Two pages per sheet
-    Two = 2,
-    /// Four pages per sheet
-    Four = 4,
-    /// Six pages per sheet
-    Six = 6,
-    /// Eight pages per sheet
-    Eight = 8,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum MarginMode {
-    /// No margins
-    None,
-    /// Minimum margins
-    Minimum,
-    /// Normal margins
-    Normal,
-    /// Wide margins
-    Wide,
-    /// Custom { margins }
-    Custom { top: f64, bottom: f64, left: f64, right: f64 },
 }
 
 impl Default for PrintOptions {

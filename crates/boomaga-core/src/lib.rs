@@ -10,8 +10,8 @@ pub mod printer;
 pub mod constants;
 
 pub use error::{Error, Result};
-pub use job::{JobStatus, FileType, JobMetadata, JobPriority, PrintJobRequest, PrintOptions, DuplexMode, PagesPerSheet, MarginMode, PageInfo};
-pub use document::{Document, Page, PageSize, Orientation, PageContents, GraphicsElement, PathElement, Color};
+pub use job::{JobStatus, JobMetadata, JobPriority, PrintJobRequest, PrintOptions, PageInfo, JobId};
+pub use document::{Document, Page, PageSize, Orientation, PageContents, GraphicsElement, PathElement, Color, FileType, PagesPerSheet, MarginMode, DuplexMode};
 pub use printer::{PrinterInfo, PrinterCapabilities, PageLayout};
 pub use constants::*;
 

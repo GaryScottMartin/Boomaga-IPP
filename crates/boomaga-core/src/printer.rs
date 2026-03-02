@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use crate::{PrintOptions, DuplexMode, PageSize, Orientation, MarginMode, PagesPerSheet};
 
 /// Information about a printer
 #[derive(Debug, Clone, Serialize, Deserialize)]

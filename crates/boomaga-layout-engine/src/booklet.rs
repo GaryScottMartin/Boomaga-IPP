@@ -1,7 +1,7 @@
 //! Booklet page layout algorithms
 
 use boomaga_core::{PageSize, Error, Result};
-use crate::n_up::{NUpCalculator, PagePosition, NUpLayout};
+use crate::n_up::{NUpCalculator, PagePosition, NUpLayout, PageResult};
 use tracing::{info, debug};
 
 /// Booklet layout result
@@ -92,10 +92,12 @@ impl BookletCalculator {
             pages.push(output_page);
         }
 
+        let page_count = pages.len();
+
         Ok(BookletLayout {
             pages,
             output_size,
-            page_count: pages.len(),
+            page_count,
             booklet_type: self.booklet_type,
             arrangement: PageArrangement::CorrectOrder,
         })

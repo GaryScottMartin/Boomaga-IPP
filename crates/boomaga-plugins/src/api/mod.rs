@@ -1,57 +1,18 @@
 //! Plugin API definitions
 
-use crate::core::{Plugin, PluginMetadata, PluginType};
+use crate::core::{Plugin, PluginMetadata, PluginType, PluginId};
+use crate::core::{
+    PluginError,
+    DocumentFilter,
+    LayoutPlugin,
+    PrintHook,
+    UIExtension,
+    UtilityPlugin,
+};
+use boomaga_core::document::Document;
+use boomaga_core::{PageSize, Page, PrintJobRequest, Error, Result};
 use std::any::Any;
 use std::sync::Arc;
-
-/// Document filter API
-pub trait DocumentFilter: Plugin {
-    /// Filter a document
-    fn filter_document(&mut self, document: &mut crate::document::Document) -> Result<(), crate::Error>;
-
-    /// Get supported file formats
-    fn supported_formats(&self) -> Vec<String>;
-}
-
-/// Layout API
-pub trait LayoutPlugin: Plugin {
-    /// Generate layout
-    fn generate_layout(
-        &self,
-        pages: &[crate::core::Page],
-        output_size: crate::PageSize,
-    ) -> Result<Vec<crate::core::Page>, crate::Error>;
-}
-
-/// Print hook API
-pub trait PrintHook: Plugin {
-    /// Before print
-    fn before_print(&self, job: &crate::PrintJobRequest) -> Result<(), crate::Error>;
-
-    /// After print
-    fn after_print(&self, job: &crate::PrintJobRequest, success: bool) -> Result<(), crate::Error>;
-}
-
-/// UI extension API
-pub trait UIExtension: Plugin {
-    /// Add menu item
-    fn add_menu_item(&self, menu_name: &str, item_name: &str) -> Result<(), crate::Error>;
-
-    /// Add toolbar button
-    fn add_toolbar_button(&self, button_name: &str) -> Result<(), crate::Error>;
-
-    /// Add shortcut
-    fn add_shortcut(&self, shortcut: &str, command: &str) -> Result<(), crate::Error>;
-}
-
-/// Utility API
-pub trait UtilityPlugin: Plugin {
-    /// Execute utility function
-    fn execute(&self, command: &str, params: std::collections::HashMap<String, String>) -> Result<String, crate::Error>;
-
-    /// Get utility capabilities
-    fn capabilities(&self) -> Vec<String>;
-}
 
 /// Plugin capability registry
 pub struct PluginCapabilityRegistry {

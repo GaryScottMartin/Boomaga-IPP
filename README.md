@@ -220,6 +220,8 @@ curl -v http://localhost:631
 ## Credits
 
 Developed with ❤️ by the Boomaga-IPP Team
+- @GaryScottMartin
+- Assisted and Supported by Claude Code / GLM-4.7-Flash
 
 ## Support
 

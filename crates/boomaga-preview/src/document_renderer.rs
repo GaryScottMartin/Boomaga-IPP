@@ -3,14 +3,13 @@
 //! This module provides functionality to load, parse, and render PDF/PostScript
 //! documents using the Poppler library.
 
-use poppler::{Document as PopplerDocument, Page as PopplerPage};
+use boomaga_core::{Document, Page, PageSize, Orientation, GraphicsElement, PathElement, Color};
+use cairo::{ImageSurface, Context as CairoContext, Format};
+use poppler::{Document as PopplerDocument, Page as PopplerPage, RenderError, PageOrientation};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
-use druid::kurbo::Rect;
-use cairo::{ImageSurface, Context as CairoContext, Format};
 use tracing::{info, warn, error};
-
-use boomaga_core::{Document, Page, PageSize, Orientation, GraphicsElement, PathElement, Color};
+use druid::kurbo::Rect;
 
 /// Error types for document rendering
 #[derive(Debug, thiserror::Error)]

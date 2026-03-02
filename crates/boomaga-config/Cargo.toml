@@ -6,11 +6,11 @@ license.workspace = true
 description = "Configuration management for boomaga virtual printer"
 
 [dependencies]
-serde = { workspace = true, features = ["derive"] }
+boomaga-core = { path = "../boomaga-core" }
+serde = "1.0"
 serde_json = "1.0"
 config = "0.14"
 directories = "5.0"
-thiserror.workspace = true
-anyhow.workspace = true
-tracing.workspace = true
-boomaga-core.workspace = true
+thiserror = "1.0"
+anyhow = "1.0"
+tracing = "0.1"

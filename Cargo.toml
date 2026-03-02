@@ -25,7 +25,7 @@ druid = "0.8"
 cairo-rs = "0.18"
 
 # Document Rendering
-poppler = "0.27"
+poppler = "0.6"
 libc = "0.2"
 
 # IPC
@@ -51,12 +51,17 @@ tracing-subscriber = "0.3"
 config = "0.14"
 directories = "5.0"
 
-# UUID
-uuid = { version = "1.0", features = ["v4", "serde"] }
+# Time
+chrono = "0.4"
 
-# Core and Config crates (both need to use path since they don't match workspace naming)
-boomaga-core = { path = "crates/boomaga-core" }
-boomaga-config = { path = "crates/boomaga-config" }
+# URL
+url = "2.5"
+
+# Temporary Files
+tempfile = "3.10"
+
+# UUID
+uuid = "1.0"
 
 [profile.release]
 lto = true

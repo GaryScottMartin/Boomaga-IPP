@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use crate::{Error, Result};
 
 /// Represents a document (PDF or PostScript)
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -133,7 +134,7 @@ pub enum PagesPerSheet {
 }
 
 /// Margin mode enumeration
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum MarginMode {
     /// No margins
     None,
@@ -145,6 +146,17 @@ pub enum MarginMode {
     Wide,
     /// Custom { margins }
     Custom { top: f64, bottom: f64, left: f64, right: f64 },
+}
+
+/// Duplex mode enumeration
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub enum DuplexMode {
+    /// No duplex
+    None,
+    /// Long edge binding (standard book)
+    LongEdge,
+    /// Short edge binding (calendar style)
+    ShortEdge,
 }
 
 /// Graphics element types

@@ -4,7 +4,7 @@ use boomaga_core::{PageSize, Orientation, Error, Result};
 use tracing::{debug, info};
 
 /// Page transformation operation
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TransformOperation {
     /// Rotate 90 degrees clockwise
     Rotate90,

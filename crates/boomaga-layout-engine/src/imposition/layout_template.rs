@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::info;
 use boomaga_core::{PageSize, Error, Result};
-use crate::n_up::{PagePosition, PageResult};
+use crate::n_up::PagePosition;
 
 /// Layout template for N-up and booklet layouts
 #[derive(Debug, Clone)]
