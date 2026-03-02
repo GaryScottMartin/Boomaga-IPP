@@ -10,9 +10,9 @@ pub mod printer;
 pub mod constants;
 
 pub use error::{Error, Result};
-pub use job::{PrintJob, JobStatus};
-pub use document::{Document, Page, PageSize, Orientation};
-pub use printer::{PrinterInfo, PrinterCapabilities};
+pub use job::{JobStatus, FileType, JobMetadata, JobPriority, PrintJobRequest, PrintOptions, DuplexMode, PagesPerSheet, MarginMode, PageInfo};
+pub use document::{Document, Page, PageSize, Orientation, PageContents, GraphicsElement, PathElement, Color};
+pub use printer::{PrinterInfo, PrinterCapabilities, PageLayout};
 pub use constants::*;
 
 // Re-export commonly used types

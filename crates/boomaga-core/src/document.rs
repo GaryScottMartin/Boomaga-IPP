@@ -106,6 +106,47 @@ impl Page {
     }
 }
 
+/// File type enumeration
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum FileType {
+    /// PDF document
+    Pdf,
+    /// PostScript document
+    PostScript,
+    /// PostScript (.ps) file
+    Ps,
+}
+
+/// Pages per sheet enumeration
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum PagesPerSheet {
+    /// One page per sheet
+    One = 1,
+    /// Two pages per sheet
+    Two = 2,
+    /// Four pages per sheet
+    Four = 4,
+    /// Six pages per sheet
+    Six = 6,
+    /// Eight pages per sheet
+    Eight = 8,
+}
+
+/// Margin mode enumeration
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum MarginMode {
+    /// No margins
+    None,
+    /// Minimum margins
+    Minimum,
+    /// Normal margins
+    Normal,
+    /// Wide margins
+    Wide,
+    /// Custom { margins }
+    Custom { top: f64, bottom: f64, left: f64, right: f64 },
+}
+
 /// Graphics element types
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum GraphicsElement {
@@ -137,7 +178,7 @@ pub enum GraphicsElement {
     },
     /// Image element
     Image {
-        path: PathBuf,
+        path: std::path::PathBuf,
         x: f64,
         y: f64,
         width: f64,
@@ -155,7 +196,7 @@ pub enum PathElement {
 }
 
 /// Page size types
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum PageSize {
     /// Letter (8.5 x 11 inches)
     Letter,

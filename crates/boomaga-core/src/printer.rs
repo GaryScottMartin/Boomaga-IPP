@@ -79,7 +79,7 @@ impl Default for PrinterCapabilities {
 }
 
 /// Supported page layouts
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum PageLayout {
     /// Single page
     Single,
@@ -92,7 +92,7 @@ pub enum PageLayout {
 }
 
 /// Supported paper sizes
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum PaperSize {
     /// Letter (8.5 x 11 inches)
     Letter,

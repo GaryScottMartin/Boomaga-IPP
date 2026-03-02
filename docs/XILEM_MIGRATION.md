@@ -22,7 +22,7 @@ Xilem is preferred over Druid because:
 
 # Add Xilem dependencies
 [dependencies]
-xilem = "0.1"
+xilem = "0.4"
 kurbo = { version = "0.11", features = ["use-glow"] }  # For rendering
 winit = "0.30"  # Window management
 env_logger = "0.11"  # Logging

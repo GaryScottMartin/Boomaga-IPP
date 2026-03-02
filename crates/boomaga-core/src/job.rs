@@ -1,9 +1,10 @@
 //! Print job types and handling
 
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::{Error, Result};
+use crate::document::{Orientation};
+use crate::job::{FileType, PagesPerSheet, MarginMode};
 
 /// Unique identifier for a print job
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -103,7 +104,7 @@ pub struct JobMetadata {
     pub pages_printed: usize,
     pub status: JobStatus,
     pub priority: JobPriority,
-    pub file_path: PathBuf,
+    pub file_path: std::path::PathBuf,
     pub file_type: FileType,
     pub pages: Vec<PageInfo>,
 }
@@ -116,28 +117,11 @@ pub struct PageInfo {
     pub orientation: Orientation,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum FileType {
-    Pdf,
-    PostScript,
-    Ps,
-}
-
-impl std::fmt::Display for FileType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            FileType::Pdf => write!(f, "PDF"),
-            FileType::PostScript => write!(f, "PostScript"),
-            FileType::Ps => write!(f, "PostScript"),
-        }
-    }
-}
-
 /// Print job request
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrintJobRequest {
     pub job_id: JobId,
-    pub file_path: PathBuf,
+    pub file_path: std::path::PathBuf,
     pub file_type: FileType,
     pub printer_name: Option<String>,
     pub options: PrintOptions,
