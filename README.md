@@ -225,7 +225,7 @@ curl -v http://localhost:631
 ## Resources
 
 - [Original Boomaga](https://github.com/Boomaga/boomaga)
-- [Druid GUI Framework](https://github.com/linebender/druid)
+- [Xilem GUI Framework](https://github.com/linebender/xilem)
 - [Poppler Documentation](https://poppler.freedesktop.org/)
 - [CUPS IPP Protocol](https://www.cups.org/doc/spec-ipp.html)
 
