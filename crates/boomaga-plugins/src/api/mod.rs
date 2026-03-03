@@ -1,7 +1,7 @@
 //! Plugin API definitions
 
-use crate::core::{Plugin, PluginMetadata, PluginType, PluginId};
-use crate::core::{
+use super::core::{Plugin, PluginMetadata, PluginType, PluginId};
+use super::core::{
     PluginError,
     DocumentFilter,
     LayoutPlugin,

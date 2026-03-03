@@ -22,6 +22,7 @@ boomaga-ipp/
 ├── boomaga-ipp-backend/   # IPP server service
 ├── boomaga-preview/       # Wayland GUI application
 ├── boomaga-layout-engine/ # Page layout algorithms
+├── boomaga-config/        # Configuration management
 ├── boomaga-ipc/           # Inter-process communication
 └── boomaga-plugins/       # Plugin system
 ```
@@ -84,6 +85,17 @@ boomaga-ipp-backend --socket /tmp/boomaga.sock --port 631
 ```bash
 boomaga-preview --window 1200x900
 ```
+
+## Project Status
+
+**Phase 1 (Foundation)**: 80% Complete ✅
+- Project structure and workspace setup
+- Core infrastructure (config, error handling, types)
+- IPP backend service with job queue
+- Preview application with Xilem GUI framework
+- Layout engine with N-up and booklet algorithms
+- Configuration management system
+- Plugin system framework
 
 ## Plugins
 

@@ -1,10 +1,9 @@
 //! Error types for boomaga
 
-use std::path::PathBuf;
 use thiserror::Error;
 
 /// Result type alias for boomaga
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Error types that can occur in boomaga
 #[derive(Error, Debug)]

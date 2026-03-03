@@ -5,7 +5,7 @@ use std::net::{TcpListener, TcpStream};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{info, warn, debug};
-use boomaga_core::{JobId, PrintJobRequest, PrintOptions, DuplexMode, PagesPerSheet, Error};
+use boomaga_core::{JobId, PrintJobRequest, PrintOptions, Error};
 use crate::job_processor::JobProcessor;
 
 /// IPP version
@@ -142,6 +142,7 @@ impl IppServer {
 
     /// Handle a client connection
     async fn handle_client(
+        &self,
         client_id: u32,
         addr: std::net::SocketAddr,
         stream: TcpStream,
@@ -224,7 +225,7 @@ impl IppServer {
     }
 
     /// Handle CreateJob request
-    async fn handle_create_job(request: IppRequest) -> Result<IppResponse, Error> {
+    async fn handle_create_job(&self, request: IppRequest) -> Result<IppResponse, Error> {
         // Parse job parameters
         // In production, use proper IPP parameter parsing
         let job_id = JobId(Uuid::new_v4());

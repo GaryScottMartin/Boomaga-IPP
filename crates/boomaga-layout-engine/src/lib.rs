@@ -11,4 +11,4 @@ pub mod imposition;
 pub use n_up::*;
 pub use booklet::*;
 pub use transforms::*;
-pub use imposition::template::LayoutTemplate;
+pub use imposition::layout_template::LayoutTemplate;

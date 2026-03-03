@@ -1,7 +1,7 @@
 //! Page transformation operations
 
-use boomaga_core::{PageSize, Orientation, Error, Result};
-use tracing::{debug, info};
+use boomaga_core::{PageSize, Orientation};
+use tracing::debug;
 
 /// Page transformation operation
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -68,10 +68,8 @@ impl PageTransformer {
         &self,
         page_size: PageSize,
         orientation: Orientation,
-        rotation_degrees: f64,
+        _rotation_degrees: f64,
     ) -> TransformedPage {
-        let radians = rotation_degrees.to_radians();
-
         let (width, height) = if orientation.is_landscape() {
             // Swap dimensions for landscape
             (page_size.height_points(), page_size.width_points())
@@ -80,7 +78,7 @@ impl PageTransformer {
         };
 
         // Apply rotation
-        let (transformed_width, transformed_height) = if rotation_degrees % 180.0 == 90.0 {
+        let (transformed_width, transformed_height) = if _rotation_degrees % 180.0 == 90.0 {
             (height * self.default_scale, width * self.default_scale)
         } else {
             (width * self.default_scale, height * self.default_scale)
@@ -215,10 +213,8 @@ impl PageRotationCalculator {
     }
 
     /// Calculate rotation for multiple pages
-    pub fn calculate_rotations(&self, pages: &[usize]) -> Vec<f64> {
-        pages.iter()
-            .map(|_| self.required_rotation())
-            .collect()
+    pub fn calculate_rotations(&self, _pages: &[usize]) -> Vec<f64> {
+        vec![self.required_rotation(); _pages.len()]
     }
 }
 

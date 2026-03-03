@@ -1,9 +1,8 @@
 //! N-up page layout algorithms
 
-use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::{info, debug, error};
-use boomaga_core::{PageSize, Orientation, Error, Result};
+use tracing::{info, debug};
+use boomaga_core::{PageSize, Error, Result};
 use crate::imposition::layout_template::LayoutTemplate;
 
 /// N-up layout result
@@ -167,7 +166,7 @@ impl NUpCalculator {
         let template = LayoutTemplate::new(self.pages_per_sheet, output_size, scaled_size);
 
         // Generate layout
-        let pages = self.generate_layout(input_pages, template)?;
+        let pages = self.generate_layout(input_pages, &template)?;
 
         Ok(NUpLayout {
             pages,
@@ -178,33 +177,30 @@ impl NUpCalculator {
     }
 
     /// Find minimum page size among input pages
-    fn find_min_page_size(&self, page_indices: &[usize]) -> PageSize {
+    fn find_min_page_size(&self, _page_indices: &[usize]) -> PageSize {
         // TODO: Implement actual page size lookup
         PageSize::A4
     }
 
     /// Find maximum page size among input pages
-    fn find_max_page_size(&self, page_indices: &[usize]) -> PageSize {
+    fn find_max_page_size(&self, _page_indices: &[usize]) -> PageSize {
         // TODO: Implement actual page size lookup
         PageSize::A4
     }
 
     /// Calculate scaled size based on scale mode
-    fn calculate_scaled_size(&self, input_size: PageSize, output_size: PageSize) -> (f64, f64) {
+    fn calculate_scaled_size(&self, input_size: PageSize, output_size: PageSize) -> f64 {
         let scale = match self.scale_mode {
             ScaleMode::Fit => self.calculate_fit_scale(input_size, output_size),
             ScaleMode::Fill => self.calculate_fill_scale(input_size, output_size),
             ScaleMode::Shrink => self.calculate_shrink_scale(input_size, output_size),
             ScaleMode::Stretch => {
                 // Use input size
-                (input_size.width_points(), input_size.height_points())
+                1.0
             }
         };
 
-        (
-            scale * input_size.width_points(),
-            scale * input_size.height_points(),
-        )
+        scale * input_size.width_points() * input_size.height_points()
     }
 
     /// Calculate fit scale
@@ -247,14 +243,13 @@ impl NUpCalculator {
     fn generate_layout(
         &self,
         input_pages: &[usize],
-        template: LayoutTemplate,
+        template: &LayoutTemplate,
     ) -> Result<Vec<PageResult>> {
         let mut pages = Vec::new();
-        let page_count = input_pages.len();
 
         // Generate page positions based on pages per sheet
-        for (output_index, input_pages) in template.generate_pages(input_pages).enumerate() {
-            let position = template.get_page_position(output_index)?;
+        for (output_index, input_pages) in template.generate_pages(input_pages).iter().enumerate() {
+            let position = template.get_position(output_index)?;
 
             pages.push(PageResult {
                 output_page: output_index + 1,

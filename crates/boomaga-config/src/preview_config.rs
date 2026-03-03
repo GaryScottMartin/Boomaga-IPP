@@ -1,6 +1,7 @@
 //! Preview application configuration
 
 use serde::{Deserialize, Serialize};
+use boomaga_core::{Orientation, MarginMode};
 use std::path::PathBuf;
 
 /// Preview application configuration

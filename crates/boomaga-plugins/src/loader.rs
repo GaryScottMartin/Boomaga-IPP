@@ -5,7 +5,7 @@ use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tracing::{info, warn, error};
-use crate::core::{
+use super::core::{
     PluginRegistry,
     Plugin,
     PluginMetadata,

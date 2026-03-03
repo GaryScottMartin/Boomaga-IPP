@@ -37,7 +37,7 @@ impl LayoutTemplate {
     }
 
     /// Generate page positions based on pages per sheet
-    pub fn generate_positions(&mut self) -> Vec<PagePosition> {
+    pub fn generate_positions(&self) -> Vec<PagePosition> {
         match self.pages_per_sheet {
             1 => vec![PagePosition::MiddleCenter],
             2 => vec![

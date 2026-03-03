@@ -26,7 +26,13 @@ Need to create a modern version of boomaga (BOOklet MANager), a virtual printer 
    - Print dialog
    - Plugin system support
 
-3. **Shared Components**
+3. **Configuration System**
+   - Backend configuration (IPP settings)
+   - Preview configuration (GUI preferences)
+   - Settings management
+   - Default constants
+
+4. **Shared Components**
    - IPP parser
    - Page layout engine (N-up, booklet)
    - PDF/PostScript rendering
@@ -42,18 +48,19 @@ Need to create a modern version of boomaga (BOOklet MANager), a virtual printer 
 
 ## Technology Stack Decisions
 
-### GUI Framework: Druid
-**Why Druid over alternatives**:
-- Mature Wayland backend support
-- Strong Rust integration
-- Desktop-optimized architecture
-- Good performance for document rendering
-- Data-driven approach suits document viewers
+### GUI Framework: Xilem
+**Why Xilem over alternatives**:
+- Native Wayland rendering with direct compositor integration
+- Immediate mode GUI framework for modern architectures
+- Excellent performance for document rendering
+- Functional programming paradigms
+- Lightweight and focused on text and graphics
+- Growing ecosystem with active development
+- Better fit for document-centric applications
 
 ### Display: Native Wayland
-**Why not Xwayland**:
-- Better performance and integration
-- Direct Wayland API access
+- Direct Wayland compositor access
+- Maximum performance and integration
 - Modern compositor support
 - Future-proof architecture
 
@@ -106,6 +113,7 @@ crates/
 ├── boomaga-ipp-backend/               # IPP service
 ├── boomaga-preview/                   # GUI application
 ├── boomaga-layout-engine/             # Page layout algorithms
+├── boomaga-config/                    # Configuration management
 ├── boomaga-ipc/                       # IPC library
 └── boomaga-plugins/                   # Plugin system
 ```
@@ -120,7 +128,7 @@ crates/
 
 ### Phase 2: Core Functionality (Weeks 5-8)
 - Print job processing
-- GUI foundation with Druid
+- GUI foundation with Xilem
 - Layout engine (N-up, booklet)
 - Document rendering
 
@@ -146,7 +154,7 @@ crates/
 
 ### Rust Crates
 - **poppler**: PDF rendering (v0.27)
-- **druid**: GUI framework (v0.8)
+- **xilem**: GUI framework (v0.4)
 - **zbus**: D-Bus communication (v4.3)
 - **tokio**: Async runtime (v1.35)
 - **serde**: Serialization (v1.0)
@@ -162,6 +170,7 @@ crates/
 - `crates/boomaga-ipp-backend/src/main.rs` - IPP service entry
 - `crates/boomaga-ipp-backend/src/server.rs` - IPP server
 - `crates/boomaga-ipp-backend/src/job_processor.rs` - Job handling
+- `crates/boomaga-ipp-backend/src/job_queue.rs` - Job persistence
 
 ### GUI
 - `crates/boomaga-preview/src/main.rs` - GUI entry point
@@ -171,7 +180,12 @@ crates/
 ### Layout Engine
 - `crates/boomaga-layout-engine/src/n_up.rs` - N-up layout
 - `crates/boomaga-layout-engine/src/booklet.rs` - Booklet creation
-- `crates/boomaga-layout-engine/src/imposition/template.rs` - Page templates
+- `crates/boomaga-layout-engine/src/imposition/layout_template.rs` - Page templates
+
+### Configuration
+- `crates/boomaga-config/src/lib.rs` - Configuration manager
+- `crates/boomaga-config/src/backend_config.rs` - Backend settings
+- `crates/boomaga-config/src/preview_config.rs` - Preview settings
 
 ### IPC
 - `crates/boomaga-ipc/src/protocol/messages.rs` - Message types
@@ -190,7 +204,7 @@ crates/
 - Configure testing infrastructure
 
 ### Week 2: Core Infrastructure
-- Configuration management
+- Configuration management (boomaga-config crate)
 - Error types and handling
 - D-Bus interface definitions
 - IPC protocol messages
@@ -215,7 +229,7 @@ crates/
 - Cancellation support
 
 ### Week 6: GUI Foundation
-- Druid with Wayland backend
+- Xilem with Wayland rendering
 - Main window
 - Preview rendering
 - Zoom and navigation
@@ -293,7 +307,7 @@ crates/
 - Project structure and workspace setup
 - Core crate (boomaga-core) with error handling, job types, document types
 - IPP backend service with job queue and processor
-- Preview application with Druid GUI framework
+- Preview application with Xilem GUI framework
 - Layout engine with N-up and booklet algorithms
 - **Configuration management system** (boomaga-config crate)
   - BackendConfig for IPP service settings
@@ -321,7 +335,7 @@ crates/
 #### Remaining Phase 2 Tasks
 - Full D-Bus integration (30%)
 - Document rendering completion (0%)
-- Druid GUI rendering pipeline (10%)
+- Xilem GUI rendering pipeline (10%)
 - Document viewer implementation (5%)
 - Navigation and zoom controls (0%)
 - Toolbar and menu bar implementation (60%)
@@ -353,5 +367,5 @@ crates/
 
 ## Sources:
 - [Boomaga Original System](https://github.com/Boomaga/boomaga)
-- [Druid Rust GUI Framework](https://github.com/linebender/druid)
+- [Xilem - Modern Rust GUI Framework](https://github.com/linebender/xilem)
 - [Poppler Rust Bindings](https://crates.io/crates/poppler)

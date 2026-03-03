@@ -4,6 +4,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::{info, warn};
+use boomaga_core::Uuid;
 
 /// Plugin ID
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -16,7 +17,7 @@ impl PluginId {
     }
 
     /// Create a new plugin ID
-    pub fn from_uuid(uuid: std::uuid::Uuid) -> Self {
+    pub fn from_uuid(uuid: Uuid) -> Self {
         Self(uuid.to_string())
     }
 
@@ -92,14 +93,19 @@ pub struct PluginContext {
 /// Logger wrapper
 pub struct Logger {
     /// Underlying logger
-    logger: tracing_subscriber::Registry,
+    logger: LoggerImpl,
 }
+
+pub type LoggerImpl = tracing_subscriber::Registry;
 
 /// Event emitter
 pub struct EventEmitter {
     /// Event handlers
     handlers: Vec<Box<dyn Fn(String, String) + Send + Sync>>,
 }
+
+/// Document type for plugins
+pub type Document = boomaga_core::Document;
 
 /// Plugin trait
 pub trait Plugin: Send + Sync {
@@ -265,6 +271,13 @@ pub struct PluginRegistry {
     /// Registered plugins
     plugins: HashMap<PluginId, PluginInstance>,
 }
+
+// Type aliases for backward compatibility
+pub type DocumentFilter = Box<dyn Fn(&Document) -> bool + Send + Sync + 'static>;
+pub type LayoutPlugin = Box<dyn Fn(&Document) -> Result<Document> + Send + Sync + 'static>;
+pub type PrintHook = Box<dyn Fn(&mut Document) -> Result<()> + Send + Sync + 'static>;
+pub type UIExtension = Box<dyn Fn() -> Result<()> + Send + Sync + 'static>;
+pub type UtilityPlugin = Box<dyn Plugin + Send + Sync + 'static>;
 
 impl PluginRegistry {
     /// Create a new plugin registry

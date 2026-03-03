@@ -13,6 +13,9 @@ pub use preview_config::PreviewConfig;
 pub use settings::Settings;
 pub use defaults::constants::*;
 
+// Re-export types from boomaga_core
+pub use boomaga_core::PrintOptions;
+
 use std::path::PathBuf;
 use anyhow::Result;
 use tracing::{info, debug};
