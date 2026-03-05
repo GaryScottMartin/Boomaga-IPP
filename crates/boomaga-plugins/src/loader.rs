@@ -55,7 +55,7 @@ impl PluginLoader {
             initialized: false,
         };
 
-        let instance = PluginInstance::new(metadata, plugin);
+        let instance = PluginInstance::new(metadata.clone(), plugin);
 
         info!("Plugin loaded successfully: {}", metadata.name);
 
@@ -101,7 +101,7 @@ impl PluginLoader {
 
                 if path.is_file() {
                     if path.extension() == Some(OsStr::new("so")) || path.extension() == Some(OsStr::new("dll")) {
-                        match self.load_from_file(path) {
+                        match self.load_from_file(path.clone()) {
                             Ok(instance) => plugins.push(instance),
                             Err(e) => {
                                 error!("Failed to load plugin {:?}: {}", path, e);
@@ -215,7 +215,7 @@ impl DynamicPluginLoader {
             initialized: false,
         };
 
-        let instance = PluginInstance::new(metadata, plugin);
+        let instance = PluginInstance::new(metadata.clone(), plugin);
 
         info!("Dynamic plugin loaded: {}", metadata.name);
 

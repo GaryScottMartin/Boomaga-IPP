@@ -1,6 +1,6 @@
 //! Plugin API definitions
 
-use super::core::{Plugin, PluginMetadata, PluginType, PluginId};
+use super::core::{Plugin, PluginMetadata, PluginType, PluginId, PluginRegistry, PluginInstance};
 use super::core::{
     PluginError,
     DocumentFilter,
@@ -81,10 +81,13 @@ impl PluginManager {
 
     /// Register a plugin
     pub fn register_plugin(&mut self, plugin: PluginInstance) {
+        let metadata = plugin.metadata();
+        let plugin_type_str = metadata.plugin_type.as_str().to_string();
+        let id = metadata.id.clone();
         self.registry.register(plugin);
         self.capabilities.register_capability(
-            plugin.metadata().plugin_type.as_str(),
-            plugin.metadata().id.clone(),
+            &plugin_type_str,
+            id,
         );
     }
 

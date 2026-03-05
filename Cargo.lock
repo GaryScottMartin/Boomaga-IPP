@@ -295,10 +295,12 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "boomaga-core",
+ "boomaga-plugins",
  "config",
  "directories",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror",
  "toml 0.8.2",
  "tracing",
@@ -372,6 +374,7 @@ dependencies = [
  "serde",
  "thiserror",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

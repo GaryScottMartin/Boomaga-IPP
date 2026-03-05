@@ -65,6 +65,20 @@ pub enum PluginType {
     Custom,
 }
 
+impl PluginType {
+    /// Convert plugin type to string
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            PluginType::DocumentFilter => "DocumentFilter",
+            PluginType::Layout => "Layout",
+            PluginType::PrintHook => "PrintHook",
+            PluginType::UIExtension => "UIExtension",
+            PluginType::Utility => "Utility",
+            PluginType::Custom => "Custom",
+        }
+    }
+}
+
 /// Plugin status
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PluginStatus {
@@ -85,7 +99,7 @@ pub struct PluginContext {
     /// Application configuration
     pub config: HashMap<String, String>,
     /// Logger
-    pub logger: tracing::Logger,
+    pub logger: Logger,
     /// Event emitter
     pub events: EventEmitter,
 }
@@ -148,6 +162,18 @@ pub enum PluginError {
 
     #[error("Plugin not found: {0}")]
     NotFound(String),
+}
+
+impl From<std::io::Error> for PluginError {
+    fn from(error: std::io::Error) -> Self {
+        PluginError::InitError(error.to_string())
+    }
+}
+
+impl From<libloading::Error> for PluginError {
+    fn from(error: libloading::Error) -> Self {
+        PluginError::InitError(error.to_string())
+    }
 }
 
 /// Plugin instance
@@ -259,9 +285,9 @@ impl EventEmitter {
     }
 
     /// Emit an event
-    pub fn emit(&self, event_type: String, data: String) {
+    pub fn emit(&self, event_type: &str, data: &str) {
         for handler in &self.handlers {
-            handler(event_type, data);
+            handler(event_type.to_string(), data.to_string());
         }
     }
 }
@@ -274,9 +300,9 @@ pub struct PluginRegistry {
 
 // Type aliases for backward compatibility
 pub type DocumentFilter = Box<dyn Fn(&Document) -> bool + Send + Sync + 'static>;
-pub type LayoutPlugin = Box<dyn Fn(&Document) -> Result<Document> + Send + Sync + 'static>;
-pub type PrintHook = Box<dyn Fn(&mut Document) -> Result<()> + Send + Sync + 'static>;
-pub type UIExtension = Box<dyn Fn() -> Result<()> + Send + Sync + 'static>;
+pub type LayoutPlugin = Box<dyn Fn(&Document) -> Result<Document, PluginError> + Send + Sync + 'static>;
+pub type PrintHook = Box<dyn Fn(&mut Document) -> Result<(), PluginError> + Send + Sync + 'static>;
+pub type UIExtension = Box<dyn Fn() -> Result<(), PluginError> + Send + Sync + 'static>;
 pub type UtilityPlugin = Box<dyn Plugin + Send + Sync + 'static>;
 
 impl PluginRegistry {
@@ -320,6 +346,14 @@ impl PluginRegistry {
                 instance.initialize()?;
                 instance.start()?;
             }
+        }
+        Ok(())
+    }
+
+    /// Start all plugins
+    pub fn start_all(&mut self) -> Result<(), PluginError> {
+        for instance in self.plugins.values_mut() {
+            instance.start()?;
         }
         Ok(())
     }

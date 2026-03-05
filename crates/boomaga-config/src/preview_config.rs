@@ -2,6 +2,11 @@
 
 use serde::{Deserialize, Serialize};
 use boomaga_core::{Orientation, MarginMode};
+use boomaga_core::constants::{
+    DEFAULT_IPC_SOCKET, DEFAULT_DBUS_SERVICE, DEFAULT_DBUS_PATH,
+    DEFAULT_IPP_PORT, DEFAULT_MAX_JOB_HISTORY, DEFAULT_TIMEOUT_SECS,
+    DEFAULT_MAX_CONCURRENT_JOBS, DEFAULT_WORKER_THREADS, DEFAULT_JOB_QUEUE_SIZE,
+};
 use std::path::PathBuf;
 
 /// Preview application configuration
@@ -266,10 +271,15 @@ impl PreviewConfig {
 impl From<PreviewConfig> for boomaga_core::constants::AppConfig {
     fn from(config: PreviewConfig) -> Self {
         boomaga_core::constants::AppConfig {
-            preview_window: std::path::PathBuf::from(format!(
-                "{}x{}",
-                config.default_window_size.0, config.default_window_size.1
-            )),
+            ipc_socket_path: DEFAULT_IPC_SOCKET.to_string(),
+            dbus_service_name: DEFAULT_DBUS_SERVICE.to_string(),
+            dbus_path: DEFAULT_DBUS_PATH.to_string(),
+            ipp_port: DEFAULT_IPP_PORT,
+            max_job_history: DEFAULT_MAX_JOB_HISTORY,
+            timeout_secs: DEFAULT_TIMEOUT_SECS,
+            max_concurrent_jobs: DEFAULT_MAX_CONCURRENT_JOBS,
+            worker_threads: DEFAULT_WORKER_THREADS,
+            job_queue_size: DEFAULT_JOB_QUEUE_SIZE,
         }
     }
 }

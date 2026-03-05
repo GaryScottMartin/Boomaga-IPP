@@ -67,7 +67,7 @@ pub struct DocumentSettings {
 }
 
 /// Print settings
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct PrintSettings {
     /// Last used printer
     pub last_printer: Option<String>,

@@ -42,6 +42,13 @@ pub const DEFAULT_WORKER_THREADS: usize = 2;
 /// Job queue size
 pub const DEFAULT_JOB_QUEUE_SIZE: usize = 100;
 
+// Backward compatibility aliases
+pub const IPC_SOCKET_PATH: &str = DEFAULT_IPC_SOCKET;
+pub const DBUS_SERVICE_NAME: &str = DEFAULT_DBUS_SERVICE;
+pub const MAX_CONCURRENT_JOBS: usize = DEFAULT_MAX_CONCURRENT_JOBS;
+pub const WORKER_THREADS: usize = DEFAULT_WORKER_THREADS;
+pub const JOB_QUEUE_SIZE: usize = DEFAULT_JOB_QUEUE_SIZE;
+
 /// Application configuration
 #[derive(Debug, Clone)]
 pub struct AppConfig {

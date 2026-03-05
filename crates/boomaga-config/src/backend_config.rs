@@ -3,6 +3,10 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+use boomaga_core::constants::{
+    DEFAULT_DBUS_PATH, DEFAULT_MAX_JOB_HISTORY, DEFAULT_TIMEOUT_SECS,
+};
+
 /// Backend service configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BackendConfig {
@@ -120,9 +124,12 @@ impl BackendConfig {
 impl From<BackendConfig> for boomaga_core::constants::AppConfig {
     fn from(config: BackendConfig) -> Self {
         boomaga_core::constants::AppConfig {
-            ipc_socket_path: config.ipc_socket_path,
-            dbus_service_name: config.dbus_service_name,
+            ipc_socket_path: config.ipc_socket_path.display().to_string(),
+            dbus_service_name: config.dbus_service_name.to_string(),
+            dbus_path: DEFAULT_DBUS_PATH.to_string(),
             ipp_port: config.ipp_port,
+            max_job_history: DEFAULT_MAX_JOB_HISTORY,
+            timeout_secs: DEFAULT_TIMEOUT_SECS,
             max_concurrent_jobs: config.max_concurrent_jobs,
             worker_threads: config.worker_threads,
             job_queue_size: config.job_queue_size,

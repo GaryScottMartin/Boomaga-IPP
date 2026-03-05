@@ -7,6 +7,7 @@ description = "Configuration management for boomaga virtual printer"
 
 [dependencies]
 boomaga-core = { path = "../boomaga-core" }
+boomaga-plugins = { path = "../boomaga-plugins" }
 serde = "1.0"
 serde_json = "1.0"
 config = "0.14"
@@ -15,3 +16,4 @@ thiserror = "1.0"
 anyhow = "1.0"
 tracing = "0.1"
 toml = "0.8"
+tempfile = "3.10"
