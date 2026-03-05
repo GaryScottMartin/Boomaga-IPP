@@ -30,7 +30,7 @@ pub const DEFAULT_CACHE_DIR: &str = ".cache/boomaga/pages";
 pub const DEFAULT_CACHE_DIR_ABSOLUTE: &str = "/var/cache/boomaga/pages";
 
 pub const DEFAULT_THUMBNAIL_SIZE: usize = 120;
-pub const DEFAULT_PREVIEW_ZOOM_LEVELS: &[f64; 6] = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0];
+pub const DEFAULT_PREVIEW_ZOOM_LEVELS: &[f64; 6] = &[0.25, 0.5, 0.75, 1.0, 1.5, 2.0];
 pub const DEFAULT_MAX_JOB_HISTORY: usize = 100;
 pub const DEFAULT_TIMEOUT_SECS: u64 = 30;
 
