@@ -1,1 +1,0 @@
-../../claude-code-handoff/handoff.md
