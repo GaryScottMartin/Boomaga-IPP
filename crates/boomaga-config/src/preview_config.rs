@@ -1,11 +1,11 @@
 //! Preview application configuration
 
 use serde::{Deserialize, Serialize};
-use boomaga_core::{Orientation, MarginMode};
+use boomaga_core::{Orientation, MarginMode, constants::{DEFAULT_IPC_SOCKET, DEFAULT_DBUS_SERVICE, DEFAULT_DBUS_PATH}};
 use boomaga_core::constants::{
-    DEFAULT_IPC_SOCKET, DEFAULT_DBUS_SERVICE, DEFAULT_DBUS_PATH,
     DEFAULT_IPP_PORT, DEFAULT_MAX_JOB_HISTORY, DEFAULT_TIMEOUT_SECS,
     DEFAULT_MAX_CONCURRENT_JOBS, DEFAULT_WORKER_THREADS, DEFAULT_JOB_QUEUE_SIZE,
+    DEFAULT_THUMBNAIL_SIZE, DEFAULT_PREVIEW_ZOOM_LEVELS,
 };
 use std::path::PathBuf;
 
@@ -52,7 +52,7 @@ pub struct PreviewConfig {
     pub plugin_dirs: Vec<PathBuf>,
 
     /// Default print settings
-    pub default_print_settings: PrintSettings,
+    pub default_print_settings: crate::PrintSettings,
 
     /// Enable shortcuts
     pub enable_shortcuts: bool,

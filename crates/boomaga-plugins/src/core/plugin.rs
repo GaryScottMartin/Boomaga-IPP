@@ -1,5 +1,6 @@
 //! Core plugin types and interfaces
 
+use serde::{Deserialize, Serialize};
 use std::any::Any;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -7,7 +8,7 @@ use tracing::{info, warn};
 use boomaga_core::Uuid;
 
 /// Plugin ID
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct PluginId(String);
 
 impl PluginId {
@@ -28,7 +29,7 @@ impl PluginId {
 }
 
 /// Plugin metadata
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PluginMetadata {
     /// Plugin ID
     pub id: PluginId,
@@ -49,7 +50,7 @@ pub struct PluginMetadata {
 }
 
 /// Plugin type
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PluginType {
     /// Document filter plugin
     DocumentFilter,

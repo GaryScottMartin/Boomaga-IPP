@@ -9,20 +9,12 @@ mod settings;
 mod defaults;
 
 pub use backend_config::BackendConfig;
-pub use preview_config::PreviewConfig;
+pub use preview_config::{PreviewConfig, PrintSettings};
 pub use settings::Settings;
 pub use defaults::constants::*;
 
 // Re-export types from boomaga_core
 pub use boomaga_core::PrintOptions;
-pub use boomaga_core::constants::{
-    DEFAULT_IPC_SOCKET, DEFAULT_DBUS_SERVICE, DEFAULT_DBUS_PATH,
-    DEFAULT_IPP_PORT, DEFAULT_MAX_JOB_HISTORY, DEFAULT_TIMEOUT_SECS,
-    DEFAULT_MAX_CONCURRENT_JOBS, DEFAULT_WORKER_THREADS, DEFAULT_JOB_QUEUE_SIZE,
-    DEFAULT_THUMBNAIL_SIZE, DEFAULT_PREVIEW_ZOOM_LEVELS,
-    IPC_SOCKET_PATH, DBUS_SERVICE_NAME, MAX_CONCURRENT_JOBS,
-    WORKER_THREADS, JOB_QUEUE_SIZE,
-};
 
 use std::path::PathBuf;
 use anyhow::{anyhow, Result};
@@ -67,19 +59,11 @@ impl ConfigManager {
     /// Create a new configuration manager
     pub fn new() -> Result<Self> {
         let dirs = directories::BaseDirs::new()
-            .ok_or_else(|| anyhow::anyhow!("Could not determine user directories"))?;
+            .expect("Could not determine user directories");
 
-        let config_dir = dirs.config_dir()
-            .ok_or_else(|| anyhow::anyhow!("Could not determine config directory"))?;
-        let config_dir = config_dir.join(boomaga_core::constants::CONFIG_DIR);
-
-        let cache_dir = dirs.cache_dir()
-            .ok_or_else(|| anyhow::anyhow!("Could not determine cache directory"))?;
-        let cache_dir = cache_dir.join(boomaga_core::constants::CACHE_DIR);
-
-        let state_dir = dirs.state_dir()
-            .ok_or_else(|| anyhow::anyhow!("Could not determine state directory"))?;
-        let state_dir = state_dir.join(boomaga_core::constants::STATE_DIR);
+        let config_dir = dirs.config_dir().to_path_buf().join(boomaga_core::constants::CONFIG_DIR);
+        let cache_dir = dirs.cache_dir().to_path_buf().join(boomaga_core::constants::CACHE_DIR);
+        let state_dir = dirs.state_dir().expect("Could not determine state directory").to_path_buf().join(boomaga_core::constants::STATE_DIR);
 
         // Create necessary directories
         std::fs::create_dir_all(&config_dir)?;

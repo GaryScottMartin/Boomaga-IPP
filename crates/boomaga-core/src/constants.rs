@@ -17,9 +17,11 @@ pub const DEFAULT_DBUS_SERVICE: &str = "org.boomaga.IPP";
 
 /// D-Bus object path
 pub const DEFAULT_DBUS_PATH: &str = "/org/boomaga/IPP";
+pub const DBUS_OBJECT_PATH: &str = DEFAULT_DBUS_PATH;
 
 /// IPP service port
 pub const DEFAULT_IPP_PORT: u16 = 631;
+pub const IPP_PORT: u16 = DEFAULT_IPP_PORT;
 
 /// Default document thumbnail size
 pub const DEFAULT_THUMBNAIL_SIZE: (usize, usize) = (120, 120);
@@ -48,6 +50,11 @@ pub const DBUS_SERVICE_NAME: &str = DEFAULT_DBUS_SERVICE;
 pub const MAX_CONCURRENT_JOBS: usize = DEFAULT_MAX_CONCURRENT_JOBS;
 pub const WORKER_THREADS: usize = DEFAULT_WORKER_THREADS;
 pub const JOB_QUEUE_SIZE: usize = DEFAULT_JOB_QUEUE_SIZE;
+
+// Backward compatibility aliases
+pub const THUMBNAIL_SIZE: (usize, usize) = DEFAULT_THUMBNAIL_SIZE;
+pub const ZOOM_LEVELS: [f64; 6] = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0];
+pub const MAX_JOB_HISTORY: usize = DEFAULT_MAX_JOB_HISTORY;
 
 /// Application configuration
 #[derive(Debug, Clone)]

@@ -9,6 +9,7 @@ use boomaga_core::{PrintJobRequest, JobStatus, Error};
 use crate::job_queue::JobQueue;
 
 /// Job processor
+#[derive(Clone)]
 pub struct JobProcessor {
     queue: Arc<JobQueue>,
     max_concurrent: usize,
@@ -54,7 +55,8 @@ impl JobProcessor {
         info!("Adding job {} to queue", job_id);
 
         // Add to queue
-        self.queue.push(request).await?;
+        let mut queue_clone = Arc::clone(&self.queue);
+        queue_clone.push(request).await?;
 
         // Update job status
         {
@@ -81,7 +83,8 @@ impl JobProcessor {
 
         while running {
             // Wait for job to be available
-            match queue.pop().await {
+            let queue_clone = Arc::clone(&queue);
+            match queue_clone.pop().await {
                 Ok(request) => {
                     let job_id = request.job_id.to_string();
 

@@ -80,9 +80,9 @@ impl JobQueue {
     }
 
     /// Clear the queue
-    pub async fn clear(&self) {
+    pub async fn clear(&mut self) {
         // Drain the receiver
-        while self.receiver.try_recv().is_ok() {
+        while let Ok(job) = self.receiver.try_recv() {
             self.queue_size.fetch_sub(1, Ordering::Relaxed);
         }
 

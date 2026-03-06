@@ -10,8 +10,11 @@ mod job_queue;
 use tracing::{info, error, warn, Level};
 use std::env;
 use std::path::PathBuf;
+use std::sync::Arc;
+use boomaga_core::Error;
 
-fn main() -> anyhow::Result<()> {
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
     // Parse command line arguments
     let args: Vec<String> = env::args().collect();
 
@@ -38,23 +41,23 @@ fn main() -> anyhow::Result<()> {
     info!("  - IPP port: {}", config.ipp_port);
 
     // Create job queue
-    let job_queue = job_queue::JobQueue::new(config.job_queue_size)?;
+    let job_queue = Arc::new(job_queue::JobQueue::new(config.job_queue_size)?);
 
     // Start job processor
-    let processor = job_processor::JobProcessor::new(job_queue, config.max_concurrent_jobs, config.worker_threads)?;
+    let processor = job_processor::JobProcessor::new(Arc::clone(&job_queue), config.max_concurrent_jobs, config.worker_threads)?;
 
     // Start IPP server
     let mut ipp_server = server::IppServer::new(
         config.ipp_port,
         config.ipc_socket_path,
         config.dbus_service_name,
-        processor.clone(),
-    );
+        Arc::clone(&processor),
+    )?;
 
     info!("Starting IPP server on port {}", config.ipp_port);
 
     // Start server
-    if let Err(e) = ipp_server.run() {
+    if let Err(e) = ipp_server.run().await {
         error!("IPP server error: {}", e);
         return Err(e);
     }

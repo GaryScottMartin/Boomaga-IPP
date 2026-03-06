@@ -3,6 +3,9 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+use boomaga_core::PrintOptions;
+use boomaga_plugins::core::PluginMetadata;
+
 /// Application settings
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
@@ -73,7 +76,7 @@ pub struct PrintSettings {
     pub last_printer: Option<String>,
 
     /// Last used settings
-    pub last_print_settings: Option<PrintOptions>,
+    pub last_print_settings: Option<crate::PrintSettings>,
 }
 
 /// UI settings

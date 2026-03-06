@@ -36,28 +36,19 @@ pub const DEFAULT_TIMEOUT_SECS: u64 = 30;
 
 /// Default configuration constants that can be accessed from other crates
 pub mod constants {
-    pub const APP_NAME: &str = "Boomaga-IPP";
-    pub const APP_VERSION: &str = "0.1.0";
-    pub const APP_DESCRIPTION: &str = "Modern virtual printer for Linux with native Wayland GUI and IPP Everywhere support";
-
-    pub const CONFIG_DIR: &str = ".config/boomaga";
-    pub const CACHE_DIR: &str = ".cache/boomaga";
-    pub const STATE_DIR: &str = ".local/share/boomaga";
-
-    pub const IPC_SOCKET_PATH: &str = DEFAULT_IPC_SOCKET;
-    pub const DBUS_SERVICE_NAME: &str = DEFAULT_DBUS_SERVICE;
-    pub const DBUS_OBJECT_PATH: &str = DEFAULT_DBUS_PATH;
-
-    pub const IPP_PORT: u16 = DEFAULT_IPP_PORT;
-
-    pub const MAX_JOB_HISTORY: usize = DEFAULT_MAX_JOB_HISTORY;
-    pub const DEFAULT_TIMEOUT: std::time::Duration =
-        std::time::Duration::from_secs(DEFAULT_TIMEOUT_SECS);
-
-    pub const MAX_CONCURRENT_JOBS: usize = DEFAULT_MAX_CONCURRENT_JOBS;
-    pub const WORKER_THREADS: usize = DEFAULT_WORKER_THREADS;
-    pub const JOB_QUEUE_SIZE: usize = DEFAULT_JOB_QUEUE_SIZE;
-
-    pub const THUMBNAIL_SIZE: (usize, usize) = (DEFAULT_THUMBNAIL_SIZE, DEFAULT_THUMBNAIL_SIZE);
-    pub const ZOOM_LEVELS: [f64; 6] = *DEFAULT_PREVIEW_ZOOM_LEVELS;
+    pub use boomaga_core::constants::{
+        APP_NAME, APP_VERSION, APP_DESCRIPTION,
+        CONFIG_DIR, CACHE_DIR, STATE_DIR,
+        IPC_SOCKET_PATH, DBUS_SERVICE_NAME,
+        DBUS_OBJECT_PATH,
+        IPP_PORT,
+        DEFAULT_THUMBNAIL_SIZE, DEFAULT_PREVIEW_ZOOM_LEVELS,
+        DEFAULT_MAX_JOB_HISTORY,
+        DEFAULT_TIMEOUT_SECS,
+        DEFAULT_MAX_CONCURRENT_JOBS, DEFAULT_WORKER_THREADS,
+        DEFAULT_JOB_QUEUE_SIZE,
+        THUMBNAIL_SIZE, ZOOM_LEVELS,
+        MAX_JOB_HISTORY,
+        MAX_CONCURRENT_JOBS, WORKER_THREADS, JOB_QUEUE_SIZE,
+    };
 }
