@@ -10,7 +10,7 @@ mod document_view;
 mod menu_bar;
 mod toolbar;
 mod print_dialog;
-mod settings_dialog;
+// mod settings_dialog;  // TODO: Create Xilem version
 
 use tracing::{info, error, Level};
 use std::env;

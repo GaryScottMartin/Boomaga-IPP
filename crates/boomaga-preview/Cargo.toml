@@ -25,3 +25,8 @@ thiserror = { workspace = true }
 url = { workspace = true }
 chrono = { workspace = true }
 tempfile = { workspace = true }
+
+# Xilem for GUI
+xilem = { workspace = true }
+kurbo = { workspace = true }
+winit = { workspace = true }

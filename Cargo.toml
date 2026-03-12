@@ -18,10 +18,14 @@ license = "GPL-3.0"
 repository = "https://github.com/GaryScottMartin/Boomaga-IPP"
 readme = "README.md"
 description = "Modern virtual printer for Linux with native Wayland GUI and IPP Everywhere support"
+rust-version = "1.88"
 
 [workspace.dependencies]
 # GUI
 druid = "0.8"
+xilem = "0.4"
+kurbo = "0.11"
+winit = "0.30"
 cairo-rs = "0.18"
 
 # Document Rendering
@@ -29,7 +33,7 @@ poppler = "0.6"
 libc = "0.2"
 
 # IPC
-zbus = "4.3"
+zbus = "4.4.0"
 
 # Async Runtime
 tokio = { version = "1.35", features = ["full"] }

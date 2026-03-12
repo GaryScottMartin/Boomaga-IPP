@@ -4,7 +4,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{info, error, debug};
-use zbus::{Interface, Property, SignalContext, SignalHandlerId, dbus_proxy, dbus_interface};
+use zbus::{fdo};
+use boomaga_core::Uuid;
 
 /// D-Bus service implementation
 pub struct DBusService {
@@ -19,7 +20,7 @@ pub struct DBusService {
 impl DBusService {
     /// Create a new D-Bus service
     pub async fn new(service_name: String, object_path: String) -> Result<Self, zbus::Error> {
-        let connection = zbus::Connection::session().await?;
+        let connection = Arc::new(zbus::Connection::session().await?);
 
         Ok(Self {
             service_name,
@@ -33,7 +34,7 @@ impl DBusService {
         info!("Publishing D-Bus service: {}", self.service_name);
 
         // Publish object at object path
-        let proxy = BoomagaIppInterface::new(&self.connection, &self.object_path).await?;
+        let proxy = zbus::fdo::ObjectProxy::new(&*self.connection, &self.object_path);
 
         Ok(())
     }
@@ -42,12 +43,12 @@ impl DBusService {
     pub async fn register_signal_handler<F>(
         &self,
         handler: F,
-    ) -> Result<SignalHandlerId, zbus::Error>
+    ) -> Result<(), zbus::Error>
     where
         F: Fn(&zbus::SignalContext<'_>, String) + 'static,
     {
         // In production, would register signal handlers
-        Ok(zbus::SignalHandlerId::new(0))
+        Ok(())
     }
 
     /// Send signal
@@ -76,7 +77,7 @@ pub struct DBusClient {
 impl DBusClient {
     /// Create a new D-Bus client
     pub async fn new(service_name: String, object_path: String) -> Result<Self, zbus::Error> {
-        let connection = zbus::Connection::session().await?;
+        let connection = Arc::new(zbus::Connection::session().await?);
 
         Ok(Self {
             service_name,
@@ -86,7 +87,7 @@ impl DBusClient {
     }
 
     /// Call a method
-    pub async fn call_method(&self, method_name: &str, params: HashMap<String, String>) -> Result<HashMap<String, String>, zbus::Error> {
+    pub async fn call_method(&self, method_name: &str, _params: HashMap<String, String>) -> Result<HashMap<String, String>, zbus::Error> {
         info!("Calling D-Bus method: {}", method_name);
 
         // In production, would call the actual method
@@ -94,7 +95,7 @@ impl DBusClient {
     }
 
     /// Listen for signals
-    pub async fn listen_for_signal(&self, signal_name: &str, handler: impl Fn() + 'static) -> Result<(), zbus::Error> {
+    pub async fn listen_for_signal(&self, signal_name: &str, _handler: impl Fn() + 'static) -> Result<(), zbus::Error> {
         info!("Listening for D-Bus signal: {}", signal_name);
 
         // In production, would set up signal listener
@@ -103,95 +104,63 @@ impl DBusClient {
 }
 
 /// D-Bus interface definition
-#[dbus_interface(name = "org.boomaga.IPP")]
 pub struct BoomagaIppInterface {
     /// Printer name
-    #[property]
     printer_name: String,
     /// Printer description
-    #[property]
     printer_description: String,
     /// Printer status
-    #[property]
     printer_status: String,
     /// Job queue size
-    #[property]
     job_queue_size: usize,
     /// Active jobs
-    #[property]
     active_jobs: usize,
     /// Supported formats
-    #[property]
     supported_formats: Vec<String>,
 }
 
+#[zbus(name = "org.boomaga.IPP")]
 impl BoomagaIppInterface {
-    /// Create new interface
-    pub fn new(connection: &zbus::Connection, object_path: &str) -> zbus::fdo::ObjectProxy<'_> {
-        zbus::fdo::ObjectProxy::new(connection, object_path)
-    }
-
     /// Get printer attributes
-    #[zbus_method]
-    pub fn get_printer_attributes(&self, attributtes: Vec<String>) -> Result<HashMap<String, String>, zbus::Error> {
-        info!("Getting printer attributes: {:?}", attributtes);
-
-        let mut attrs = HashMap::new();
-        attrs.insert("printer-name".to_string(), "boomaga-ipp".to_string());
-        attrs.insert("printer-info".to_string(), "Boomaga Virtual Printer".to_string());
-        attrs.insert("printer-state".to_string(), "idle".to_string());
-
-        Ok(attrs)
+    #[zbus(signal)]
+    async fn get_printer_attributes(attributtes: Vec<String>) -> Result<(), zbus::Error> {
+        // Signal implementation
     }
 
     /// Get job queue
-    #[zbus_method]
-    pub fn get_job_queue(&self) -> Result<Vec<JobInfo>, zbus::Error> {
-        info!("Getting job queue");
-
-        let jobs = Vec::new();
-
-        Ok(jobs)
+    #[zbus(signal)]
+    async fn get_job_queue() -> Result<(), zbus::Error> {
+        // Signal implementation
     }
 
     /// Create a new job
-    #[zbus_method]
-    pub fn create_job(&self, options: HashMap<String, String>) -> Result<JobId, zbus::Error> {
-        info!("Creating job with options: {:?}", options);
-
-        Ok(JobId::from(std::uuid::Uuid::new_v4()))
+    #[zbus(signal)]
+    async fn create_job(options: HashMap<String, String>) -> Result<JobId, zbus::Error> {
+        // Signal implementation
     }
 
     /// Cancel a job
-    #[zbus_method]
-    pub fn cancel_job(&self, job_id: String) -> Result<(), zbus::Error> {
-        info!("Cancelling job: {}", job_id);
-
-        Ok(())
+    #[zbus(signal)]
+    async fn cancel_job(job_id: String) -> Result<(), zbus::Error> {
+        // Signal implementation
     }
 
     /// Send document
-    #[zbus_method]
-    pub fn send_document(&self, job_id: String, document: Vec<u8>) -> Result<(), zbus::Error> {
-        info!("Sending document for job: {}", job_id);
-
-        Ok(())
+    #[zbus(signal)]
+    async fn send_document(job_id: String, document: Vec<u8>) -> Result<(), zbus::Error> {
+        // Signal implementation
     }
 
     /// Close job
-    #[zbus_method]
-    pub fn close_job(&self, job_id: String) -> Result<(), zbus::Error> {
-        info!("Closing job: {}", job_id);
-
-        Ok(())
+    #[zbus(signal)]
+    async fn close_job(job_id: String) -> Result<(), zbus::Error> {
+        // Signal implementation
     }
 
     /// Print document
-    #[zbus_method]
-    pub fn print_document(&self, job_id: String) -> Result<(), zbus::Error> {
-        info!("Printing document: {}", job_id);
-
-        Ok(())
+    #[zbus(signal)]
+    async fn print_document(job_id: String) -> Result<(), zbus::Error> {
+        // Signal implementation
     }
 }
 
@@ -211,22 +180,22 @@ pub struct JobInfo {
 /// Job ID type
 #[derive(Debug, Clone, Copy)]
 pub struct JobId {
-    id: std::uuid::Uuid,
+    id: Uuid,
 }
 
 impl JobId {
     /// Create new job ID
     pub fn new() -> Self {
-        Self { id: std::uuid::Uuid::new_v4() }
+        Self { id: Uuid::new_v4() }
     }
 
     /// Create from UUID
-    pub fn from_uuid(uuid: std::uuid::Uuid) -> Self {
+    pub fn from_uuid(uuid: Uuid) -> Self {
         Self { id: uuid }
     }
 
     /// Get UUID
-    pub fn uuid(&self) -> std::uuid::Uuid {
+    pub fn uuid(&self) -> Uuid {
         self.id
     }
 
@@ -236,13 +205,13 @@ impl JobId {
     }
 }
 
-impl From<std::uuid::Uuid> for JobId {
-    fn from(uuid: std::uuid::Uuid) -> Self {
+impl From<Uuid> for JobId {
+    fn from(uuid: Uuid) -> Self {
         Self { id: uuid }
     }
 }
 
-impl From<JobId> for std::uuid::Uuid {
+impl From<JobId> for Uuid {
     fn from(job_id: JobId) -> Self {
         job_id.id
     }

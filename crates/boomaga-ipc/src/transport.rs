@@ -6,6 +6,7 @@ use std::net::{Shutdown, UnixListener, UnixStream};
 use std::os::unix::net::UnixStreamExt;
 use std::path::PathBuf;
 use std::time::Duration;
+use tokio::io::AsyncWriteExt;
 use tokio::net::UnixStream as TokioUnixStream;
 use tokio::sync::mpsc;
 use tracing::{info, error, debug};
@@ -20,7 +21,7 @@ pub struct UnixSocket {
     /// Client connections
     clients: Vec<TokioUnixStream>,
     /// Receiver channel for incoming messages
-    receiver: mpsc::Receiver<io::Result<Message>>,
+    receiver: Option<mpsc::Receiver<io::Result<Message>>>,
 }
 
 impl UnixSocket {

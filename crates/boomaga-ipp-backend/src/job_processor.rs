@@ -84,7 +84,7 @@ impl JobProcessor {
         while running {
             // Wait for job to be available
             let queue_clone = Arc::clone(&queue);
-            match queue_clone.pop().await {
+            match queue_clone.pop_mut().await {
                 Ok(request) => {
                     let job_id = request.job_id.to_string();
 

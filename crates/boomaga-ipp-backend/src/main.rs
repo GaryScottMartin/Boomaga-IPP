@@ -14,7 +14,7 @@ use std::sync::Arc;
 use boomaga_core::Error;
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> boomaga_core::Result<()> {
     // Parse command line arguments
     let args: Vec<String> = env::args().collect();
 
@@ -33,7 +33,8 @@ async fn main() -> anyhow::Result<()> {
     info!("{} v{} starting...", boomaga_core::constants::APP_NAME, boomaga_core::constants::APP_VERSION);
 
     // Parse configuration
-    let config = parse_config(&args)?;
+    let config: AppConfig = parse_config(&args)
+        .map_err(|e| boomaga_core::Error::Configuration(e.to_string()))?;
 
     info!("Configuration loaded:");
     info!("  - IPC socket: {:?}", config.ipc_socket_path);
@@ -44,7 +45,7 @@ async fn main() -> anyhow::Result<()> {
     let job_queue = Arc::new(job_queue::JobQueue::new(config.job_queue_size)?);
 
     // Start job processor
-    let processor = job_processor::JobProcessor::new(Arc::clone(&job_queue), config.max_concurrent_jobs, config.worker_threads)?;
+    let processor = Arc::new(job_processor::JobProcessor::new(Arc::clone(&job_queue), config.max_concurrent_jobs, config.worker_threads)?);
 
     // Start IPP server
     let mut ipp_server = server::IppServer::new(

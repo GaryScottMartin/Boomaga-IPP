@@ -3,13 +3,12 @@
 //! This module provides functionality to load, parse, and render PDF/PostScript
 //! documents using the Poppler library.
 
-use boomaga_core::{Document, Page, PageSize, Orientation, GraphicsElement, PathElement, Color};
+use boomaga_core::{Document, Page, PageSize, Orientation, GraphicsElement, PathElement, Color, FileType};
 use cairo::{ImageSurface, Context as CairoContext, Format};
-use poppler::{Document as PopplerDocument, Page as PopplerPage, RenderError, PageOrientation};
+use poppler::{Document, Page};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
-use tracing::{info, warn, error};
-use druid::kurbo::Rect;
+use tracing::{info, error};
 
 /// Error types for document rendering
 #[derive(Debug, thiserror::Error)]
@@ -18,7 +17,7 @@ pub enum RenderError {
     Io(#[from] std::io::Error),
 
     #[error("Poppler error: {0}")]
-    Poppler(#[from] poppler::Error),
+    Poppler(String),
 
     #[error("Invalid document path")]
     InvalidPath,
@@ -230,37 +229,6 @@ impl DocumentRenderer {
     }
 }
 
-/// File type enumeration
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum FileType {
-    Pdf,
-    PostScript,
-    Unknown,
-}
-
-impl FileType {
-    /// Determine file type from extension
-    pub fn from_path(path: &Path) -> Self {
-        let extension = path.extension()
-            .and_then(|s| s.to_str())
-            .to_lowercase();
-
-        match extension.as_str() {
-            "pdf" => FileType::Pdf,
-            "ps" | "eps" => FileType::PostScript,
-            _ => FileType::Unknown,
-        }
-    }
-
-    /// Get MIME type for the file
-    pub fn mime_type(&self) -> &'static str {
-        match self {
-            FileType::Pdf => "application/pdf",
-            FileType::PostScript => "application/postscript",
-            FileType::Unknown => "application/octet-stream",
-        }
-    }
-}
 
 #[cfg(test)]
 mod tests {

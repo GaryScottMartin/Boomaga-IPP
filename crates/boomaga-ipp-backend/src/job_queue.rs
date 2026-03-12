@@ -59,6 +59,16 @@ impl JobQueue {
         }
     }
 
+    /// Pop a job from the queue (alternative version for Arc usage)
+    pub async fn pop_arc(&self) -> Result<Option<PrintJobRequest>, Error> {
+        self.queue_size.fetch_sub(1, Ordering::Relaxed);
+
+        match self.receiver.recv().await {
+            Some(job) => Ok(Some(job)),
+            None => Ok(None),
+        }
+    }
+
     /// Get current queue size
     pub fn size(&self) -> usize {
         self.queue_size.load(Ordering::Relaxed)

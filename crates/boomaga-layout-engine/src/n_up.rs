@@ -189,7 +189,7 @@ impl NUpCalculator {
     }
 
     /// Calculate scaled size based on scale mode
-    fn calculate_scaled_size(&self, input_size: PageSize, output_size: PageSize) -> f64 {
+    fn calculate_scaled_size(&self, input_size: PageSize, output_size: PageSize) -> (f64, f64) {
         let scale = match self.scale_mode {
             ScaleMode::Fit => self.calculate_fit_scale(input_size, output_size),
             ScaleMode::Fill => self.calculate_fill_scale(input_size, output_size),
@@ -200,7 +200,9 @@ impl NUpCalculator {
             }
         };
 
-        scale * input_size.width_points() * input_size.height_points()
+        let scaled_width = input_size.width_points() * scale;
+        let scaled_height = input_size.height_points() * scale;
+        (scaled_width, scaled_height)
     }
 
     /// Calculate fit scale

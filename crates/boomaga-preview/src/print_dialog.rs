@@ -81,8 +81,9 @@ impl PrintDialog {
 
     /// Update state based on document
     pub fn update_for_document(&mut self, document_name: String) {
+        let is_empty = document_name.is_empty();
         self.document_name = document_name;
-        self.print_enabled = !document_name.is_empty();
+        self.print_enabled = !is_empty;
     }
 
     /// Apply settings

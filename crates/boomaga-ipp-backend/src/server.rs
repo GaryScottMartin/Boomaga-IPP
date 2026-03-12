@@ -86,7 +86,7 @@ impl IppServer {
             port,
             ipc_socket_path,
             dbus_service_name,
-            processor,
+            processor: Arc::clone(&processor),
             running: Arc::new(RwLock::new(false)),
             clients: Arc::new(RwLock::new(HashMap::new())),
             client_counter: Arc::new(RwLock::new(0)),
