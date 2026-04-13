@@ -1,6 +1,6 @@
 # Boomaga-IPP
 
-**A modern virtual printer for Linux with native Wayland GUI and IPP Everywhere support**
+**A virtual printer for Linux with native Wayland and IPP Everywhere support**
 
 Boomaga-IPP is a rewrite of the classic Boomaga (Booklet Manager) application, reimagined with modern Rust technology and native Wayland integration.
 
