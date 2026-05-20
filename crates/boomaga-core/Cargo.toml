@@ -12,6 +12,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 tracing = { workspace = true }
 uuid = { workspace = true, features = ["v4", "serde"] }
+qpdf = "0.3.5"
 
 [dev-dependencies]
 tempfile = "3.10"

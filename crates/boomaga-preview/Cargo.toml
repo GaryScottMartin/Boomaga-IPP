@@ -12,7 +12,6 @@ path = "src/main.rs"
 [dependencies]
 boomaga-core = { path = "../boomaga-core" }
 boomaga-config = { path = "../boomaga-config" }
-druid = { workspace = true }
 cairo-rs = { workspace = true }
 poppler = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
