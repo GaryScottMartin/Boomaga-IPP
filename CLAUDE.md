@@ -27,13 +27,6 @@ See @README.md for project overview and architecture
 - JSON message protocol for state synchronization
 - Message types include job status, document info, user actions
 
-**Plugin System**:
-
-- Dynamic library loading via dyn traits
-- Plugin API defines Plugin trait with metadata, initialize, execute, cleanup
-  methods
-- PluginRegistry manages plugin lifecycle and type registration
-
 **Layout Engine**:
 
 - N-up algorithms (1, 2, 4, 8 pages per sheet)
@@ -124,12 +117,6 @@ focused on:
 - Messages follow JSON serialization protocol
 - Handle async I/O with tokio runtime
 
-### Plugin Development
-
-- Plugins use dynamic library (.so) format
-- Implement Plugin trait from boomaga_plugins::core
-- Plugin metadata includes name, version, description, plugin_type
-
 ## Important Files
 
 ### Core Infrastructure
@@ -165,17 +152,10 @@ focused on:
 - `crates/boomaga-layout-engine/src/booklet.rs` \- Booklet creation algorithms
 - `crates/boomaga-layout-engine/src/transforms.rs` \- Page transformations
 
-### Plugin System
-
-- `crates/boomaga-plugins/src/core/plugin_api.rs` \- Plugin trait definitions
-- `crates/boomaga-plugins/src/core/loader.rs` \- Dynamic library loading
-- `crates/boomaga-plugins/src/loader.rs` \- Main plugin system interface
-
 ## Known Issues
 
 - Compilation errors remain ~82 across all crates
 - boomaga-config has ~38 errors (missing type exports)
-- boomaga-plugins has import and type resolution issues
 - boomaga-ipp-backend needs Arc wrapping fixes for async patterns
 - boomaga-ipc has channel type mismatches and zbus attribute issues
 
@@ -196,3 +176,10 @@ focused on:
 - Handoff summaries stored in `memory/handoff-session.md`
 - Auto-memory in `memory/MEMORY.md` for stable patterns and decisions
 - Use `/handoff` command before session end to save context
+
+## Behavioral Guidelines
+
+1. Think before coding. State your assumptions out loud. If the request is ambiguous, ask. If a simpler approach exists, push back. Stop when you are confused, name what is unclear, do not just pick one interpretation and run.
+2. Simplicity first. Write the minimum code that solves the problem. No speculative abstractions. No flexibility nobody asked for. The test: would a senior engineer call this overcomplicated.
+3. Surgical changes. Touch only what the task requires. Do not improve neighboring code. Do not refactor what is not broken. Every changed line should trace back to the request.
+4. Goal-driven execution. Turn vague instructions into verifiable targets before writing a line. “Add validation” becomes “write tests for invalid inputs, then make them pass.”

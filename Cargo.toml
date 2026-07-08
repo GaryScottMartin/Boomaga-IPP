@@ -6,7 +6,6 @@ members = [
     "crates/boomaga-preview",
     "crates/boomaga-layout-engine",
     "crates/boomaga-ipc",
-    "crates/boomaga-plugins",
 ]
 resolver = "2"
 

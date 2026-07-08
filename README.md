@@ -10,7 +10,6 @@ Boomaga-IPP is a rewrite of the classic Boomaga (Booklet Manager) application, r
 - **Native Wayland GUI**: Built with Xilem for maximum performance and integration
 - **Modern Document Rendering**: PDF and PostScript support using Poppler and Ghostscript
 - **Advanced Layout Engine**: N-up printing, booklet creation, custom page layouts
-- **Plugin System**: Extensible architecture for custom functionality
 - **Systemd Integration**: Fully managed as a systemd service
 - **Memory Safety**: Rust guarantees memory safety and thread safety
 
@@ -23,8 +22,7 @@ boomaga-ipp/
 ├── boomaga-preview/       # Wayland GUI application
 ├── boomaga-layout-engine/ # Page layout algorithms
 ├── boomaga-config/        # Configuration management
-├── boomaga-ipc/           # Inter-process communication
-└── boomaga-plugins/       # Plugin system
+└── boomaga-ipc/           # Inter-process communication
 ```
 
 ## Building
@@ -95,37 +93,6 @@ boomaga-preview --window 1200x900
 - Preview application with Xilem GUI framework
 - Layout engine with N-up and booklet algorithms
 - Configuration management system
-- Plugin system framework
-
-## Plugins
-
-Boomaga-IPP supports a plugin system for extending functionality:
-
-```rust
-// Create a simple plugin
-use boomaga_plugins::Plugin, PluginMetadata, PluginType;
-
-struct MyPlugin;
-
-impl Plugin for MyPlugin {
-    fn metadata(&self) -> PluginMetadata {
-        PluginMetadata {
-            name: "MyPlugin".to_string(),
-            version: "1.0.0".to_string(),
-            description: "A custom plugin".to_string(),
-            plugin_type: PluginType::Utility,
-            ..Default::default()
-        }
-    }
-
-    fn initialize(&mut self, context: &PluginContext) -> Result<(), PluginError> {
-        // Initialize plugin
-        Ok(())
-    }
-
-    // ... other trait methods
-}
-```
 
 ## Development
 
@@ -166,7 +133,6 @@ Contributions are welcome! Please see CONTRIBUTING.md for guidelines.
 - [x] IPP server implementation
 - [x] Preview application UI
 - [x] Layout engine
-- [x] Plugin system
 - [x] Configuration management system
 - [ ] Document rendering (poppler integration)
 - [ ] Comprehensive error handling
@@ -177,7 +143,7 @@ Contributions are welcome! Please see CONTRIBUTING.md for guidelines.
 ### Phase 2: Core Functionality (Weeks 5-8) - 🚧 60% Complete
 - [ ] Complete document rendering pipeline
 - [ ] Full D-Bus integration
-- [ ] Druid GUI rendering
+- [ ] Xilem GUI rendering
 - [ ] Document viewer implementation
 - [ ] Navigation and zoom controls
 - [ ] Print dialog UI
@@ -199,7 +165,6 @@ Contributions are welcome! Please see CONTRIBUTING.md for guidelines.
 - [ ] Distribution packages (.deb, .rpm, Flatpak)
 - [ ] Documentation completion
 - [ ] Release preparation
-- [ ] Plugin examples
 - [ ] Performance optimization
 
 ## Troubleshooting
