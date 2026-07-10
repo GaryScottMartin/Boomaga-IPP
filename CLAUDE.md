@@ -5,6 +5,8 @@ code in this repository.
 
 See @README.md for project overview and architecture
 
+See @docs/HANDOFF.md for current session state and active threads
+
 ### Key Inter-crate Patterns
 
 **Configuration Management** (boomaga-config):
