@@ -1,0 +1,12 @@
+It's working! Claude Code is running inside the sandbox. 🎉
+
+Here's a summary of everything that was needed to get here on Arch Linux:
+
+1. **`[openshell.gateway.auth] allow_unauthenticated_users = true`** — gateway was running in plaintext mode but still enforcing auth
+2. **`bind_address = "0.0.0.0:8080"`** — gateway needed to listen on all interfaces, not just loopback
+3. **`host_gateway_ip = "172.20.0.1"`** — sandbox containers are on `openshell-docker` network, not the default bridge
+4. **Gateway container joined `openshell-docker` network** — so sandbox containers could reach it directly
+5. **nftables forward chain** — needed `br-f55c73c23d50` (the openshell-docker bridge) added to the allowed forwarding interfaces, and `ct state established,related accept` moved before the `drop` rule
+6. **Docker restart after nftables reload** — `flush ruleset` in nftables.conf wipes Docker's chains, requiring a Docker restart to restore them
+
+That last point is worth making permanent — you'll want to either restart Docker automatically after nftables, or find a way to preserve Docker's chains across nftables reloads. But that's a separate problem for another day. Enjoy Claude Code in the sandbox!
