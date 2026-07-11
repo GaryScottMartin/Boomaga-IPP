@@ -1,0 +1,46 @@
+@startuml
+title Boomaga-IPP — Use Case Diagram (conforms to code @ 34652fa)
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Printer User" as User
+actor "Host CUPS\n(IPP Everywhere source)" as CUPS
+actor "Wayland compositor" as Wayland
+actor "Downstream CUPS printer" as Printer
+
+rectangle "Boomaga-IPP" {
+  usecase "Capture print job\n(IPP Everywhere service)" as UC1
+  usecase "Preview pages" as UC2
+  usecase "Rotate pages" as UC3
+  usecase "Delete pages" as UC4
+  usecase "Add blank pages" as UC5
+  usecase "Reorder pages" as UC6
+  usecase "Set N pages per sheet" as UC7
+  usecase "Create booklet" as UC8
+  usecase "Set duplex mode" as UC9
+  usecase "Select downstream printer" as UC10
+  usecase "Submit / print job" as UC11
+  usecase "Cancel job" as UC12
+}
+
+CUPS --> UC1
+Wayland --> UC2
+User --> UC2
+User --> UC3
+User --> UC4
+User --> UC5
+User --> UC6
+User --> UC7
+User --> UC8
+User --> UC9
+User --> UC10
+User --> UC11
+User --> UC12
+UC11 --> Printer
+
+UC1 ..> UC2 : <<include>>
+UC8 ..> UC7 : <<extend>>
+UC11 ..> UC10 : <<include>>
+UC7 ..> UC2 : <<extend>>
+UC3 ..> UC2 : <<extend>>
+@enduml

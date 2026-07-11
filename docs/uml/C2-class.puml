@@ -1,0 +1,192 @@
+@startuml
+title Boomaga-IPP — System Class Diagram (conforms to code @ 34652fa)
+skinparam classAttributeIconSize 0
+hide empty members
+
+package "boomaga-core" {
+  class Document {
+    +id: String
+    +file_path: PathBuf
+    +file_type: FileType
+    +title: String
+    +author: Option<String>
+    +keywords: Vec<String>
+    +pages: Vec<Page>
+    +page_count(): usize
+    +add_page(Page)
+    +parse_metadata()
+  }
+  class Page {
+    +number: usize
+    +width: f64
+    +height: f64
+    +orientation: Orientation
+    +contents: PageContents
+    +has_content(): bool
+  }
+  enum PageContents { Vector; Raster; Pdf }
+
+  class PrintJobRequest {
+    +job_id: JobId
+    +file_path: PathBuf
+    +file_type: FileType
+    +printer_name: Option<String>
+    +options: PrintOptions
+  }
+  class PrintOptions {
+    +copies: u32
+    +collate: bool
+    +duplex: DuplexMode
+    +orientation: Orientation
+    +page_range: Option<(usize,usize)>
+    +pages_per_sheet: PagesPerSheet
+    +scale: f64
+    +margins: MarginMode
+    +validate(): Result
+    +is_booklet(): bool
+  }
+  class JobMetadata {
+    +job_id: JobId
+    +name: String
+    +user: String
+    +status: JobStatus
+    +priority: JobPriority
+    +file_type: FileType
+    +pages: Vec<PageInfo>
+  }
+  class PageInfo { +page_number: usize; +width: f64; +height: f64; +orientation: Orientation }
+  class JobId { +0: Uuid }
+  enum JobStatus { Queued; Processing; Completed; Cancelled; Failed; Held; Aborted }
+  enum JobPriority { Low; Normal; High; Urgent }
+
+  class PrinterInfo {
+    +name: String
+    +uri: String
+    +is_remote: bool
+    +status: PrinterStatus
+    +capabilities: PrinterCapabilities
+    +default_settings: PrintOptions
+  }
+  enum PrinterStatus { Idle; Busy; Paused; Stopped; Error; Offline }
+  class PrinterCapabilities {
+    +supports_color: bool
+    +supports_duplex: bool
+    +supported_page_sizes: Vec<PageSize>
+  }
+  enum FileType {}
+  enum DuplexMode {}
+  enum Orientation {}
+  enum PagesPerSheet {}
+  enum MarginMode {}
+  enum PageSize {}
+}
+
+package "boomaga-ipp-backend" {
+  class IppServer {
+    -port: u16
+    -ipc_socket_path: PathBuf
+    -dbus_service_name: String
+    -processor: Arc<JobProcessor>
+    +new(...): Result<Self>
+    +run(): Result
+  }
+  class JobProcessor {
+    -queue: Arc<JobQueue>
+    -max_concurrent: usize
+    -worker_threads: usize
+    -jobs: HashMap<String,JobStatus>
+    +new(...): Result<Self>
+    +add_job(PrintJobRequest): Result
+  }
+  class JobQueue {
+    -queue_size: AtomicUsize
+    -max_size: usize
+    +push(PrintJobRequest): Result
+    +pop(): Result<PrintJobRequest>
+    +size(): usize
+  }
+  class IppRequest { +version: IppVersion; +operation_id: IppOperation; +attributes; +data: Vec<u8> }
+  class IppResponse { +status_code: IppStatusCode; +operation_id: IppOperation }
+  enum IppOperation { GetPrinterAttributes; CreateJob; SendDocument; GetJobs; CancelJob }
+  enum IppStatusCode { Successful; ClientError; ServerError }
+}
+
+package "boomaga-layout-engine" {
+  class NUpCalculator { +new(u8): Result; +with_config(NUpConfig); +calculate(input,PageSize): NUpLayout }
+  class NUpLayout { +pages: Vec<PageResult>; +output_size: PageSize; +pages_per_sheet: u8; +template: LayoutTemplate }
+  class PageResult { +output_page: usize; +input_pages: Vec<usize>; +position: PagePosition; +content: Option<Arc<Vec<u8>>> }
+  class BookletCalculator { +new(BookletType,usize): Result; +calculate(PageSize): BookletLayout }
+  class BookletLayout {}
+  class PageTransformer { +transform(...): TransformedPage; +rotate(f64); +flip_horizontal(); +flip_vertical() }
+  enum TransformOperation {}
+}
+
+package "boomaga-preview (Xilem)" {
+  class AppData {
+    +document_path: Option<PathBuf>
+    +document: Option<Document>
+    +current_page: usize
+    +zoom: f64
+    +print_options: PrintOptions
+    +job_history: Vec<JobId>
+    +next_page()
+    +previous_page()
+  }
+  class DocumentRenderer {
+    +new(String): Self
+    +load(Path): Result<Document>
+    +render_page_to_surface(...)
+  }
+}
+
+package "boomaga-ipc" {
+  class Message { +message_id: u64; +message_type: MessageType; +source: MessageSource; +destination: MessageDestination; +payload: MessagePayload; +timestamp: i64 }
+  enum MessagePayload { PrintJobRequest; PrintJobStatus; DocumentReady; PageRendered; PrinterInfo }
+  class UnixSocket { -socket_path: PathBuf }
+}
+
+package "boomaga-config" {
+  class ConfigManager
+  class Settings
+}
+
+' ---- Relationships realized in code (solid) ----
+Document "1" *-- "*" Page
+Page --> PageContents
+PrintJobRequest --> JobId
+PrintJobRequest --> PrintOptions
+PrintJobRequest --> FileType
+PrintOptions --> DuplexMode
+PrintOptions --> Orientation
+PrintOptions --> PagesPerSheet
+PrintOptions --> MarginMode
+JobMetadata --> JobId
+JobMetadata --> JobStatus
+JobMetadata --> JobPriority
+JobMetadata "1" *-- "*" PageInfo
+PrinterInfo --> PrinterStatus
+PrinterInfo --> PrinterCapabilities
+PrinterInfo --> PrintOptions
+IppServer o--> JobProcessor
+JobProcessor o--> JobQueue
+JobProcessor --> JobStatus
+JobQueue --> PrintJobRequest
+IppRequest --> IppOperation
+IppResponse --> IppStatusCode
+NUpCalculator --> NUpLayout
+NUpLayout "1" *-- "*" PageResult
+PageResult --> PagePosition
+BookletCalculator --> BookletLayout
+PageTransformer --> TransformOperation
+AppData --> Document
+AppData --> PrintOptions
+AppData --> JobId
+DocumentRenderer --> Document
+Message --> MessagePayload
+ConfigManager --> Settings
+
+' ---- Decided but not-yet-wired (dashed) ----
+AppData .[#gray,dashed].> NUpCalculator : <<planned>>
+AppData .[#gray,dashed].> UnixSocket : <<planned>>
+IppServer .[#gray,dashed].> UnixSocket : <<planned>>
+@enduml

@@ -1,0 +1,45 @@
+@startuml
+title Boomaga-IPP — Print/Preview/Submit Sequence (conforms to code @ 34652fa)
+actor "Printer User" as User
+participant "Host CUPS" as CUPS
+participant "IppServer\n(boomaga-ipp-backend)" as IPP
+participant "JobProcessor" as PROC
+participant "JobQueue" as Q
+participant "boomaga-ipc\n(Unix socket + JSON)" as IPC
+participant "Xilem GUI\n(boomaga-preview)" as GUI
+participant "DocumentRenderer\n(+poppler)" as REN
+participant "boomaga-layout-engine" as LAY
+participant "Downstream CUPS printer" as TARGET
+
+== Capture (IPP Everywhere print service — realized) ==
+User -> CUPS : print document
+CUPS -> IPP  : IPP Create-Job / Send-Document (driverless)
+IPP -> PROC  : add_job(PrintJobRequest)
+PROC -> Q    : push(request)
+Q --> PROC   : pop() -> PrintJobRequest
+
+== Notify GUI (Unix-socket IPC — decided, NOT yet wired) ==
+IPP -[#gray]->> IPC : <<planned>> Message{ PrintJobRequest }
+IPC -[#gray]->> GUI : <<planned>> job available
+
+== Preview (renderer present; poppler integration in progress) ==
+GUI -> REN : load(path)
+REN --> GUI : Document
+GUI -> REN : render_page_to_surface(page)
+REN --> GUI : rendered page
+
+== Impose & edit (layout-engine exists, GUI wiring planned) ==
+User -> GUI : adjust N-up / booklet / rotate / reorder
+GUI -[#gray]-> LAY : <<planned>> calculate() / transform()
+LAY -[#gray]--> GUI : NUpLayout / BookletLayout / TransformedPage
+
+== Submit downstream (decided, no cups dep yet) ==
+User -> GUI : print to selected printer
+GUI -[#gray]-> TARGET : <<planned>> submit via CUPS API
+TARGET -[#gray]--> GUI : job status
+
+note over IPC,LAY
+  Grey = decided design not yet
+  wired in code (Phase 1 gap)
+end note
+@enduml

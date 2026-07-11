@@ -47,9 +47,13 @@ aspirational and annotate it.
       `JobStatus` variants differ (UML Captured/Draft/Ready/Submitted/Printing/… vs real Queued/
       Processing/Held/Aborted/…). Also: "4-daemon+GUI" wording is off — SRS §2.2 names **3** daemons
       + GUI, and the code ships only **2 binaries** (`boomaga-ipp-backend`, `boomaga-preview`).
-- [ ] **Appendix C is unreconciled with the corrected design.** Decide: (a) regenerate the four
-      diagrams from the real crate/type layout + #1 service role and re-embed in a spec bump, or
-      (b) keep them as an explicitly-labelled "initial analysis model" caveat. Owner call.
+- [ ] **Appendix C is unreconciled with the corrected design.** Code-conformant replacements now
+      written as `docs/uml/{C1-component,C2-class,C3-sequence,C4-usecase}.puml` (real crate/type
+      names, IPP *service* ingress, Unix-socket IPC, no plugins; solid = in code @ 34652fa, dashed
+      `<<planned>>` = decided-but-unwired Phase-1 gaps). **Not yet rendered** (no PlantUML/network in
+      sandbox) and **not yet folded into the SRS/UIS**. Owner decision: (a) render + embed these as
+      the new Appendix C Figures/Tables in a spec bump, or (b) keep the spec's current diagrams with
+      an "initial analysis model" caveat and treat `docs/uml/` as the living source of truth.
 - [x] **Plugin residue / build-breaker (#10).** DONE (this session): removed `boomaga-plugins`
       dep from `crates/boomaga-config/Cargo.toml`, the `use boomaga_plugins::core::PluginMetadata`
       import, and the `PluginSettings` struct + `Settings.plugins` field + its `Default`. **Not
@@ -133,6 +137,7 @@ aspirational and annotate it.
 - `docs/PROJECT_PLAN.md` — architecture, phases, status.
 - `docs/XILEM_MIGRATION.md` — GUI framework migration plan.
 - `docs/SW-Reqrmnts-Spec--latest.pdf`, `docs/User-Interface-Spec--latest.pdf` — current specs.
+- `docs/uml/*.puml` — code-conformant PlantUML (replacement for spec Appendix C); see §2.
 - GitHub issues: <https://github.com/GaryScottMartin/Boomaga-IPP/issues>
 
 ---
