@@ -7,7 +7,6 @@ description = "Configuration management for boomaga virtual printer"
 
 [dependencies]
 boomaga-core = { path = "../boomaga-core" }
-boomaga-plugins = { path = "../boomaga-plugins" }
 serde = "1.0"
 serde_json = "1.0"
 config = "0.14"

@@ -45,12 +45,6 @@ pub struct PreviewConfig {
     /// Cache file directory
     pub cache_dir: PathBuf,
 
-    /// Enable plugins
-    pub enable_plugins: bool,
-
-    /// Plugin search directories
-    pub plugin_dirs: Vec<PathBuf>,
-
     /// Default print settings
     pub default_print_settings: crate::PrintSettings,
 
@@ -158,11 +152,6 @@ impl Default for PreviewConfig {
             max_cache_size: 256,
             enable_cache: true,
             cache_dir: PathBuf::from(".cache/boomaga/pages"),
-            enable_plugins: true,
-            plugin_dirs: vec![
-                PathBuf::from("~/.local/share/boomaga/plugins").into(),
-                PathBuf::from("/usr/lib/boomaga/plugins").into(),
-            ],
             default_print_settings: PrintSettings::default(),
             enable_shortcuts: true,
             keybindings: Keybindings::default(),
@@ -258,12 +247,6 @@ impl PreviewConfig {
     /// Set default window size
     pub fn with_window_size(mut self, size: (u32, u32)) -> Self {
         self.default_window_size = size;
-        self
-    }
-
-    /// Enable plugins
-    pub fn with_plugins(mut self, enabled: bool) -> Self {
-        self.enable_plugins = enabled;
         self
     }
 }

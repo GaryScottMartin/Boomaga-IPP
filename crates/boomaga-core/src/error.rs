@@ -32,9 +32,6 @@ pub enum Error {
     #[error("Configuration error: {0}")]
     Config(String),
 
-    #[error("Plugin error: {0}")]
-    Plugin(String),
-
     #[error("IPC error: {0}")]
     Ipc(String),
 
@@ -91,7 +88,7 @@ impl Error {
             Self::Timeout(_) => ErrorSeverity::Medium,
             Self::Job(_) => ErrorSeverity::Medium,
             Self::Document(_) | Self::Parse(_) | Self::Render(_) => ErrorSeverity::Low,
-            Self::Config(_) | Self::Plugin(_) | Self::Ipc(_) => ErrorSeverity::Medium,
+            Self::Config(_) | Self::Ipc(_) => ErrorSeverity::Medium,
             Self::Ipp(_) | Self::Bus(_) => ErrorSeverity::Medium,
             Self::System(_) | Self::Graphics(_) | Self::Pdf(_) => ErrorSeverity::Low,
             Self::Unknown(_) => ErrorSeverity::Low,

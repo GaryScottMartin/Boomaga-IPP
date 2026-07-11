@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use boomaga_core::PrintOptions;
-use boomaga_plugins::core::PluginMetadata;
 
 /// Application settings
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -23,9 +22,6 @@ pub struct Settings {
 
     /// Performance settings
     pub performance: PerformanceSettings,
-
-    /// Plugin settings
-    pub plugins: PluginSettings,
 
     /// Keybindings
     pub keybindings: HashMap<String, String>,
@@ -129,16 +125,6 @@ pub struct PerformanceSettings {
     pub render_quality: RenderQuality,
 }
 
-/// Plugin settings
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PluginSettings {
-    /// Enabled plugins
-    pub enabled_plugins: Vec<String>,
-
-    /// Plugin configuration
-    pub plugin_config: HashMap<String, PluginMetadata>,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ZoomMode {
@@ -181,7 +167,6 @@ impl Default for Settings {
             print: PrintSettings::default(),
             ui: UISettings::default(),
             performance: PerformanceSettings::default(),
-            plugins: PluginSettings::default(),
             keybindings: HashMap::new(),
         }
     }
@@ -239,11 +224,3 @@ impl Default for PerformanceSettings {
     }
 }
 
-impl Default for PluginSettings {
-    fn default() -> Self {
-        Self {
-            enabled_plugins: vec![],
-            plugin_config: HashMap::new(),
-        }
-    }
-}
