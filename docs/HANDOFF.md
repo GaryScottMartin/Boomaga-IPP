@@ -50,10 +50,12 @@ aspirational and annotate it.
 - [ ] **Appendix C is unreconciled with the corrected design.** Code-conformant replacements now
       written as `docs/uml/{C1-component,C2-class,C3-sequence,C4-usecase}.puml` (real crate/type
       names, IPP *service* ingress, Unix-socket IPC, no plugins; solid = in code @ 34652fa, dashed
-      `<<planned>>` = decided-but-unwired Phase-1 gaps). **Not yet rendered** (no PlantUML/network in
-      sandbox) and **not yet folded into the SRS/UIS**. Owner decision: (a) render + embed these as
-      the new Appendix C Figures/Tables in a spec bump, or (b) keep the spec's current diagrams with
-      an "initial analysis model" caveat and treat `docs/uml/` as the living source of truth.
+      `<<planned>>` = decided-but-unwired Phase-1 gaps). Two follow-ups tracked as GitHub issues:
+      - **#13** — render + validate the `.puml` on a host w/ PlantUML (sandbox has none); resolve
+        auto-created bare boxes; confirm solid/dashed reads correctly.
+      - **#14** *(owner decision, blocked on #13)* — (a) render + embed these as the new Appendix C
+        Figures/Tables in a spec bump, or (b) keep the spec's current diagrams with an "initial
+        analysis model" caveat and treat `docs/uml/` as the living source of truth.
 - [x] **Plugin residue / build-breaker (#10).** DONE (this session): removed `boomaga-plugins`
       dep from `crates/boomaga-config/Cargo.toml`, the `use boomaga_plugins::core::PluginMetadata`
       import, and the `PluginSettings` struct + `Settings.plugins` field + its `Default`. **Not
