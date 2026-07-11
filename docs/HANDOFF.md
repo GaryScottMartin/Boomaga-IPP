@@ -91,10 +91,20 @@ aspirational and annotate it.
 
 ## 5. Gotchas / environment quirks
 <!-- The stuff that wastes an hour if you don't know it. -->
-- **This runs in an `openshell` sandbox = a Docker overlay container.** The source was uploaded
-  one-way via `--upload .:/sandbox/project`, and **`--upload` honors `.gitignore`** — so `.git/`,
-  `.claude/`, `target/`, and `claude-code-handoff/` are **absent**. Consequence: there is **no
-  `.git` here**, so all git operations happen on the **host** source dir, not in the sandbox.
+- **This runs in an `openshell` sandbox reached over SSH; the repo was `git clone`d directly into
+  `/sandbox/BIPP`.** So there **is** a real `.git` here with a working `origin`
+  (`GaryScottMartin/Boomaga-IPP`) — git add/commit/push all work in-sandbox. (Earlier sessions used
+  a different `--upload .:/sandbox/project` flow that honored `.gitignore` and had **no** `.git`,
+  forcing host-side git; that no longer applies to this clone.)
+- **Pushing over HTTPS:** `GITHUB_TOKEN` is gateway-injected (an `openshell:resolve:env:…` placeholder
+  resolved at exec time) and **can't be cleared** from a shell, so `gh auth login` refuses. The token
+  is fine-grained: it 403s on some REST endpoints (e.g. `/user`, repo metadata) but **has git
+  push + git-data access**. It isn't wired into git's credential flow by default (`git push` fails
+  with "could not read Username"). Fix: feed it via `GIT_ASKPASS` — a tiny script echoing
+  `x-access-token` for Username and `$GITHUB_TOKEN` for Password — then `git push` works. Raw `curl`
+  to `github.com`/`api.github.com` is egress-blocked (proxy 403 on CONNECT); use `gh api` (REST) or
+  git-with-askpass instead. Note API reads (`gh api …/git/ref/heads/main`) can lag a fresh push —
+  `git ls-remote` is authoritative.
 - **Sandbox persistence:** container is `AutoRemove=false` + `restart=unless-stopped` (files survive
   reboot), BUT networking (gateway netns in `/run`, tmpfs) and the gateway JWT are the fragile parts —
   a live session is not reliably restorable across reboot; `docker-compose down` on the gateway is
@@ -105,8 +115,9 @@ aspirational and annotate it.
   Appendix C `.puml` text tables extract fine** via CMap decode. Working extractor rebuilt this
   session at `/sandbox/work/extract.py` (parses ObjStm/XRef streams → per-font ToUnicode → decodes
   Tj/TJ); `/sandbox/work/*` is scratch and not persisted to the repo.
-- **No Rust toolchain in the sandbox** — no `cargo`/`rustc`, no crates.io registry cache, no network.
-  Code changes here can't be compile-checked; run `cargo check`/`cargo build` on the host.
+- **No Rust toolchain in the sandbox** — no `cargo`/`rustc` and no crates.io registry cache (and raw
+  egress is proxy-restricted, so a fresh crate fetch is unlikely to work even if installed). Code
+  changes here can't be compile-checked; run `cargo check`/`cargo build` on the host.
 - **`docs/*--latest.pdf` == the current `v0.2.1` files** (byte-identical); v0.1.0 + v0.2.0 baselines kept for diffing.
 
 ## 6. Repo & workflow
