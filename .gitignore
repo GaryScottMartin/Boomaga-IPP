@@ -1,8 +1,10 @@
 # Rust compile artifacts reproducible from source
 target/
 
-# Handoff context files (session-specific, not for version control)
-.claude/
+# Claude Code config: settings.json, hooks/, commands/, and skills/ ARE shared
+# (tracked). Machine-local and session-scratch files below stay out of git.
+# NB: no blanket ".claude/" rule — git cannot re-include files under an ignored dir.
+.claude/settings.local.json
 .claude/context.md
 .claude/current-task.md
 .claude/task-history.md
