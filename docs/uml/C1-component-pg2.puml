@@ -1,0 +1,28 @@
+' ==== Realized in code (solid) ====
+HOSTCUPS --> IPPSRV        : IPP Everywhere (driverless);\nCUPS forwards jobs IN
+IPPSRV --> PROC
+PROC --> QUEUE
+IPPSRV ..> CORE
+PROC   ..> CORE
+QUEUE  ..> CORE
+APP    ..> CORE
+APP    ..> CONFIG
+CONFIG ..> CORE
+LAYOUT ..> CORE
+IPC    ..> CORE
+APP --> RENDER
+WAYLAND --> APP            : display / input
+SYSTEMD ..> IPPSRV         : socket activation /\nlifecycle (zbus_systemd)
+
+' ==== Decided design, NOT yet wired in code (dashed = Phase 1 gap) ====
+IPPSRV .[#gray,dashed].> IPC    : <<planned>> notify GUI (Unix socket + JSON)
+APP    .[#gray,dashed].> IPC    : <<planned>> receive job / status
+PROC   .[#gray,dashed].> LAYOUT : <<planned>> imposition
+APP    .[#gray,dashed].> LAYOUT : <<planned>> imposition preview
+APP    .[#gray,dashed].> TARGET : <<planned>> submit downstream\n(CUPS API; no cups dep yet)
+
+legend right
+  Solid  = present in code / Cargo deps @ 34652fa
+  Dashed = decided design, not yet wired (Phase 1)
+endlegend
+@enduml

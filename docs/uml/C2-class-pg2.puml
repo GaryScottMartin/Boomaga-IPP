@@ -1,0 +1,39 @@
+  class PrintOptions {
+    +copies: u32
+    +collate: bool
+    +duplex: DuplexMode
+    +orientation: Orientation
+    +page_range: Option<(usize,usize)>
+    +pages_per_sheet: PagesPerSheet
+    +scale: f64
+    +margins: MarginMode
+    +validate(): Result
+    +is_booklet(): bool
+  }
+  class JobMetadata {
+    +job_id: JobId
+    +name: String
+    +user: String
+    +status: JobStatus
+    +priority: JobPriority
+    +file_type: FileType
+    +pages: Vec<PageInfo>
+  }
+  class PageInfo {
+    +page_number: usize
+    +width: f64
+    +height: f64
+    +orientation: Orientation
+  }
+  class JobId {
+    +0: Uuid
+  }
+  enum JobStatus {
+    Queued
+    Processing
+    Completed
+    Cancelled
+    Failed
+    Held
+    Aborted
+  }

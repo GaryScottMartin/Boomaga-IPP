@@ -1,0 +1,27 @@
+package "boomaga-ipc" {
+  class Message {
+    +message_id: u64
+    +message_type: MessageType
+    +source: MessageSource
+    +destination: MessageDestination
+    +payload: MessagePayload
+    +timestamp: i64
+  }
+
+  enum MessagePayload {
+    PrintJobRequest
+    PrintJobStatus
+    DocumentReady
+    PageRendered
+    PrinterInfo
+  }
+  class UnixSocket {
+    -socket_path: PathBuf
+  }
+}
+
+package "boomaga-config" {
+  class ConfigManager
+  class Settings
+}
+

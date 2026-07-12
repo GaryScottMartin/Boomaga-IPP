@@ -1,0 +1,43 @@
+  class NUpLayout {
+    +pages: Vec<PageResult>
+    +output_size: PageSize
+    +pages_per_sheet: u8
+    +template: LayoutTemplate
+  }
+  class PageResult {
+    +output_page: usize
+    +input_pages: Vec<usize>
+    +position: PagePosition
+    +content: Option<Arc<Vec<u8>>>
+  }
+  class BookletCalculator {
+    +new(BookletType,usize): Result
+    +calculate(PageSize): BookletLayout
+  }
+  class BookletLayout {}
+  class PageTransformer {
+    +transform(...): TransformedPage
+    +rotate(f64)
+    +flip_horizontal()
+    +flip_vertical()
+  }
+  enum TransformOperation {}
+}
+
+package "boomaga-preview (Xilem)" {
+  class AppData {
+    +document_path: Option<PathBuf>
+    +document: Option<Document>
+    +current_page: usize
+    +zoom: f64
+    +print_options: PrintOptions
+    +job_history: Vec<JobId>
+    +next_page()
+    +previous_page()
+  }
+  class DocumentRenderer {
+    +new(String): Self
+    +load(Path): Result<Document>
+    +render_page_to_surface(...)
+  }
+}

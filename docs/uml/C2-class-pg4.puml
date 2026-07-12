@@ -1,0 +1,45 @@
+  class JobProcessor {
+    -queue: Arc<JobQueue>
+    -max_concurrent: usize
+    -worker_threads: usize
+    -jobs: HashMap<String,JobStatus>
+    +new(...): Result<Self>
+    +add_job(PrintJobRequest): Result
+  }
+  class JobQueue {
+    -queue_size: AtomicUsize
+    -max_size: usize
+    +push(PrintJobRequest): Result
+    +pop(): Result<PrintJobRequest>
+    +size(): usize
+  }
+  class IppRequest {
+    +version: IppVersion
+    +operation_id: IppOperation
+    +attributes
+    +data: Vec<u8>
+  }
+  class IppResponse {
+    +status_code: IppStatusCode
+    +operation_id: IppOperation
+  }
+  enum IppOperation {
+    GetPrinterAttributes
+    CreateJob
+    SendDocument
+    GetJobs
+    CancelJob
+  }
+  enum IppStatusCode {
+    Successful
+    ClientError
+    ServerError
+  }
+}
+
+package "boomaga-layout-engine" {
+  class NUpCalculator {
+    +new(u8): Result
+    +with_config(NUpConfig)
+    +calculate(input,PageSize): NUpLayout
+  }

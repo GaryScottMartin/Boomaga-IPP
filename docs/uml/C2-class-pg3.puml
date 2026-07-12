@@ -1,0 +1,44 @@
+  enum JobPriority {
+    Low
+    Normal
+    High
+    Urgent
+  }
+  class PrinterInfo {
+    +name: String
+    +uri: String
+    +is_remote: bool
+    +status: PrinterStatus
+    +capabilities: PrinterCapabilities
+    +default_settings: PrintOptions
+  }
+  enum PrinterStatus {
+    Idle
+    Busy
+    Paused
+    Stopped
+    Error
+    Offline
+  }
+  class PrinterCapabilities {
+    +supports_color: bool
+    +supports_duplex: bool
+    +supported_page_sizes: Vec<PageSize>
+  }
+  enum FileType {}
+  enum DuplexMode {}
+  enum Orientation {}
+  enum PagesPerSheet {}
+  enum MarginMode {}
+  enum PageSize {}
+}
+
+package "boomaga-ipp-backend" {
+  class IppServer {
+    -port: u16
+    -ipc_socket_path: PathBuf
+    -dbus_service_name: String
+    -processor: Arc<JobProcessor>
+    +new(...): Result<Self>
+    +run(): Result
+  }

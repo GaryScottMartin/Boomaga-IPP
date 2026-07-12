@@ -1,0 +1,40 @@
+' ---- Relationships realized in code (solid) ----
+Document "1" *-- "*" Page
+Page --> PageContents
+PrintJobRequest --> JobId
+PrintJobRequest --> PrintOptions
+PrintJobRequest --> FileType
+PrintOptions --> DuplexMode
+PrintOptions --> Orientation
+PrintOptions --> PagesPerSheet
+PrintOptions --> MarginMode
+JobMetadata --> JobId
+JobMetadata --> JobStatus
+JobMetadata --> JobPriority
+JobMetadata "1" *-- "*" PageInfo
+PrinterInfo --> PrinterStatus
+PrinterInfo --> PrinterCapabilities
+PrinterInfo --> PrintOptions
+IppServer o--> JobProcessor
+JobProcessor o--> JobQueue
+JobProcessor --> JobStatus
+JobQueue --> PrintJobRequest
+IppRequest --> IppOperation
+IppResponse --> IppStatusCode
+NUpCalculator --> NUpLayout
+NUpLayout "1" *-- "*" PageResult
+PageResult --> PagePosition
+BookletCalculator --> BookletLayout
+PageTransformer --> TransformOperation
+AppData --> Document
+AppData --> PrintOptions
+AppData --> JobId
+DocumentRenderer --> Document
+Message --> MessagePayload
+ConfigManager --> Settings
+
+' ---- Decided but not-yet-wired (dashed) ----
+AppData .[#gray,dashed].> NUpCalculator : <<planned>>
+AppData .[#gray,dashed].> UnixSocket : <<planned>>
+IppServer .[#gray,dashed].> UnixSocket : <<planned>>
+@enduml
