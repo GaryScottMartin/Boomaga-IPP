@@ -179,6 +179,24 @@ focused on:
 - Auto-memory in `memory/MEMORY.md` for stable patterns and decisions
 - Use `/handoff` command before session end to save context
 
+### Claude Code setup (shipped in the repo)
+
+Project-level Claude Code configuration lives in `.claude/` and is **version
+controlled**, so a fresh clone picks it up automatically:
+
+- `.claude/settings.json` — enabled tools and **hooks**:
+  - `SessionStart` → `.claude/hooks/session-start.sh` (loads handoff context at start)
+  - `PreCompact` → `.claude/hooks/pre-compact.sh` (re-injects context before autocompaction)
+- `.claude/hooks/` — the hook scripts above (keep them executable: `chmod +x`)
+- `.claude/commands/` — custom slash commands (e.g. `/handoff`)
+- `.claude/skills/` — custom project skills
+
+**Not** tracked (stays local per developer): `.claude/settings.local.json`
+(personal permission grants) and the session-scratch files
+(`context.md`, `current-task.md`, `task-history.md`, `current-bug.md`, `mode`).
+See `.gitignore` for the exact split. The session-context automation is therefore
+provided by the repo — no per-machine setup is required beyond the executable bit.
+
 ## Behavioral Guidelines
 
 1. Think before coding. State your assumptions out loud. If the request is ambiguous, ask. If a simpler approach exists, push back. Stop when you are confused, name what is unclear, do not just pick one interpretation and run.
