@@ -1,140 +1,148 @@
 # Modern Boomaga Virtual Printer - Implementation Plan
 
+> **Last reviewed against code:** 2026-07-12 (6-crate workspace; 2 binaries).
+> **Authoritative architecture:** SRS & UIS **v0.2.2**, Appendix C, and the
+> code-conformant PlantUML in [`docs/uml/`](./uml/) (conforms to code @ `34652fa`).
+> Where this plan and the specs/UML disagree, the specs/UML win — this document
+> is the *implementation* view and is kept in sync with them.
+
 ## Context
 Need to create a modern version of boomaga (BOOklet MANager), a virtual printer for Linux. The original C++ implementation has good features but is outdated, using CUPS + D-Bus + Ghostscript. Requirements: systemd-managed Linux, Wayland display, IPP Everywhere printing, Rust language implementation, memory-safe and type-safe.
 
 ## Requirements Summary
-- **Language**: Rust
+- **Language**: Rust (edition 2021, `rust-version = 1.88`, resolver v2)
 - **Display**: Native Wayland
-- **Print System**: IPP Everywhere (CUPS IPP)
-- **Process Management**: systemd-managed
+- **Print System**: IPP Everywhere — Boomaga-IPP exposes an IPP Everywhere print
+  *service* (driverless queue that host CUPS forwards jobs into); downstream
+  submission to a real printer *may* act as an IPP/CUPS client (decision #1)
+- **Process Management**: systemd-managed (socket activation)
 - **License**: GPLv3
-- **Features**: Full-featured UI with plugin system
-- **Supported Formats**: PDF and PostScript
+- **UI**: Full-featured document preview & imposition UI. **No plugin system**
+  (decision #10 — the `boomaga-plugins` crate and all plugin hooks were removed)
+- **Supported input formats**: PDF, PWG Raster, JPEG. **PostScript and Ghostscript
+  were dropped** (not IPP-mandatory; decision #4). *Code gap:* `FileType` in
+  `boomaga-core` still enumerates `Pdf`/`PostScript`/`Ps` and lacks `PwgRaster`/`Jpeg`
+  — it must be updated to match this decision.
 
 ## Architecture Overview
 
+See [`docs/uml/C1-component.puml`](./uml/C1-component.puml) for the authoritative
+component diagram (solid = present in code; dashed = decided-but-not-yet-wired).
+
 ### Components
-1. **Backend Service** (systemd service)
-   - Receives print jobs via IPP
-   - Processes and transforms pages
-   - Spawns preview window
+1. **Backend Service** (`boomaga-ipp-backend`, systemd service)
+   - Receives print jobs via an IPP Everywhere print service (`IppServer`, TCP)
+   - Queues and processes jobs (`JobQueue`, `JobProcessor`)
+   - Notifies the GUI over the Unix-socket IPC (planned wiring)
 
-2. **Preview Application** (Wayland GUI)
-   - Document viewer with annotations and bookmarks
-   - Print controls (N-up, booklet, etc.)
-   - Print dialog
-   - Plugin system support
+2. **Preview Application** (`boomaga-preview`, Wayland GUI · Xilem)
+   - Document viewer (`DocumentRenderer` via poppler)
+   - Imposition controls (N-up, booklet, rotate, reorder, duplex)
+   - Downstream printer selection & submit
 
-3. **Configuration System**
-   - Backend configuration (IPP settings)
-   - Preview configuration (GUI preferences)
-   - Settings management
-   - Default constants
+3. **Configuration System** (`boomaga-config`)
+   - `BackendConfig` (IPP service settings)
+   - `PreviewConfig` (GUI preferences)
+   - `Settings` + `ConfigManager` (load/save; TOML for configs, JSON for settings)
 
 4. **Shared Components**
-   - IPP parser
-   - Page layout engine (N-up, booklet)
-   - PDF/PostScript rendering
-   - Document manipulation
+   - Domain types + error handling (`boomaga-core`; PDF assembly via `qpdf`)
+   - Page layout / imposition engine (`boomaga-layout-engine`: N-up, booklet, transforms)
+   - IPC library (`boomaga-ipc`: Unix-domain-socket transport + versioned JSON protocol)
+   - PDF rendering for preview (poppler + cairo, in `boomaga-preview`)
 
 ### Data Flow
-1. User selects printer → CUPS
-2. CUPS creates IPP job → Boomaga backend service
-3. Backend processes document → Generates preview
-4. Backend spawns preview window with document
-5. User reviews → Clicks print
-6. User prints → Uses system printer
+1. User prints → host CUPS
+2. Host CUPS sends an IPP Everywhere (driverless) job **into** the Boomaga-IPP `IppServer`
+3. Backend queues/processes the job → notifies the GUI over the Unix socket
+4. Preview opens the document, renders pages, applies imposition
+5. User reviews → selects a downstream printer → submits
+6. Downstream job is sent to the selected CUPS/IPP printer
 
 ## Technology Stack Decisions
 
 ### GUI Framework: Xilem
 **Why Xilem over alternatives**:
 - Native Wayland rendering with direct compositor integration
-- Immediate mode GUI framework for modern architectures
-- Excellent performance for document rendering
-- Functional programming paradigms
-- Lightweight and focused on text and graphics
-- Growing ecosystem with active development
-- Better fit for document-centric applications
+- Modern, reactive/declarative Rust GUI (view tree over a Masonry widget layer)
+- Good performance for document-centric rendering
+- Active development by the Linebender community
+- Druid (the original choice) is unmaintained — see [`docs/XILEM_MIGRATION.md`](./XILEM_MIGRATION.md)
+
+**Status:** the Druid→Xilem migration is **in progress and currently does not
+compile** (Druid removed from all manifests, but Druid-based modules remain active,
+and the Xilem scaffolds were written against an incorrect API). This is the single
+biggest blocker to a green `cargo build`. See the migration plan for the concrete
+remaining work.
 
 ### Display: Native Wayland
-- Direct Wayland compositor access
+- Direct Wayland compositor access (via winit)
 - Maximum performance and integration
-- Modern compositor support
 - Future-proof architecture
 
-### Document Rendering: Poppler + Ghostscript
-- Poppler for PDF rendering (industry standard)
-- Ghostscript for PostScript rendering
-- Cairo for 2D graphics surface handling
+### Document Rendering & PDF Assembly: Poppler + qpdf
+- **poppler** (0.6) + **cairo-rs** (0.18) for PDF page rendering in the preview
+- **qpdf** (0.3.5, in `boomaga-core`) for content-preserving PDF assembly/imposition output
+- **Ghostscript dropped** — poppler + qpdf + the layout engine cover the residual
+  functions (decision #4)
 
-### IPC: Unix Domain Socket + D-Bus
-**Why this combination**:
-- Low-latency IPC for real-time updates
-- Native Linux integration
-- Systemd socket activation support
+### IPC: Unix Domain Socket + versioned JSON
+**Why**:
+- Low-latency, local-only IPC for real-time backend→GUI updates
+- Native Linux integration with systemd socket activation
 - Better security than network sockets
 
-### Plugin System: Dynamic Libraries with dyn traits
-**Implementation approach**:
-- Runtime extensibility
-- Clear API boundaries
-- Easy distribution and update
-- Compatible with Rust's type system
+**Note on D-Bus:** `zbus` / `zbus_systemd` is scoped to **systemd lifecycle only**
+(socket activation / service management), **not** to IPC message transport (decision #3).
+The message transport is Unix domain sockets carrying versioned JSON `Message`s.
 
 ## Complete Crate Architecture
 
 ```
 boomaga-ipp/
-├── Cargo.toml                          # Workspace manifest
+├── Cargo.toml                          # Workspace manifest (resolver v2)
 ├── README.md
-├── LICENSE                            # GPLv3
-├── CHANGELOG.md
-├── CONTRIBUTING.md
+├── LICENSE                             # GPLv3
+├── CLAUDE.md
+├── BIPP-project-policy.yaml            # sandbox network/fs policy
 ├── docs/
-│   ├── architecture.md
-│   ├── design-decisions.md
-│   └── api-documentation/
-├── examples/
-│   ├── ipp-client-test/
-│   └── layout-algorithms/
-├── tests/
-│   ├── integration/
-│   └── performance/
+│   ├── PROJECT_PLAN.md
+│   ├── XILEM_MIGRATION.md
+│   ├── HANDOFF.md
+│   ├── SW-Reqrmnts-Spec--*.pdf         # SRS (latest == v0.2.2)
+│   ├── User-Interface-Spec--*.pdf      # UIS (latest == v0.2.2)
+│   └── uml/                            # code-conformant PlantUML (spec Appendix C)
 └── scripts/
-    ├── install-systemd.sh
-    ├── setup-debian.sh
-    └── create-distribution-packages.sh
 
-# Core crates
+# Core crates (6 total; 2 emit binaries)
 crates/
-├── boomaga-core/                      # Core shared logic
-├── boomaga-ipp-backend/               # IPP service
-├── boomaga-preview/                   # GUI application
-├── boomaga-layout-engine/             # Page layout algorithms
-├── boomaga-config/                    # Configuration management
-├── boomaga-ipc/                       # IPC library
-└── boomaga-plugins/                   # Plugin system
+├── boomaga-core/                       # Core shared logic (+ qpdf)          [lib]
+├── boomaga-ipp-backend/                # IPP Everywhere print service        [bin]
+├── boomaga-preview/                    # GUI application (Xilem + poppler)   [bin]
+├── boomaga-layout-engine/              # Imposition: N-up, booklet, transforms [lib]
+├── boomaga-config/                     # Configuration management            [lib]
+└── boomaga-ipc/                        # IPC library (Unix socket + JSON)    [lib]
 ```
+
+*(There is no `boomaga-plugins` crate — decision #10.)*
 
 ## Implementation Phases (20 weeks total)
 
 ### Phase 1: Foundation (Weeks 1-4)
 - Project setup and CI/CD
 - Core infrastructure (config, error handling, IPC)
-- IPP server skeleton
+- IPP service skeleton
 - Document processing pipeline
 
 ### Phase 2: Core Functionality (Weeks 5-8)
 - Print job processing
-- GUI foundation with Xilem
+- GUI foundation with Xilem (complete the migration)
 - Layout engine (N-up, booklet)
 - Document rendering
 
 ### Phase 3: Advanced Features (Weeks 9-12)
 - Systemd integration
-- Printer management
+- Downstream printer management
 - User experience enhancements
 - Advanced features (watermarks, PDF export)
 
@@ -152,48 +160,58 @@ crates/
 
 ## Critical Dependencies
 
-### Rust Crates
-- **poppler**: PDF rendering (v0.27)
-- **xilem**: GUI framework (v0.4)
-- **zbus**: D-Bus communication (v4.3)
-- **tokio**: Async runtime (v1.35)
-- **serde**: Serialization (v1.0)
+### Rust Crates (versions as pinned in workspace `Cargo.toml`)
+- **poppler**: PDF rendering (0.6)
+- **cairo-rs**: 2D surface for page rendering (0.18)
+- **qpdf**: PDF assembly/imposition (0.3.5, in `boomaga-core`)
+- **xilem**: GUI framework (0.4)
+- **kurbo**: geometry/vector math (0.11)
+- **winit**: windowing (0.30)
+- **zbus**: D-Bus / systemd lifecycle only, *not* IPC transport (4.4)
+- **nix**: Unix socket syscalls (0.29, in `boomaga-ipc` + backend)
+- **tokio**: async runtime (1.35)
+- **serde** / **serde_json**: serialization (1.0)
+- **uuid**: `JobId` (1.0)
+- **config** / **toml** / **directories**: configuration (`boomaga-config`)
 
 ### System Libraries
-- libpoppler-dev (PDF rendering)
-- libpoppler-cpp-dev (PDF API)
-- libghostscript-dev (PostScript)
+- libpoppler-dev / libpoppler-glib-dev (PDF rendering)
+- libcairo2-dev (rendering surface)
+- Wayland client/compositor libraries
+- CUPS (host side, for driverless job ingress)
+
+*(No Ghostscript / libghostscript-dev — decision #4.)*
 
 ## Critical Files
 
-### Backend
-- `crates/boomaga-ipp-backend/src/main.rs` - IPP service entry
-- `crates/boomaga-ipp-backend/src/server.rs` - IPP server
-- `crates/boomaga-ipp-backend/src/job_processor.rs` - Job handling
-- `crates/boomaga-ipp-backend/src/job_queue.rs` - Job persistence
+### Backend (`boomaga-ipp-backend`)
+- `src/main.rs` - service entry, CLI parsing, init
+- `src/server.rs` - `IppServer` (IPP operations, TCP listener)
+- `src/job_processor.rs` - `JobProcessor` (worker loop)
+- `src/job_queue.rs` - `JobQueue` (tokio mpsc + atomic size)
 
-### GUI
-- `crates/boomaga-preview/src/main.rs` - GUI entry point
-- `crates/boomaga-preview/src/app.rs` - Main application
-- `crates/boomaga-preview/src/viewer/document_view.rs` - Document viewer
+### GUI (`boomaga-preview`)
+- `src/main.rs` - GUI entry point (target: Xilem)
+- `src/app.rs` - application state (`AppData` per UML; currently `BoomagaApp`)
+- `src/document_renderer.rs` - poppler + cairo rendering (real)
+- `src/viewer/`, `src/widgets/`, `src/handlers/`, `src/window.rs` - UI (mid-migration)
 
-### Layout Engine
-- `crates/boomaga-layout-engine/src/n_up.rs` - N-up layout
-- `crates/boomaga-layout-engine/src/booklet.rs` - Booklet creation
-- `crates/boomaga-layout-engine/src/imposition/layout_template.rs` - Page templates
+### Layout Engine (`boomaga-layout-engine`)
+- `src/n_up.rs` - N-up layout (`NUpCalculator`)
+- `src/booklet.rs` - booklet creation (`BookletCalculator`)
+- `src/transforms.rs` - page transforms (`PageTransformer`)
+- `src/imposition/layout_template.rs` - page templates
 
-### Configuration
-- `crates/boomaga-config/src/lib.rs` - Configuration manager
-- `crates/boomaga-config/src/backend_config.rs` - Backend settings
-- `crates/boomaga-config/src/preview_config.rs` - Preview settings
+### Configuration (`boomaga-config`)
+- `src/lib.rs` - `ConfigManager`
+- `src/backend_config.rs` - backend/IPP settings
+- `src/preview_config.rs` - GUI preferences
+- `src/settings.rs` / `src/defaults.rs`
 
-### IPC
-- `crates/boomaga-ipc/src/protocol/messages.rs` - Message types
-- `crates/boomaga-ipc/src/transport/unix_socket.rs` - Socket transport
-
-### Plugin System
-- `crates/boomaga-plugins/src/core/plugin_api.rs` - Plugin interfaces
-- `crates/boomaga-plugins/src/core/loader.rs` - Dynamic loading
+### IPC (`boomaga-ipc`)
+- `src/protocol.rs` - `Message` types / JSON protocol
+- `src/transport.rs` - `UnixSocket` transport (stubbed)
+- `src/d_bus.rs` - zbus lifecycle skeleton (systemd only)
 
 ## Step-by-Step Implementation
 
@@ -204,33 +222,32 @@ crates/
 - Configure testing infrastructure
 
 ### Week 2: Core Infrastructure
-- Configuration management (boomaga-config crate)
-- Error types and handling
-- D-Bus interface definitions
-- IPC protocol messages
-- Basic IPC transport
+- Configuration management (`boomaga-config`)
+- Error types and handling (`boomaga-core`)
+- IPC protocol messages + Unix-socket transport
+- systemd lifecycle hooks (zbus_systemd)
 
 ### Week 3: IPP Foundation
-- IPP server skeleton
+- IPP service skeleton (receive-side)
 - DNS-SD service registration
 - Print job queue management
 - Job status tracking
 
 ### Week 4: Document Processing
 - PDF rendering with poppler
-- PostScript parsing
+- PWG Raster / JPEG ingestion
 - Document metadata extraction
 - Page rendering pipeline
 
 ### Week 5: Print Job Processing
-- IPP job reception
+- IPP job reception (Create-Job / Send-Document)
 - Job validation and error handling
 - Queue persistence
 - Cancellation support
 
 ### Week 6: GUI Foundation
-- Xilem with Wayland rendering
-- Main window
+- **Complete the Xilem migration** (see `XILEM_MIGRATION.md`)
+- Main window (winit)
 - Preview rendering
 - Zoom and navigation
 
@@ -242,13 +259,12 @@ crates/
 
 ### Week 8: Document Rendering
 - PDF pipeline completion
-- PostScript support
 - High-quality preview
-- Document merging
+- Document merging (qpdf)
 
 ### Week 9-12: Advanced Features
 - Systemd integration
-- Printer management
+- Downstream printer management (CUPS/IPP client — no `cups` dep yet)
 - Print settings dialog
 - Job queue UI
 - Drag-and-drop support
@@ -277,13 +293,13 @@ crates/
 
 ### Manual Testing Checklist
 - [ ] PDF rendering and preview
-- [ ] PostScript rendering
+- [ ] PWG Raster / JPEG ingestion
 - [ ] N-up printing (1, 2, 4, 8 pages/sheet)
 - [ ] Booklet creation (A4, Letter)
 - [ ] Multiple document merging
 - [ ] Print settings dialog
 - [ ] Systemd service lifecycle
-- [ ] Plugin loading and execution
+- [ ] Downstream printer selection & submit
 
 ### Environment Requirements
 - Debian/Ubuntu with systemd
@@ -292,66 +308,75 @@ crates/
 - Development dependencies installed
 
 ## Success Criteria
-1. Complete IPP Everywhere compliance
+1. Complete IPP Everywhere compliance (print-service ingress)
 2. Native Wayland performance comparable to original
 3. 90%+ test coverage for core functionality
 4. Clean packaging for major distributions
 5. Comprehensive documentation
-6. Plugin ecosystem with 3+ sample plugins
 
 ## Implementation Status
 
-### Phase 1: Foundation (Weeks 1-4) - ✅ **80% Complete**
+> **Reality check (2026-07-12):** the workspace **does not currently compile**
+> as a whole. The dominant blocker is the incomplete Druid→Xilem migration in
+> `boomaga-preview` (see `XILEM_MIGRATION.md`); the backend also has stub/compile
+> gaps. Percentages below are honest estimates of *design + partial implementation*,
+> not of green-build completeness.
+
+### Per-crate state
+
+| Crate | Kind | State | Tests | Notes |
+|-------|------|-------|-------|-------|
+| `boomaga-core` | lib | Types complete; compiles | 0 | Plugin residue removed. `FileType` still lists PostScript/Ps — update to PDF/PWG/JPEG (decision #4). `parse_metadata()` is a TODO no-op. |
+| `boomaga-config` | lib | Complete | 3 | `ConfigManager` wired; plugin settings removed. |
+| `boomaga-layout-engine` | lib | Real & usable | 6 | N-up, booklet, transforms implemented; a few TODOs for page-size lookup. |
+| `boomaga-preview` | bin | **Broken (mid-migration)** | 5 | poppler+cairo rendering is real; GUI half-migrated Druid→Xilem, does not compile. |
+| `boomaga-ipc` | lib | Skeleton, **unused** | 0 | Protocol defined; Unix-socket transport stubbed; not yet imported by backend/GUI. |
+| `boomaga-ipp-backend` | bin | Scaffolded, partial | 0 | `IppServer`/`JobProcessor`/`JobQueue` present; request parsing incomplete; processor has a compile bug; no CUPS/downstream code. |
+
+### Phase 1: Foundation (Weeks 1-4) — 🚧 **~65%** (was reported 80%)
 
 #### Completed ✅
-- Project structure and workspace setup
-- Core crate (boomaga-core) with error handling, job types, document types
-- IPP backend service with job queue and processor
-- Preview application with Xilem GUI framework
-- Layout engine with N-up and booklet algorithms
-- **Configuration management system** (boomaga-config crate)
-  - BackendConfig for IPP service settings
-  - PreviewConfig for GUI preferences
-  - Settings for user preferences
-  - ConfigManager for loading/saving configuration
-  - Default configuration constants
+- Workspace + 6-crate structure
+- `boomaga-core` domain types, error handling
+- `boomaga-config` configuration management (BackendConfig, PreviewConfig, Settings, ConfigManager)
+- `boomaga-layout-engine` N-up, booklet, transforms (with unit tests)
+- poppler + cairo PDF rendering in `boomaga-preview`
+- IPP service scaffolding (`IppServer`, `JobQueue`, `JobProcessor`)
 
 #### Remaining Phase 1 Tasks
-- Document rendering implementation with poppler (0%)
-- Comprehensive error handling for all crates
-- Basic IPC transport implementation (30%)
-- D-Bus service registration (20%)
-- Unit tests for core functionality (10%)
+- **Make the workspace compile** — finish Druid→Xilem migration in `boomaga-preview`
+- Update `FileType` to PDF/PWG Raster/JPEG; drop PostScript variants (decision #4)
+- Wire Unix-socket IPC transport (`boomaga-ipc`) into backend + GUI (currently unused)
+- Complete IPP request parsing / response generation; fix `JobProcessor`/`JobQueue` mismatch
+- systemd socket activation (zbus_systemd) — not yet wired
+- Unit tests for `boomaga-core`, `boomaga-ipc`, `boomaga-ipp-backend` (currently 0)
 
 ---
 
-### Phase 2: Core Functionality (Weeks 5-8) - 🚧 **60% Complete**
+### Phase 2: Core Functionality (Weeks 5-8) — 🚧 **~35%**
 
 #### Completed ✅
-- Print job processing pipeline
-- IPC protocol messages and routing (30%)
-- Plugin system framework (40%)
+- Layout/imposition algorithms (in `boomaga-layout-engine`)
+- PDF rendering pipeline foundation (poppler)
+- IPC protocol message types defined
 
 #### Remaining Phase 2 Tasks
-- Full D-Bus integration (30%)
-- Document rendering completion (0%)
-- Xilem GUI rendering pipeline (10%)
-- Document viewer implementation (5%)
-- Navigation and zoom controls (0%)
-- Toolbar and menu bar implementation (60%)
-- Print dialog UI (0%)
+- Working Xilem GUI (document viewer, navigation, zoom, toolbar, menu, print dialog)
+- Wire imposition (layout engine) into the GUI preview
+- Complete document-ready / job-status IPC round trip
+- Downstream submit path (CUPS/IPP client)
 
 ---
 
-### Phase 3: Advanced Features (Weeks 9-12) - 📋 **0% Complete**
+### Phase 3: Advanced Features (Weeks 9-12) — 📋 **0%**
 - Systemd integration
-- Printer management
+- Downstream printer management
 - User experience enhancements
 - Advanced features (watermarks, PDF export)
 
 ---
 
-### Phase 4: Testing & Quality (Weeks 13-16) - 📋 **0% Complete**
+### Phase 4: Testing & Quality (Weeks 13-16) — 📋 **0%**
 - Unit testing (>90% coverage)
 - Integration testing
 - Performance optimization
@@ -359,7 +384,7 @@ crates/
 
 ---
 
-### Phase 5: Deployment & Documentation (Weeks 17-20) - 📋 **0% Complete**
+### Phase 5: Deployment & Documentation (Weeks 17-20) — 📋 **0%**
 - Packaging (.deb, .rpm, Flatpak)
 - Documentation completion
 - Release preparation
@@ -369,3 +394,4 @@ crates/
 - [Boomaga Original System](https://github.com/Boomaga/boomaga)
 - [Xilem - Modern Rust GUI Framework](https://github.com/linebender/xilem)
 - [Poppler Rust Bindings](https://crates.io/crates/poppler)
+- SRS/UIS **v0.2.2** Appendix C and [`docs/uml/`](./uml/) — authoritative architecture

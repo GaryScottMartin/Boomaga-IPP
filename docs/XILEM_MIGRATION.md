@@ -1,786 +1,234 @@
 # Xilem Migration Plan
 
+> **Last reviewed against code:** 2026-07-12.
+> **Status:** migration **in progress and currently NOT compiling.** Druid has
+> already been removed from every `Cargo.toml`, but Druid-based modules are still
+> the active code, and the Xilem scaffolds were written against an API that does
+> not exist in Xilem 0.4. This document has been corrected accordingly — the
+> earlier version described a not-yet-started migration and contained example
+> code using a fabricated Xilem API. **Do not use the old examples as a template.**
+
 ## Overview
-This document outlines the plan to replace Druid with Xilem for the Boomaga-IPP project.
+This document tracks replacing Druid with Xilem for the `boomaga-preview` GUI.
+Target architecture: SRS/UIS **v0.2.2** Appendix C and [`docs/uml/`](./uml/)
+(`AppData`, `DocumentRenderer`).
 
 ## Motivation
 
 ### Why Xilem?
-Xilem is chosen over Druid because:
-- **Native Rust GUI**: Zero FFI, full Rust ecosystem integration
-- **Wayland-optimized**: Built for modern Linux compositors
-- **Future-proof**: Active development by Rust community
-- **Performance**: Zero-cost abstractions
-- **Clean API**: Declarative UI similar to React
-- **Active Maintenance**: Druid is considered unmaintained
+- **Native Rust GUI**: full Rust ecosystem, no C++ toolkit FFI
+- **Wayland-optimised**: built for modern Linux compositors (via winit + Vello/wgpu)
+- **Future-proof**: active Linebender development; Druid is unmaintained
+- **Reactive/declarative**: a view tree rebuilt from state, diffed each update
 
-### Why Not Druid?
+### Why not Druid?
 - Druid is **unmaintained** since mid-2023
-- Community has moved to Xilem as the modern replacement
+- The Linebender community moved to Xilem (and its Masonry widget layer)
 - Long-term viability concerns for production software
-- Xilem provides better performance and modern features
 
-## Current Status
+## Current Status — the real picture
 
-**Framework in Use**: Druid 0.8 (to be replaced)
-**Target Framework**: Xilem
-**Date**: March 2026
+**This is a half-finished migration, not a fresh start.** Concretely:
 
-The current preview application (`boomaga-preview`) uses Druid:
-- **Location**: `crates/boomaga-preview/src/`
-- **Entry Point**: `main.rs` (Druid-based)
-- **Key Components**:
-  - `app.rs` - Druid application state
-  - `document_renderer.rs` - Poppler document rendering
-  - `document_view.rs` - Document viewer widget
-  - `menu_bar.rs` - Menu bar (Druid-based)
-  - `toolbar.rs` - Toolbar (Druid-based)
-  - `print_dialog.rs` - Print dialog
-  - `settings_dialog.rs` - Settings dialog
-  - `viewer/` - Document view components
+**Dependencies (already changed):**
+- Workspace `Cargo.toml` and `crates/boomaga-preview/Cargo.toml` declare
+  `xilem = "0.4"`, `kurbo = "0.11"`, `winit = "0.30"`, plus `cairo-rs = "0.18"`
+  and `poppler = "0.6"` for rendering.
+- **`druid` is not a dependency in any manifest.** (Verified: no `druid` entry in
+  any `Cargo.toml`.)
 
-**Druid Dependencies** (in workspace Cargo.toml):
-```toml
-druid = "0.8"
-cairo-rs = "0.18"
-```
+**Code (inconsistent — this is why it won't build):**
+- The **active** entry point and several modules still call Druid, with no `druid`
+  crate available:
+  - `src/main.rs` — `druid::WindowDesc::new()`, `druid::run_app(...)`
+  - `src/app.rs` — `use druid::{AppLauncher, Data, Env, Lens}`, `#[derive(Clone, Data, Lens)]`
+  - `src/menu_bar.rs`, `src/toolbar.rs` — Druid `Widget` impls (`paint`/`layout`/`event`/`lifecycle`)
+  - `src/widgets/page_container.rs` — `use druid::kurbo::Vec2`, `druid::ImageData`
+  - `src/document_view.rs`, `src/viewer/` — Druid custom widgets
+  → every one of these is a dangling reference to a crate that isn't linked.
+- Parallel **Xilem scaffolds** exist but were written against a **non-existent API**:
+  - `src/main_xilem.rs` — `use xilem::{App, Color, Event, EventCtx, LifeCycle, LifeCycleCtx, PaintCtx, Env, Widget}`
+  - `src/widgets/{document_viewer,page_container}.rs` — `use xilem::{Widget, Flex, Label, PaintCtx, ...}` with `paint`/`event`/`lifecycle` methods
+  - `src/window.rs` — `use xilem::WindowConfig`
+  - `src/handlers/{document,navigation}.rs` — `use xilem::{Event, EventCtx, WindowCtx}`
+  → **Xilem 0.4 exports none of these** (`xilem::Widget`, `Flex`, `Label`, `App`,
+  `WindowConfig`, `PaintCtx`, `EventCtx`, `LifeCycle` at the crate root). These files
+  are essentially Druid code with the import path renamed to `xilem::`. They must be
+  rewritten, not patched.
 
-## Migration Approach
+**What is salvageable:**
+- `src/document_renderer.rs` — **real poppler + cairo rendering** (loads a PDF via
+  `poppler::Document`, extracts metadata, renders pages to a Cairo surface). This is
+  framework-agnostic and should be **kept**; only the surface→GPU-image handoff needs
+  adapting to Xilem/Masonry paint.
+- The domain types in `boomaga-core` (`Document`, `Page`, `PrintOptions`) and
+  `boomaga-config` are framework-independent and stay as-is.
 
-**Note**: This is a **complete rewrite**, not a migration. The project will be rebuilt using Xilem from the start, as Druid is unmaintained and not suitable for long-term development.
+## The correct Xilem 0.4 mental model
 
-## Migration Phases
+Xilem is **not** an immediate-mode / retained-widget framework where you implement a
+`Widget` trait with `paint`/`event`/`lifecycle`. That is the *Druid/Masonry* shape.
+In Xilem you:
 
-### Phase 1: Project Foundation Setup (1-2 days)
+1. Hold your app state in a plain value (our `AppData`).
+2. Write an **`app_logic`** function `fn(&mut AppData) -> impl WidgetView<AppData>`
+   that returns a **view tree** built from view constructors in `xilem::view::*`
+   (e.g. `flex`, `button`, `label`, `sized_box`, `prose`, `textbox`). Interactions
+   are wired with callbacks that receive `&mut AppData`.
+3. On each state change Xilem re-runs `app_logic`, **diffs** the new view tree against
+   the old, and mutates the underlying **Masonry** widget tree accordingly.
+4. Run the app roughly as:
+   `Xilem::new(initial_state, app_logic).run_windowed(event_loop, window_attributes)`
+   (Xilem re-exports `winit`; a window is a winit window).
 
-#### 1.1 Update Workspace Dependencies
+**Custom drawing** (the rendered PDF page canvas) is done by implementing a
+**Masonry `Widget`** (that's where `paint`/`layout`/pointer-event methods live, via
+`masonry::…`) and exposing it to the Xilem view tree through a small `View` wrapper —
+*not* by implementing a `xilem::Widget`.
 
-Update `Cargo.toml` workspace dependencies:
+**Async / external events** (a page finishing rendering on a worker, or a job arriving
+over the Unix-socket IPC) are delivered back into state through Xilem's message/proxy
+mechanism (`xilem::core` — e.g. a worker view or a `MessageProxy`), which then triggers
+a rebuild. This is the hook the backend→GUI IPC notification (see `docs/uml/C3-sequence.puml`)
+will use.
 
-```toml
-[workspace.dependencies]
-# GUI - Replace Druid with Xilem
-xilem = "0.4"
-kurbo = { version = "0.11", features = ["use-glow"] }
-winit = "0.30"
+> ⚠️ Exact symbol names and signatures (e.g. `run_windowed` arguments, the precise
+> view constructors, the Masonry `Widget` method set) shift between Xilem releases.
+> **Verify every symbol against the pinned `xilem 0.4` / `masonry` docs on docs.rs
+> before writing code** — this environment cannot compile Rust, so the sketches below
+> are structural, not guaranteed-compiling.
 
-# Document Rendering - Keep Poppler
-poppler = "0.6"
-
-# Other dependencies - Keep as is
-tokio = { workspace = true, features = ["full"] }
-druid = "0.8"  # Keep for now, will remove after migration
-cairo-rs = "0.18"
-```
-
-#### 1.2 Update Preview Crate Dependencies
-
-Update `crates/boomaga-preview/Cargo.toml`:
-
-```toml
-[dependencies]
-boomaga-core = { path = "../boomaga-core" }
-boomaga-config = { path = "../boomaga-config" }
-
-# Remove Druid dependencies
-# Remove cairo-rs (if not needed for other purposes)
-
-# Add Xilem dependencies
-xilem = { workspace = true }
-kurbo = { workspace = true }
-winit = { workspace = true }
-
-# Keep for now during transition
-druid = { workspace = true }
-cairo-rs = { workspace = true }
-
-# Document and async dependencies
-poppler = { workspace = true }
-tokio = { workspace = true }
-anyhow = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
-```
-
-#### 1.3 Create Xilem Project Structure
-
-Create new Xilem-based project structure:
-
-```
-crates/boomaga-preview/src/
-├── main.rs              # Xilem entry point
-├── app.rs               # Application state
-├── document_renderer.rs # Poppler document rendering
-├── widgets/             # Xilem widgets
-│   ├── mod.rs
-│   ├── document_viewer.rs  # Main container
-│   ├── page_container.rs   # Single page widget
-│   ├── toolbar.rs           # Toolbar widget
-│   ├── menu_bar.rs          # Menu bar widget
-│   ├── navigation.rs        # Navigation controls
-│   └── zoom_controls.rs     # Zoom controls
-├── handlers/            # Event handlers
-│   ├── mod.rs
-│   ├── document.rs
-│   ├── navigation.rs
-│   └── zoom.rs
-├── styles/              # Styling utilities
-│   ├── mod.rs
-│   └── colors.rs
-├── util/                # Helper functions
-│   ├── mod.rs
-│   └── layout.rs
-├── window.rs            # Window management
-└── window_config.rs     # Window configuration
-```
-
-#### 1.4 Create Application State
-
-Create new `app.rs` with Xilem-compatible state:
+### Illustrative sketch (structure only — verify symbols)
 
 ```rust
-// crates/boomaga-preview/src/app.rs
-use std::path::PathBuf;
-use boomaga_core::{Document, Page, PageSize, Orientation};
-
-#[derive(Clone)]
+// app.rs — plain state value (target of the migration; UML calls it AppData)
 pub struct AppData {
-    pub document: Option<Document>,
+    pub document_path: Option<std::path::PathBuf>,
+    pub document: Option<boomaga_core::Document>,
     pub current_page: usize,
-    pub num_pages: usize,
     pub zoom: f64,
-    pub is_loading: bool,
-    pub error_message: Option<String>,
+    pub print_options: boomaga_core::PrintOptions,
 }
 
-impl Default for AppData {
-    fn default() -> Self {
-        Self {
-            document: None,
-            current_page: 0,
-            num_pages: 0,
-            zoom: 1.0,
-            is_loading: false,
-            error_message: None,
-        }
-    }
+// main.rs — declarative app_logic + windowed run
+fn app_logic(data: &mut AppData) -> impl xilem::WidgetView<AppData> {
+    use xilem::view::{flex, button, label};
+    flex((
+        flex((
+            button("Prev", |d: &mut AppData| { d.current_page = d.current_page.saturating_sub(1); }),
+            label(format!("Page {}", data.current_page + 1)),
+            button("Next", |d: &mut AppData| { d.current_page += 1; }),
+        )),
+        // page_view(data)  // <- Masonry widget wrapped as a Xilem View for the PDF canvas
+    ))
 }
-```
 
-### Phase 2: Core UI Components (3-4 days)
-
-#### 2.1 Window Management
-
-Create window setup:
-
-```rust
-// crates/boomaga-preview/src/window.rs
-use xilem::WindowConfig;
-
-pub fn create_window() -> WindowConfig<AppData> {
-    WindowConfig::new()
-        .title("Boomaga Preview")
-        .size((1200, 800))
-        .build()
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let event_loop = xilem::winit::event_loop::EventLoop::with_user_event().build()?;
+    let app = xilem::Xilem::new(AppData::default(), app_logic);
+    app.run_windowed(event_loop, "Boomaga Preview".into())?;
+    Ok(())
 }
 ```
 
-#### 2.2 Document Renderer
-
-Port Poppler integration to Xilem:
-
-```rust
-// crates/boomaga-preview/src/document_renderer.rs
-use poppler::Document as PopplerDocument;
-use boomaga_core::Document;
-
-pub struct DocumentRenderer {
-    // Poppler document reference
-    // Rendering state
-    // Cache management
-}
-
-impl DocumentRenderer {
-    pub fn new() -> Self {
-        Self {}
-    }
-
-    pub fn load_document(&mut self, path: &PathBuf) -> Result<Document, Error> {
-        // Implement Poppler document loading
-        // Create boomaga_core::Document
-        Ok(document)
-    }
-
-    pub fn render_page(&self, page_num: usize, zoom: f64) -> Result<ImageData, Error> {
-        // Render page to image
-        Ok(image_data)
-    }
-}
-```
-
-#### 2.3 Page Container Widget
-
-Create single page widget:
-
-```rust
-// crates/boomaga-preview/src/widgets/page_container.rs
-use kurbo::Vec2;
-use xilem::{Widget, WidgetId, PaintCtx};
-
-pub struct PageContainer {
-    page_image: Option<ImageData>,
-    transform: kurbo::Affine,
-}
-
-impl PageContainer {
-    pub fn new(page_image: Option<ImageData>, zoom: f64) -> Self {
-        // Calculate transform based on zoom
-        Self {
-            page_image,
-            transform: calculate_transform(zoom),
-        }
-    }
-}
-
-impl Widget for PageContainer {
-    fn paint(&mut self, ctx: &mut PaintCtx, data: &AppData, env: &Env) {
-        if let Some(image) = &self.page_image {
-            ctx.draw_image(
-                image.to_img_ctx(),
-                self.transform,
-            );
-        }
-    }
-}
-```
-
-#### 2.4 Document Viewer Widget
-
-Create main container:
-
-```rust
-// crates/boomaga-preview/src/widgets/document_viewer.rs
-use xilem::{Widget, Flex, Label};
-use crate::app::AppData;
-
-pub struct DocumentViewer {
-    page_container: PageContainer,
-    page_info: Label,
-    navigation_buttons: Flex,
-    zoom_controls: Flex,
-}
-
-impl Widget for DocumentViewer {
-    fn event(
-        &mut self,
-        event: &Event,
-        ctx: &mut EventCtx,
-        data: &mut AppData,
-        env: &Env,
-    ) -> bool {
-        match event {
-            Event::Click(button) => {
-                match button {
-                    NavigationButton::Prev => navigate_prev(data),
-                    NavigationButton::Next => navigate_next(data),
-                    ZoomButton::In => zoom_in(data),
-                    ZoomButton::Out => zoom_out(data),
-                }
-                ctx.request_paint();
-                true
-            }
-            _ => false,
-        }
-    }
-
-    fn paint(&mut self, ctx: &mut PaintCtx, data: &AppData, env: &Env) {
-        // Render document viewer
-    }
-}
-```
-
-### Phase 3: Toolbar & Menu (2-3 days)
-
-#### 3.1 Toolbar Widget
-
-Create toolbar with Xilem:
-
-```rust
-// crates/boomaga-preview/src/widgets/toolbar.rs
-use xilem::{Widget, Flex, Button, Label};
-use crate::app::AppData;
-
-pub enum ToolbarEvent {
-    OpenDocument,
-    Print,
-    ZoomIn,
-    ZoomOut,
-}
-
-pub struct Toolbar {
-    open_button: Button,
-    print_button: Button,
-    zoom_controls: Flex,
-    page_info: Label,
-}
-
-impl Widget for Toolbar {
-    fn event(
-        &mut self,
-        event: &Event,
-        ctx: &mut EventCtx,
-        data: &mut AppData,
-        env: &Env,
-    ) -> bool {
-        match event {
-            Event::Click(button) => match button {
-                ToolbarEvent::OpenDocument => handle_open_document(ctx, data),
-                ToolbarEvent::Print => handle_print(ctx, data),
-                ToolbarEvent::ZoomIn => zoom_in(data),
-                ToolbarEvent::ZoomOut => zoom_out(data),
-            },
-            _ => false,
-        }
-    }
-
-    fn paint(&mut self, ctx: &mut PaintCtx, data: &AppData, env: &Env) {
-        // Render toolbar
-    }
-}
-```
-
-#### 3.2 Menu Bar Widget
-
-Create menu bar:
-
-```rust
-// crates/boomaga-preview/src/widgets/menu_bar.rs
-use xilem::{Widget, Flex};
-use crate::app::AppData;
-
-pub struct MenuBar {
-    file_menu: Flex,
-    view_menu: Flex,
-    help_menu: Flex,
-}
-
-impl Widget for MenuBar {
-    fn event(
-        &mut self,
-        event: &Event,
-        ctx: &mut EventCtx,
-        data: &mut AppData,
-        env: &Env,
-    ) -> bool {
-        match event {
-            Event::MenuAction(action) => match action {
-                MenuItem::OpenDocument => handle_open_document(ctx, data),
-                MenuItem::Print => handle_print(ctx, data),
-                MenuItem::Exit => ctx.close_window(),
-                // ... other menu items
-            },
-            _ => false,
-        }
-    }
-}
-```
-
-### Phase 4: Navigation & Zoom Controls (1-2 days)
-
-#### 4.1 Navigation Widget
-
-```rust
-// crates/boomaga-preview/src/widgets/navigation.rs
-pub enum NavigationButton {
-    First,
-    Prev,
-    Next,
-    Last,
-}
-
-pub struct NavigationWidget {
-    prev_button: Button,
-    next_button: Button,
-    page_label: Label,
-    jump_input: TextInput,
-}
-```
-
-#### 4.2 Zoom Controls
-
-```rust
-// crates/boomaga-preview/src/widgets/zoom_controls.rs
-pub enum ZoomButton {
-    In,
-    Out,
-    Reset,
-}
-
-pub struct ZoomWidget {
-    zoom_label: Label,
-    zoom_in_button: Button,
-    zoom_out_button: Button,
-    zoom_reset_button: Button,
-}
-```
-
-### Phase 5: Event Handling (2 days)
-
-#### 5.1 Handler Module
-
-```rust
-// crates/boomaga-preview/src/handlers/document.rs
-use crate::app::AppData;
-
-pub fn handle_open_document(ctx: &mut EventCtx, data: &mut AppData) {
-    // File dialog handling
-}
-
-pub fn handle_print(ctx: &mut EventCtx, data: &AppData) {
-    // Print dialog handling
-}
-
-pub fn handle_document_loaded(result: Result<Document, Error>, data: &mut AppData) {
-    // Update state on document load
-}
-```
-
-#### 5.2 Navigation Handler
-
-```rust
-// crates/boomaga-preview/src/handlers/navigation.rs
-pub fn navigate_prev(data: &mut AppData) {
-    if data.current_page > 0 {
-        data.current_page -= 1;
-    }
-}
-
-pub fn navigate_next(data: &mut AppData) {
-    if data.current_page < data.num_pages - 1 {
-        data.current_page += 1;
-    }
-}
-```
-
-#### 5.3 Zoom Handler
-
-```rust
-// crates/boomaga-preview/src/handlers/zoom.rs
-pub fn zoom_in(data: &mut AppData) {
-    data.zoom *= 1.2;
-}
-
-pub fn zoom_out(data: &mut AppData) {
-    data.zoom /= 1.2;
-}
-
-pub fn reset_zoom(data: &mut AppData) {
-    data.zoom = 1.0;
-}
-```
-
-### Phase 6: Document Loading Pipeline (2 days)
-
-#### 6.1 Load PDF File
-
-```rust
-// crates/boomaga-preview/src/document_renderer.rs
-pub fn load_document_from_file(path: &PathBuf) -> Result<Document, DocumentError> {
-    let poppler_doc = PopplerDocument::new_from_file(path)?;
-    let mut pages = Vec::new();
-
-    for i in 0..poppler_doc.n_pages() {
-        let page = poppler_doc.page(i)?;
-        pages.push(extract_page(page)?);
-    }
-
-    Ok(Document {
-        file_path: path.clone(),
-        pages,
-        file_type: FileType::Pdf,
-    })
-}
-```
-
-#### 6.2 Render to Image
-
-```rust
-// crates/boomaga-preview/src/document_renderer.rs
-pub fn render_page_to_image(
-    poppler_page: &PopplerPage,
-    zoom: f64,
-) -> Result<ImageData, RenderError> {
-    let width = poppler_page.get_page_width() * zoom as f64;
-    let height = poppler_page.get_page_height() * zoom as f64;
-
-    let surface = CairoImageSurface::create(width as i32, height as i32)?;
-    let context = CairoContext::new(&surface)?;
-
-    // Draw page
-    // Render to ImageData
-    Ok(ImageData::new(surface))
-}
-```
-
-### Phase 7: Error Handling (1-2 days)
-
-#### 7.1 Error Types
-
-```rust
-// crates/boomaga-preview/src/errors.rs
-use thiserror::Error;
-
-#[derive(Error, Debug)]
-pub enum DocumentError {
-    #[error("Failed to open document: {0}")]
-    OpenError(String),
-
-    #[error("Invalid document format")]
-    InvalidFormat,
-
-    #[error("Page {0} not found")]
-    PageNotFound(usize),
-
-    #[error("Rendering error: {0}")]
-    RenderError(String),
-}
-```
-
-#### 7.2 Error Handling
-
-Implement comprehensive error handling throughout the application.
-
-### Phase 8: Testing (2-3 days)
-
-#### 8.1 Unit Tests
-
-```rust
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_document_loading() {
-        // Test document loading
-    }
-
-    #[test]
-    fn test_page_navigation() {
-        // Test navigation logic
-    }
-
-    #[test]
-    fn test_zoom_operations() {
-        // Test zoom functionality
-    }
-}
-```
-
-#### 8.2 Integration Tests
-
-```rust
-#[cfg(test)]
-mod integration_tests {
-    // Test full document loading workflow
-    // Test UI interactions
-}
-```
-
-### Phase 9: Polish & Optimization (2 days)
-
-#### 9.1 Performance Optimization
-
-- Implement rendering caching
-- Optimize image loading
-- Optimize zoom operations
-
-#### 9.2 Keyboard Shortcuts
-
-```rust
-// Global event handler
-Event::KeyDown(key) => match key {
-    KeyCode::Space => navigate_next(data),
-    KeyCode::Back => navigate_prev(data),
-    KeyCode::Plus => zoom_in(data),
-    KeyCode::Minus => zoom_out(data),
-    KeyCode::Key0 => reset_zoom(data),
-    // ...
-}
-```
-
-#### 9.3 Accessibility
-
-- Focus management
-- Keyboard navigation
-- Screen reader support
-
-### Phase 10: Documentation & Cleanup (1-2 days)
-
-#### 10.1 Update Documentation
-
-- Update README.md
-- Update CLAUDE.md
-- Add migration documentation
-
-#### 10.2 Remove Druid Code
-
-- Remove all Druid dependencies
-- Remove all Druid-specific code
-- Update build scripts
-
-#### 10.3 Update Architecture Diagrams
-
-## File Structure
-
-### Final Xilem Structure
-
-```
-crates/boomaga-preview/src/
-├── main.rs              # Xilem entry point with window setup
-├── app.rs               # Application state (AppData)
-├── errors.rs            # Error types
-├── window.rs            # Window configuration
-├── document_renderer.rs # Poppler integration
-├── widgets/
-│   ├── mod.rs
-│   ├── document_viewer.rs  # Main container
-│   ├── page_container.rs   # Single page widget
-│   ├── toolbar.rs           # Toolbar widget
-│   ├── menu_bar.rs          # Menu bar widget
-│   ├── navigation.rs        # Navigation controls
-│   └── zoom_controls.rs     # Zoom controls
-├── handlers/
-│   ├── mod.rs
-│   ├── document.rs
-│   ├── navigation.rs
-│   └── zoom.rs
-├── styles/
-│   ├── mod.rs
-│   └── colors.rs
-└── util/
-    ├── mod.rs
-    └── layout.rs
-```
-
-## Key Technical Details
-
-### Xilem vs Druid
-
-| Druid Concept | Xilem Equivalent |
-|---------------|------------------|
-| `Data` trait | Value type (no trait needed) |
-| `Lens` trait | Function-based access (no trait needed) |
-| `Widget` trait | `Widget` trait (similar but simpler) |
-| `EventCtx` | `EventCtx` (slightly different API) |
-| `LifeCycle` | `LifeCycle` (similar) |
-| `PaintCtx` | `PaintCtx` (similar) |
-| `WindowDesc` | `WindowConfig` (function-based) |
-| `AppLauncher` | `Window` builder pattern |
-
-### Event Handling
-
-```rust
-fn event(
-    &mut self,
-    event: &Event,
-    ctx: &mut EventCtx,
-    data: &mut AppData,
-    env: &Env,
-) -> bool {
-    // Return true to consume event
-    true
-}
-```
-
-### Painting
-
-```rust
-fn paint(&mut self, ctx: &mut PaintCtx, data: &AppData, env: &Env) {
-    // Use Xilem's drawing APIs
-    ctx.draw_text(...);
-    ctx.draw_image(...);
-}
-```
-
-### Layout
-
-Xilem uses a simpler, more intuitive layout system based on Flexbox concepts.
+## Migration Phases (revised for the actual remaining work)
+
+### Phase A: Get to a compiling Xilem skeleton (highest priority)
+1. Delete the dangling Druid modules and the incorrect Xilem scaffolds
+   (`main_xilem.rs`, `app_xilem.rs`, `document_renderer_xilem.rs`, the Druid-shaped
+   `widgets/`, `handlers/`, `window.rs`, `menu_bar.rs`, `toolbar.rs`,
+   `document_view.rs`, `viewer/`). Keep `document_renderer.rs`.
+2. Rewrite `app.rs` as a plain `AppData` value (no `Data`/`Lens` derives).
+3. Rewrite `main.rs` with `app_logic` + `Xilem::new(...).run_windowed(...)`.
+4. Confirm `cargo build -p boomaga-preview` links (host-side — no toolchain in sandbox).
+
+### Phase B: Core view tree
+- `flex`/`sized_box` layout: toolbar row + page canvas + status row.
+- Navigation (prev/next/first/last) and zoom (in/out/reset) as `button` callbacks on `AppData`.
+- Page counter / status via `label`.
+
+### Phase C: PDF page canvas (Masonry custom widget)
+- Implement a Masonry `Widget` that paints the Cairo/poppler-rendered page image.
+- Feed it the surface produced by `document_renderer::render_page_to_surface`.
+- Wrap it as a Xilem `View` and place it in the tree.
+
+### Phase D: Document loading & async rendering
+- File-open → load via `DocumentRenderer::load` (keep existing poppler code).
+- Render pages off the UI thread; deliver results into state via the worker/proxy hook.
+
+### Phase E: Imposition & IPC wiring
+- Wire `boomaga-layout-engine` (N-up / booklet / transforms) into preview state
+  (`docs/uml/C2-class.puml` marks `AppData → NUpCalculator` as `<<planned>>`).
+- Wire the Unix-socket IPC (`boomaga-ipc`) so backend job notifications update `AppData`
+  (`docs/uml/C3-sequence.puml`).
+
+### Phase F: Print dialog & downstream submit
+- Print options dialog bound to `PrintOptions`.
+- Downstream printer selection + submit (CUPS/IPP client — no `cups` dep yet).
+
+### Phase G: Testing, polish, docs
+- Unit tests for navigation/zoom/state; keyboard shortcuts; accessibility.
+- Update README/CLAUDE; remove any lingering Druid references.
+
+## Druid → Xilem concept mapping (corrected)
+
+| Druid concept | Xilem 0.4 equivalent |
+|---------------|----------------------|
+| `Data` / `Lens` traits | Plain state value; access via closures in `app_logic` — no traits |
+| `Widget` trait (`paint`/`event`/`lifecycle`) | **No user `Widget` trait.** Build **views** (`xilem::view::*`); for custom drawing implement a **Masonry** `Widget` |
+| `WidgetPod` tree (retained) | View tree rebuilt from state each update, diffed onto the Masonry tree |
+| `EventCtx` / `LifeCycle` / `PaintCtx` | Live in **Masonry** (only when writing a custom widget), not at the `xilem` root |
+| `WindowDesc` / `AppLauncher` / `run_app` | `Xilem::new(state, app_logic).run_windowed(event_loop, attrs)` |
+| `Env` / theme | Xilem/Masonry styling on views (`.style`-style modifiers) |
+| Async via `ExtEventSink` | `xilem::core` worker / `MessageProxy` message-into-state |
 
 ## Success Criteria
 
-### Functional Requirements
+### Functional
 - [ ] Load and display PDF documents
-- [ ] Navigate between pages (next, previous, first, last)
-- [ ] Zoom in/out and reset
-- [ ] Print documents
-- [ ] Use toolbar and menu bar
+- [ ] Navigate pages (next, previous, first, last)
+- [ ] Zoom in/out/reset
+- [ ] Apply imposition (N-up, booklet) in preview
+- [ ] Select downstream printer and submit
+- [ ] Toolbar + menu
 - [ ] Keyboard shortcuts (Space, N, P, +/-, 0)
 
-### Technical Requirements
-- [ ] Compile without errors
-- [ ] Run on Linux with Wayland
-- [ ] Acceptable performance (< 100ms for page load)
-- [ ] Minimal memory overhead (< 50MB for typical documents)
-- [ ] Smooth zoom operations
-- [ ] Responsive UI
+### Technical
+- [ ] `cargo build` succeeds with **no Druid references** and a coherent Xilem tree
+- [ ] Runs on Linux/Wayland (winit)
+- [ ] Page load < 100 ms typical; smooth zoom
+- [ ] Reasonable memory footprint
 
-### Code Quality Requirements
-- [ ] Follow Xilem patterns and conventions
-- [ ] Good test coverage (> 70%)
-- [ ] Clear, maintainable code
-- [ ] Comprehensive error handling
-- [ ] Documentation comments
-- [ ] No Druid dependencies or code
-
-## Timeline Estimate
-
-| Phase | Duration | Description |
-|-------|----------|-------------|
-| Phase 1: Foundation | 1-2 days | Setup dependencies, structure, app state |
-| Phase 2: Core UI | 3-4 days | Document renderer, page container, viewer |
-| Phase 3: Toolbar & Menu | 2-3 days | Toolbar widget, menu bar widget |
-| Phase 4: Navigation & Zoom | 1-2 days | Navigation controls, zoom controls |
-| Phase 5: Event Handling | 2 days | Handler modules for all events |
-| Phase 6: Document Loading | 2 days | PDF loading, rendering pipeline |
-| Phase 7: Error Handling | 1-2 days | Error types, error handling |
-| Phase 8: Testing | 2-3 days | Unit tests, integration tests |
-| Phase 9: Polish | 2 days | Performance, keyboard shortcuts, accessibility |
-| Phase 10: Documentation | 1-2 days | Update docs, remove Druid code |
-| **Total** | **17-24 days** | Approx. 3-4 weeks |
+### Code Quality
+- [ ] Uses the real Xilem 0.4 view-based API (verified against docs.rs), not renamed Druid
+- [ ] Test coverage > 70% for state logic
+- [ ] Clear, documented modules; no dead `_xilem.rs` duplicates
 
 ## Risk Assessment
 
 ### High Risk
-- **Complete rewrite**: This is not a migration but a complete rebuild
-- **Learning curve**: Team needs to learn Xilem patterns
-- **Poppler integration**: Must ensure rendering quality and performance
-- **State management**: New approach to handle application state
+- **API drift**: Xilem is pre-1.0; symbol names/signatures change between releases.
+  Pin `xilem = 0.4` and verify against that exact version.
+- **Custom PDF canvas**: bridging poppler/Cairo output into a Masonry paint pass and
+  onto Xilem's GPU (Vello) renderer is the hardest integration point.
+- **Two dead code paths today**: the repo currently carries *both* broken Druid and
+  broken pseudo-Xilem trees; deleting confidently (Phase A) is prerequisite to progress.
 
 ### Medium Risk
-- **Performance**: Must ensure smooth rendering with Xilem
-- **Widget behavior**: Xilem widgets have different interaction patterns
-- **Event handling**: New event system to master
-- **Testing**: Ensuring comprehensive test coverage
+- **State/reactivity model**: declarative rebuild-and-diff is a different mental model
+  from Druid's retained widgets.
+- **Async rendering + IPC**: feeding worker/IPC results back into state correctly.
 
 ### Low Risk
-- **Document loading**: Core logic can be reused
-- **Configuration**: Not GUI-specific
-- **Error handling**: Can be implemented from scratch
+- **Document loading** (`document_renderer.rs`) — reusable as-is.
+- **Configuration / domain types** — framework-independent.
 
 ## Next Steps
-
-1. ✅ Review and approve this migration plan
-2. 🚧 Remove Druid dependencies from workspace Cargo.toml
-3. 🚧 Create new Xilem-based project structure
-4. 🚧 Implement Phase 1: Foundation setup
-5. 🚧 Implement Phase 2: Core UI components
-6. 🚧 Implement Phase 3: Toolbar & Menu
-7. 🚧 Implement Phase 4: Navigation & Zoom
-8. 🚧 Implement Phase 5: Event Handling
-9. 🚧 Implement Phase 6: Document Loading
-10. 🚧 Implement Phase 7: Error Handling
-11. 🚧 Implement Phase 8: Testing
-12. 🚧 Implement Phase 9: Polish
-13. 🚧 Implement Phase 10: Documentation & Cleanup
-14. ✅ Test and deploy Xilem-based preview application
+1. ✅ Correct this plan to reflect the real (broken, mid-migration) state.
+2. 🚧 **Phase A** — delete Druid + pseudo-Xilem code; stand up a compiling Xilem skeleton.
+3. 🚧 Phase B — core view tree (toolbar, navigation, zoom).
+4. 🚧 Phase C — Masonry PDF page canvas.
+5. 🚧 Phase D — document loading & async rendering.
+6. 🚧 Phase E — imposition + IPC wiring.
+7. 🚧 Phase F — print dialog & downstream submit.
+8. 🚧 Phase G — testing, polish, docs.
