@@ -1,131 +1,88 @@
-//! Main application
+//! Preview application state (the Xilem app model).
+//!
+//! Plain data + pure state transitions — no GUI-framework traits. Xilem drives
+//! the UI by re-running `app_logic` (see `main.rs`) against this value and
+//! diffing the resulting view tree, so `AppData` deliberately knows nothing
+//! about the framework. Matches the `AppData` in `docs/uml/C2-class.puml`.
 
-use druid::{AppLauncher, Data, Env, Lens};
+use boomaga_core::{Document, JobId, PrintOptions};
 use std::path::PathBuf;
-use crate::viewer::ViewerState;
 
-/// Main application state
-#[derive(Clone, Data, Lens)]
-pub struct BoomagaApp {
-    /// Path to the document to preview
-    pub document_path: PathBuf,
-    /// Current document
-    pub current_document: Option<boomaga_core::Document>,
-    /// Current page
+/// Preview application state.
+pub struct AppData {
+    /// Path of the document being previewed, if any.
+    pub document_path: Option<PathBuf>,
+    /// The loaded document, if any.
+    pub document: Option<Document>,
+    /// Zero-based index of the page currently shown.
     pub current_page: usize,
-    /// Zoom level
-    pub zoom_level: f64,
-    /// Page margins
-    pub margins: boomaga_core::MarginMode,
-    /// Pages per sheet
-    pub pages_per_sheet: boomaga_core::PagesPerSheet,
-    /// Duplex mode
-    pub duplex_mode: boomaga_core::DuplexMode,
-    /// Print options
-    pub print_options: boomaga_core::PrintOptions,
-    /// Job history
-    pub job_history: Vec<boomaga_core::JobId>,
+    /// Zoom factor (1.0 == 100%).
+    pub zoom: f64,
+    /// Imposition / print options.
+    pub print_options: PrintOptions,
+    /// Ids of jobs submitted this session.
+    pub job_history: Vec<JobId>,
 }
 
-impl BoomagaApp {
-    /// Create a new application
-    pub fn new() -> Self {
+impl Default for AppData {
+    fn default() -> Self {
         Self {
-            document_path: PathBuf::new(),
-            current_document: None,
+            document_path: None,
+            document: None,
             current_page: 0,
-            zoom_level: 1.0,
-            margins: boomaga_core::MarginMode::Normal,
-            pages_per_sheet: boomaga_core::PagesPerSheet::One,
-            duplex_mode: boomaga_core::DuplexMode::None,
-            print_options: boomaga_core::PrintOptions::default(),
+            zoom: 1.0,
+            print_options: PrintOptions::default(),
             job_history: Vec::new(),
         }
     }
+}
 
-    /// Load a document
-    pub async fn load_document(&mut self, path: PathBuf) -> anyhow::Result<()> {
-        self.document_path = path.clone();
-
-        tracing::info!("Loading document: {:?}", path);
-
-        Ok(())
+impl AppData {
+    /// Number of pages in the loaded document (0 if none).
+    pub fn page_count(&self) -> usize {
+        self.document.as_ref().map_or(0, Document::page_count)
     }
 
-    /// Navigate to previous page
-    pub fn previous_page(&mut self) {
-        if let Some(document) = &self.current_document {
-            if self.current_page > 0 {
-                self.current_page = self.current_page.saturating_sub(1);
-            }
-        }
-    }
-
-    /// Navigate to next page
+    /// Advance to the next page, clamped to the last page.
     pub fn next_page(&mut self) {
-        if let Some(document) = &self.current_document {
-            if self.current_page < document.page_count() {
-                self.current_page = (self.current_page + 1).min(document.page_count());
-            }
+        let last = self.page_count().saturating_sub(1);
+        if self.current_page < last {
+            self.current_page += 1;
         }
     }
 
-    /// Navigate to first page
+    /// Go to the previous page, clamped to the first page.
+    pub fn previous_page(&mut self) {
+        self.current_page = self.current_page.saturating_sub(1);
+    }
+
+    /// Jump to the first page.
     pub fn first_page(&mut self) {
         self.current_page = 0;
     }
 
-    /// Navigate to last page
+    /// Jump to the last page.
     pub fn last_page(&mut self) {
-        if let Some(document) = &self.current_document {
-            self.current_page = document.page_count().saturating_sub(1);
-        }
+        self.current_page = self.page_count().saturating_sub(1);
     }
 
-    /// Set zoom level
+    /// Set the zoom factor, clamped to a sane range.
     pub fn set_zoom(&mut self, zoom: f64) {
-        // Clamp zoom level
-        self.zoom_level = zoom.clamp(0.25, 4.0);
+        self.zoom = zoom.clamp(0.25, 4.0);
     }
 
-    /// Set page margins
-    pub fn set_margins(&mut self, margins: boomaga_core::MarginMode) {
-        self.margins = margins;
+    /// Zoom in one step (20%).
+    pub fn zoom_in(&mut self) {
+        self.set_zoom(self.zoom * 1.2);
     }
 
-    /// Set pages per sheet
-    pub fn set_pages_per_sheet(&mut self, count: boomaga_core::PagesPerSheet) {
-        self.pages_per_sheet = count;
+    /// Zoom out one step (20%).
+    pub fn zoom_out(&mut self) {
+        self.set_zoom(self.zoom / 1.2);
     }
 
-    /// Set duplex mode
-    pub fn set_duplex(&mut self, mode: boomaga_core::DuplexMode) {
-        self.duplex_mode = mode;
-    }
-
-    /// Print the document
-    pub async fn print_document(&self) -> anyhow::Result<()> {
-        // TODO: Print document
-        tracing::info!("Printing document: {:?}", self.document_path);
-        Ok(())
-    }
-
-    /// Cancel current job
-    pub async fn cancel_job(&self) -> anyhow::Result<()> {
-        // TODO: Cancel job
-        tracing::info!("Cancelling job");
-        Ok(())
-    }
-
-    /// Open print dialog
-    pub fn open_print_dialog(&mut self) {
-        // TODO: Open print dialog
-        tracing::info!("Opening print dialog");
-    }
-
-    /// Open settings dialog
-    pub fn open_settings(&mut self) {
-        // TODO: Open settings dialog
-        tracing::info!("Opening settings");
+    /// Reset zoom to 100%.
+    pub fn reset_zoom(&mut self) {
+        self.zoom = 1.0;
     }
 }

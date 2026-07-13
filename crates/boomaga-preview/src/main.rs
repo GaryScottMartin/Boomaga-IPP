@@ -1,110 +1,62 @@
-//! Preview application for boomaga virtual printer
+//! Preview application for the Boomaga-IPP virtual printer.
 //!
-//! This application provides a document previewer with native Wayland GUI
-//! using the Druid framework.
+//! Native Wayland GUI built with **Xilem** (0.4). This is the Phase-A skeleton
+//! of the Druid→Xilem migration (see `docs/XILEM_MIGRATION.md`): a compiling
+//! Xilem app with state (`AppData`) and a minimal reactive view tree
+//! (navigation + zoom + status). Document rendering (`document_renderer.rs`,
+//! currently dormant), imposition, and the IPC/print wiring come in later phases.
 
 mod app;
-mod document_renderer;
-mod viewer;
-mod document_view;
-mod menu_bar;
-mod toolbar;
-mod print_dialog;
-// mod settings_dialog;  // TODO: Create Xilem version
+// `document_renderer` (poppler + cairo) is retained on disk but not yet wired
+// into the view tree — it is re-introduced in Phase C (needs a `poppler::{Document,
+// Page}` vs `boomaga_core::{Document, Page}` import-collision fix). Keeping it
+// un-`mod`-ded keeps the Phase-A skeleton minimal and compiling.
+// mod document_renderer;
 
-use tracing::{info, error, Level};
-use std::env;
+use app::AppData;
+use tracing::{info, Level};
+use xilem::view::{button, flex, label};
+use xilem::{EventLoop, WidgetView, Xilem};
 
-fn main() -> anyhow::Result<()> {
-    // Parse command line arguments
-    let args: Vec<String> = env::args().collect();
-
-    // Initialize logging
-    let log_level = if args.contains(&"--debug".to_string()) {
-        Level::DEBUG
+/// The Xilem view tree, rebuilt from `AppData` on every state change.
+fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
+    let status = if data.page_count() == 0 {
+        format!("No document loaded   ·   zoom {:.0}%", data.zoom * 100.0)
     } else {
-        Level::INFO
+        format!(
+            "page {} / {}   ·   zoom {:.0}%",
+            data.current_page + 1,
+            data.page_count(),
+            data.zoom * 100.0
+        )
     };
 
+    flex((
+        label(status),
+        button("|< first", |d: &mut AppData| d.first_page()),
+        button("< prev", |d: &mut AppData| d.previous_page()),
+        button("next >", |d: &mut AppData| d.next_page()),
+        button("last >|", |d: &mut AppData| d.last_page()),
+        button("zoom -", |d: &mut AppData| d.zoom_out()),
+        button("100%", |d: &mut AppData| d.reset_zoom()),
+        button("zoom +", |d: &mut AppData| d.zoom_in()),
+    ))
+}
+
+fn main() -> anyhow::Result<()> {
+    let debug = std::env::args().any(|a| a == "--debug");
     tracing_subscriber::fmt()
-        .with_max_level(log_level)
+        .with_max_level(if debug { Level::DEBUG } else { Level::INFO })
         .with_target(false)
         .init();
 
-    info!("{} v{} starting...", boomaga_core::constants::APP_NAME, boomaga_core::constants::APP_VERSION);
+    info!(
+        "{} v{} starting (Xilem GUI)...",
+        boomaga_core::constants::APP_NAME,
+        boomaga_core::constants::APP_VERSION
+    );
 
-    // Parse configuration
-    let config = parse_config(&args)?;
-
-    info!("Configuration loaded:");
-    info!("  - Preview window: {:?}", config.preview_window);
-
-    // Create and run application
-    let options = druid::WindowDesc::new()
-        .title(boomaga_core::constants::APP_NAME)
-        .content(app::BoomagaApp::new().into());
-
-    // Run the application
-    if let Err(e) = druid::run_app(options) {
-        error!("Application error: {}", e);
-        return Err(e);
-    }
-
+    let app = Xilem::new(AppData::default(), app_logic);
+    app.run_windowed(EventLoop::with_user_event(), boomaga_core::constants::APP_NAME.into())?;
     Ok(())
-}
-
-/// Application configuration
-struct AppConfig {
-    preview_window: std::path::PathBuf,
-}
-
-/// Parse command line arguments and configuration
-fn parse_config(args: &[String]) -> anyhow::Result<AppConfig> {
-    let mut preview_window = std::path::PathBuf::new();
-
-    // Parse arguments
-    let mut i = 1;
-    while i < args.len() {
-        match args[i].as_str() {
-            "--window" | "-w" => {
-                if i + 1 < args.len() {
-                    preview_window = args[i + 1].clone().into();
-                    i += 2;
-                } else {
-                    anyhow::bail!("--window requires a path argument");
-                }
-            }
-            "--debug" => {
-                // Debug flag already handled
-                i += 1;
-            }
-            "--help" | "-h" => {
-                print_help();
-                std::process::exit(0);
-            }
-            _ => {
-                warn!("Unknown argument: {}", args[i]);
-                i += 1;
-            }
-        }
-    }
-
-    Ok(AppConfig { preview_window })
-}
-
-/// Print usage help
-fn print_help() {
-    println!("{} v{} - Preview Application", boomaga_core::constants::APP_NAME, boomaga_core::constants::APP_VERSION);
-    println!();
-    println!("Usage: boomaga-preview [OPTIONS]");
-    println!();
-    println!("Options:");
-    println!("  --window <path>        Set preview window size (default: 800x600)");
-    println!("  --debug                 Enable debug logging");
-    println!("  --help, -h              Show this help message");
-    println!();
-    println!("Example:");
-    println!("  boomaga-preview --window 1200x900");
-    println!();
-    println!("{} {}", boomaga_core::constants::APP_NAME, boomaga_core::constants::APP_DESCRIPTION);
 }
