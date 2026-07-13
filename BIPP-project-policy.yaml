@@ -32,9 +32,6 @@ network_policies:
           - allow: { method: GET, path: "/GaryScottMartin/Boomaga-IPP*/info/refs*" }
           - allow: { method: POST, path: "/GaryScottMartin/Boomaga-IPP*/git-upload-pack" }
           - allow: { method: POST, path: "/GaryScottMartin/Boomaga-IPP*/git-receive-pack" }
-          # Submodule: Sonovore/claude-code-handoff (read/fetch only)
-          - allow: { method: GET, path: "/Sonovore/claude-code-handoff*/info/refs*" }
-          - allow: { method: POST, path: "/Sonovore/claude-code-handoff*/git-upload-pack" }
     binaries:
       - { path: /usr/bin/git }
   github_api:
