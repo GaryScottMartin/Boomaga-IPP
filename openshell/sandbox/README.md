@@ -46,6 +46,13 @@ because the file is gitignored):
 | `BIPP_DIR` | `/sandbox/BIPP` | Clone destination. |
 | `BIPP_UPDATE` | `0` | `1` → `git pull --ff-only` when the repo is already present. |
 
+## Troubleshooting
+- **`bipp-bootstrap: command not found` / exit 127.** OpenShell runs the `--`
+  entry command over ssh with a lean PATH that omits `/usr/local/bin`. The image
+  therefore symlinks the bootstrap into `/usr/bin` (always on PATH). If you ever
+  hit this, invoke by absolute path as a guaranteed fallback:
+  `-- /usr/local/bin/bipp-bootstrap …`.
+
 ## Notes
 - **The `cd "$DIR"` in the bootstrap is load-bearing — do not remove it.**
   Claude Code discovers project config (`.claude/commands/` → `/handoff`,
