@@ -6,7 +6,7 @@ clone into every `openshell sandbox create` call.
 
 ## Files
 - `Dockerfile` — `FROM` the OpenShell community base, adds `git` (defensively)
-  and installs `bipp-bootstrap` on `PATH`.
+  and installs `bipp-bootstrap` at `/usr/local/bin` (invoked by absolute path).
 - `bipp-bootstrap.sh` — idempotent first-run clone + agent hand-off.
 
 ## Usage
@@ -21,11 +21,17 @@ openshell sandbox create \
   --from ./openshell/sandbox/ \
   --policy ./BIPP-project-policy.yaml \
   --provider claude-code --provider github-BIPP \
-  -- bipp-bootstrap
+  -- /usr/local/bin/bipp-bootstrap
 ```
 
-`-- bipp-bootstrap` with no trailing command defaults to launching `claude`.
-Pass an explicit command to override, e.g. `-- bipp-bootstrap bash`.
+**Invoke the bootstrap by absolute path.** OpenShell runs the `--` entry command
+over ssh with a near-empty PATH (it omits `/usr/local/bin` *and* `/usr/bin`), so a
+bare `-- bipp-bootstrap` fails with `command not found` (exit 127). The absolute
+path always resolves; the script then re-exports a sane PATH for `git`/`claude`.
+
+`-- /usr/local/bin/bipp-bootstrap` with no trailing command defaults to launching
+`claude`. Pass an explicit command to override, e.g.
+`-- /usr/local/bin/bipp-bootstrap bash`.
 
 ### Optional: bring your local personal settings
 
@@ -47,11 +53,13 @@ because the file is gitignored):
 | `BIPP_UPDATE` | `0` | `1` → `git pull --ff-only` when the repo is already present. |
 
 ## Troubleshooting
-- **`bipp-bootstrap: command not found` / exit 127.** OpenShell runs the `--`
-  entry command over ssh with a lean PATH that omits `/usr/local/bin`. The image
-  therefore symlinks the bootstrap into `/usr/bin` (always on PATH). If you ever
-  hit this, invoke by absolute path as a guaranteed fallback:
-  `-- /usr/local/bin/bipp-bootstrap …`.
+- **`bipp-bootstrap: command not found` / exit 127.** You used a bare
+  `-- bipp-bootstrap`. The ssh entry-command PATH omits both `/usr/local/bin` and
+  `/usr/bin`, so invoke by absolute path: `-- /usr/local/bin/bipp-bootstrap …`.
+- **`git`/`claude: command not found` inside the bootstrap.** Same near-empty
+  PATH; the script guards against this by exporting
+  `PATH=/usr/local/bin:/usr/bin:/bin` at the top. If you fork the script, keep
+  that line.
 
 ## Notes
 - **The `cd "$DIR"` in the bootstrap is load-bearing — do not remove it.**

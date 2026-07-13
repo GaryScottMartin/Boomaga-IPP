@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 #
 # Boomaga-IPP sandbox first-run bootstrap.
 #
@@ -6,10 +6,13 @@
 # off to the agent command. Safe to re-run: on a persistent/restarted sandbox
 # where the repo is already present, it is left untouched (unless BIPP_UPDATE=1).
 #
-# Used as the OpenShell entry command (see ../sandbox/Dockerfile, ./README.md):
-#   openshell sandbox create --from ./openshell/sandbox/ ... -- bipp-bootstrap
-#   # defaults to launching `claude`; or pass an explicit command:
-#   ... -- bipp-bootstrap bash
+# Invoked by ABSOLUTE PATH as the OpenShell entry command — the supervisor runs
+# the `--` command over ssh with a near-empty PATH (omits /usr/local/bin AND
+# /usr/bin), so neither a bare `bipp-bootstrap` nor `#!/usr/bin/env bash` would
+# resolve. Hence `#!/bin/bash` (absolute) and the PATH export below.
+#   openshell sandbox create --from ./openshell/sandbox/ ... \
+#     -- /usr/local/bin/bipp-bootstrap        # defaults to launching `claude`
+#     -- /usr/local/bin/bipp-bootstrap bash   # or pass an explicit command
 #
 # Overridable via --env at create time:
 #   BIPP_REPO_URL  default: https://github.com/GaryScottMartin/Boomaga-IPP.git
@@ -17,6 +20,10 @@
 #   BIPP_UPDATE    default: 0  (set 1 to `git pull --ff-only` when already cloned)
 
 set -euo pipefail
+
+# The entry command inherits a near-empty PATH from the ssh session, so set a
+# sane one before calling git / claude / the passed command.
+export PATH="/usr/local/bin:/usr/bin:/bin${PATH:+:$PATH}"
 
 REPO_URL="${BIPP_REPO_URL:-https://github.com/GaryScottMartin/Boomaga-IPP.git}"
 DIR="${BIPP_DIR:-/sandbox/BIPP}"

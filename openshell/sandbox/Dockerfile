@@ -36,14 +36,13 @@ RUN if ! command -v git >/dev/null 2>&1; then \
       fi; \
     fi
 
-# Install the idempotent first-run bootstrap. Keep the real file in /usr/local/bin
-# (convention) and symlink it into /usr/bin so it is ALWAYS on PATH: OpenShell runs
-# the `--` entry command over ssh with a lean PATH that omits /usr/local/bin, so a
-# bare `bipp-bootstrap` there is "command not found" (exit 127). /usr/bin (== /bin
-# via usrmerge) is where the ssh session finds /bin/bash, so it is guaranteed.
+# Install the idempotent first-run bootstrap. OpenShell runs the `--` entry
+# command over ssh with a near-empty PATH (it omits /usr/local/bin AND /usr/bin),
+# so the bootstrap is invoked by ABSOLUTE PATH in the create command
+# (`-- /usr/local/bin/bipp-bootstrap …`) and the script re-exports a sane PATH
+# before calling git/claude. A PATH-based symlink would not help. See ./README.md.
 COPY bipp-bootstrap.sh /usr/local/bin/bipp-bootstrap
-RUN chmod +x /usr/local/bin/bipp-bootstrap \
- && ln -sf /usr/local/bin/bipp-bootstrap /usr/bin/bipp-bootstrap
+RUN chmod +x /usr/local/bin/bipp-bootstrap
 
 # Defaults; override at create time with --env KEY=VALUE.
 ENV BIPP_REPO_URL="https://github.com/GaryScottMartin/Boomaga-IPP.git" \
