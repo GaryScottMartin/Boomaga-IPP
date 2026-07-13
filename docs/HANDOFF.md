@@ -44,12 +44,13 @@ non-existent API). **Next up:** on the host, build + smoke-test the new image; t
       settings.json/hooks/commands/skills; **vendored** the handoff hooks + `/handoff` command from
       symlinks → real files; removed the dangling `.gitmodules`; normalized handoff.md CRLF→LF;
       fixed SKILL.md (machine path + "C++"→Rust). `settings.local.json` stays local. See CLAUDE.md.
-- [x] **OpenShell auto-clone image (`openshell/sandbox/`; `ed1cbb6`,`346397a`).** Dockerfile +
-      `bipp-bootstrap.sh` + README: `--from` image that clones into `/sandbox/BIPP` on create then
-      `exec claude`. Bootstrap logic verified in-sandbox incl. a **real clone** under the live policy.
-- [ ] **Host-side: build + smoke-test the `--from` image.** Not runnable in-sandbox (no Docker /
-      gateway). Use the `BIPP-verify` smoke test in `openshell/sandbox/README.md` (expect
-      `PWD=/sandbox/BIPP`, `GIT_OK`, `handoff.md`).
+- [x] **OpenShell auto-clone provisioning — DONE & host-verified 2026-07-13.** Final form is a
+      host-side script `openshell/create-bipp-sandbox.sh` that runs `openshell sandbox create …
+      -- bash -lc '<clone-if-absent; cd; exec claude>'`. `BIPP_VERIFY=1 ./openshell/create-bipp-sandbox.sh`
+      passed on Denali (`PWD=/sandbox/BIPP`, `GIT_OK`, `handoff.md`). **The `--from` image approach
+      was abandoned:** OpenShell does not serve a `--from` image's `/usr/local/bin` at runtime (a
+      baked script is absent in the running sandbox); PATH is fine, and a long inline `--` one-liner
+      corrupts on paste — hence the script. See `openshell/README.md` for the diagnostics.
 - [ ] **GUI does not compile — start `XILEM_MIGRATION.md` Phase A** on the host (delete dangling
       Druid modules + the pseudo-Xilem scaffolds; rebuild a compiling Xilem skeleton).
 
@@ -78,8 +79,10 @@ non-existent API). **Next up:** on the host, build + smoke-test the new image; t
   maintained source. (Supersedes the earlier "Appendix C is an unreconciled Perplexity model" note.)
 - **`.claude/` handoff config is repo-shipped and vendored** (real files — no symlinks, no
   submodule). Portable across clones. See CLAUDE.md "Claude Code setup".
-- **Sandboxes are provisioned via the OpenShell `--from` image** (`openshell/sandbox/`) that
-  auto-clones into `/sandbox/BIPP` and launches claude with cwd = the repo (so `/handoff` resolves).
+- **Sandboxes are provisioned via `openshell/create-bipp-sandbox.sh`** (host-side): an
+  `openshell sandbox create … -- bash -lc '<clone; cd; exec claude>'` that auto-clones into
+  `/sandbox/BIPP` and launches claude with cwd = the repo (so `/handoff` resolves). The `--from`
+  image route was abandoned (baked files not served at runtime — see `openshell/README.md`).
 
 ## 5. Gotchas / environment quirks
 <!-- The stuff that wastes an hour if you don't know it. -->
@@ -117,7 +120,8 @@ non-existent API). **Next up:** on the host, build + smoke-test the new image; t
 - `docs/XILEM_MIGRATION.md` — GUI migration plan (Phase A is the next code step).
 - `docs/SW-Reqrmnts-Spec--latest.pdf`, `docs/User-Interface-Spec--latest.pdf` — current specs (v0.2.2).
 - `docs/uml/*.puml` — code-conformant PlantUML (now also embedded in spec Appendix C).
-- `openshell/sandbox/` — OpenShell `--from` auto-clone sandbox image + bootstrap.
+- `openshell/create-bipp-sandbox.sh` + `openshell/README.md` — host-side sandbox
+  provisioning (auto-clone + launch claude); `BIPP_VERIFY=1` for a smoke test.
 - GitHub issues: <https://github.com/GaryScottMartin/Boomaga-IPP/issues>
 
 ---
