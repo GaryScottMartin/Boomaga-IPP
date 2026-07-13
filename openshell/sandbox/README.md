@@ -47,6 +47,20 @@ because the file is gitignored):
 | `BIPP_UPDATE` | `0` | `1` → `git pull --ff-only` when the repo is already present. |
 
 ## Notes
+- **The `cd "$DIR"` in the bootstrap is load-bearing — do not remove it.**
+  Claude Code discovers project config (`.claude/commands/` → `/handoff`,
+  `.claude/settings.json` → the SessionStart/PreCompact hooks) from its working
+  directory at launch. The repo lives in the subdirectory `/sandbox/BIPP`, but
+  the sandbox default cwd is `/sandbox`, and there is no `--workdir` flag on
+  `sandbox create`. Without the `cd` (e.g. a plain `-- claude`), claude starts in
+  `/sandbox`, never sees `/sandbox/BIPP/.claude/`, and `/handoff` is an unknown
+  command. The `cd` before `exec claude` is what makes the handoff system work
+  from a subdirectory.
+- **Fresh clone → empty handoff context on first start (expected).** The context
+  files the SessionStart hook loads (`.claude/context.md`, `current-task.md`, …)
+  are gitignored, so they don't come down with a clone; the hook prints "No
+  handoff context found" until you run `/handoff` once. The committed
+  `docs/HANDOFF.md` is the durable cross-sandbox handoff.
 - **Idempotent:** on a persistent/restarted sandbox the existing clone is left
   as-is (no re-clone, no clobbering local work) unless `BIPP_UPDATE=1`.
 - **Real `.git`:** unlike `--upload`, this yields a working `origin`, so
