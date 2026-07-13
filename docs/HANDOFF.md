@@ -25,12 +25,13 @@
 Specs **v0.2.2** now embed the code-conformant Appendix C UML (`c471a71`), so that thread is
 closed. This session was tooling/hygiene, not code: reconciled `PROJECT_PLAN.md` +
 `XILEM_MIGRATION.md` with the real code (both were badly stale), **vendored** the `.claude/`
-handoff config so it's portable and version-controlled, and added an OpenShell `--from` sandbox
-image (`openshell/sandbox/`) that auto-clones the repo on create. **Biggest finding:** the
+handoff config so it's portable and version-controlled, and added **host-verified** OpenShell
+provisioning — `openshell/create-bipp-sandbox.sh` auto-clones the repo and launches claude
+(the `--from` image route was tried and abandoned; see §2). **Biggest finding:** the
 workspace **does not compile** — `boomaga-preview` is a broken Druid→Xilem half-migration (Druid
 removed from all manifests, but Druid code still active; the Xilem scaffolds import a
-non-existent API). **Next up:** on the host, build + smoke-test the new image; then start
-`XILEM_MIGRATION.md` **Phase A** (delete the broken GUI trees, stand up a compiling Xilem skeleton).
+non-existent API). **Next up (the one real code task left):** `XILEM_MIGRATION.md` **Phase A** —
+delete the broken GUI trees and stand up a compiling Xilem skeleton, then `cargo check --workspace`.
 
 ## 2. Active threads / in progress
 <!-- The heart of the file. Each item: what, state, concrete next action. Delete when done. -->
@@ -56,7 +57,6 @@ non-existent API). **Next up:** on the host, build + smoke-test the new image; t
 
 ## 3. Open questions / waiting on
 <!-- Decisions or inputs owned by the human, or external events being awaited. -->
-- **Host-side image verification** (see §2) — awaiting a run on Denali.
 - **Workspace still not compile-verified** here (no toolchain). It *won't* build until the Xilem
   migration (Phase A) lands. Run `cargo check --workspace` on the host once that's done.
 - Also fix `FileType` in `boomaga-core` to match decision #4 (still lists `PostScript`/`Ps`; needs
