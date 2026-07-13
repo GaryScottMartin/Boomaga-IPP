@@ -22,12 +22,14 @@ The handoff skill generates a comprehensive summary of:
 ## Handoff Summary Location
 
 Handoff summaries are saved in:
-- **Auto-memory directory**: `/home/gary/.claude/projects/-home-gary-Applications-Boomaga-IPP-Project-Claude-boomaga-ipp/memory/`
+- **In-repo handoff**: `docs/HANDOFF.md` (version-controlled, shared across clones)
+- **Auto-memory directory**: your Claude Code project memory dir
+  (`~/.claude/projects/<project-slug>/memory/`) — this path is per-machine/per-user
 - **Session context**: Used for next session startup
 
 ## Current Project Context
 
-This is the Boomaga-IPP project - a C++ project that manages IPP (Internet Printing Protocol) printer jobs.
+This is the Boomaga-IPP project - a Rust rewrite of the Boomaga virtual printer with IPP Everywhere and native Wayland support.
 
 ## Examples
 
