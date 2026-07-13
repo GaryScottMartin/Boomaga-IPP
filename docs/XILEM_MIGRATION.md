@@ -1,12 +1,14 @@
 # Xilem Migration Plan
 
-> **Last reviewed against code:** 2026-07-12.
-> **Status:** migration **in progress and currently NOT compiling.** Druid has
-> already been removed from every `Cargo.toml`, but Druid-based modules are still
-> the active code, and the Xilem scaffolds were written against an API that does
-> not exist in Xilem 0.4. This document has been corrected accordingly — the
-> earlier version described a not-yet-started migration and contained example
-> code using a fabricated Xilem API. **Do not use the old examples as a template.**
+> **Last reviewed against code:** 2026-07-13.
+> **Status:** **Phase A DONE** — `boomaga-preview` now compiles as a minimal Xilem
+> 0.4 skeleton (`cargo check -p boomaga-preview` clean, warnings only, on the
+> `xilem-phase-a` branch). Both broken GUI trees (dangling Druid modules +
+> fabricated-Xilem scaffolds) were deleted; `app.rs` is a plain `AppData` and
+> `main.rs` is a real Xilem app. `document_renderer.rs` is retained but dormant
+> (re-wired in Phase C). Next: **Phase B** (real view tree / layout) then **Phase C**
+> (Masonry PDF canvas). The verified xilem 0.4.0 API is recorded below — use it,
+> not the pre-Phase-A guesses.
 
 ## Overview
 This document tracks replacing Druid with Xilem for the `boomaga-preview` GUI.
@@ -92,55 +94,60 @@ mechanism (`xilem::core` — e.g. a worker view or a `MessageProxy`), which then
 a rebuild. This is the hook the backend→GUI IPC notification (see `docs/uml/C3-sequence.puml`)
 will use.
 
-> ⚠️ Exact symbol names and signatures (e.g. `run_windowed` arguments, the precise
-> view constructors, the Masonry `Widget` method set) shift between Xilem releases.
-> **Verify every symbol against the pinned `xilem 0.4` / `masonry` docs on docs.rs
-> before writing code** — this environment cannot compile Rust, so the sketches below
-> are structural, not guaranteed-compiling.
+### Verified xilem 0.4.0 API (confirmed by `cargo check`, Phase A)
 
-### Illustrative sketch (structure only — verify symbols)
+The shape below is **not a guess** — it's what actually compiles against the pinned
+`xilem 0.4.0` (see `crates/boomaga-preview/src/main.rs`). Key facts that differ from
+older Xilem and from naive expectations:
+
+- **`button` takes a child *view*, not a string.** `button(label("Prev"), |d| …)` —
+  a bare `&str` is not a `WidgetView`.
+- **`flex` takes an `Axis` first:** `flex(Axis::Vertical, (child1, child2, …))`, where
+  `Axis` is `xilem::view::Axis` and the children are a tuple (a `FlexSequence`).
+- **Single-window apps use `Xilem::new_simple` + `WindowOptions` + `run_in`**, not
+  `new(...).run_windowed(...)`. `new_simple` wraps the state in `ExitOnClose`
+  (→ `AppState`) and the returned view into one window. Plain `Xilem::new` is the
+  *multi-window* API (logic must return `impl Iterator<Item = WindowView<State>>`).
+- Callbacks are `Fn(&mut State) -> Action`; returning `()` is fine.
+- `impl WidgetView<AppData> + use<>` works (Rust 1.88).
 
 ```rust
-// app.rs — plain state value (target of the migration; UML calls it AppData)
-pub struct AppData {
-    pub document_path: Option<std::path::PathBuf>,
-    pub document: Option<boomaga_core::Document>,
-    pub current_page: usize,
-    pub zoom: f64,
-    pub print_options: boomaga_core::PrintOptions,
+use xilem::view::{button, flex, label, Axis};
+use xilem::{EventLoop, WidgetView, WindowOptions, Xilem};
+
+fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
+    flex(
+        Axis::Vertical,
+        (
+            label(format!("page {}", data.current_page + 1)),
+            button(label("< prev"), |d: &mut AppData| d.previous_page()),
+            button(label("next >"), |d: &mut AppData| d.next_page()),
+        ),
+    )
 }
 
-// main.rs — declarative app_logic + windowed run
-fn app_logic(data: &mut AppData) -> impl xilem::WidgetView<AppData> {
-    use xilem::view::{flex, button, label};
-    flex((
-        flex((
-            button("Prev", |d: &mut AppData| { d.current_page = d.current_page.saturating_sub(1); }),
-            label(format!("Page {}", data.current_page + 1)),
-            button("Next", |d: &mut AppData| { d.current_page += 1; }),
-        )),
-        // page_view(data)  // <- Masonry widget wrapped as a Xilem View for the PDF canvas
-    ))
-}
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let event_loop = xilem::winit::event_loop::EventLoop::with_user_event().build()?;
-    let app = xilem::Xilem::new(AppData::default(), app_logic);
-    app.run_windowed(event_loop, "Boomaga Preview".into())?;
+fn main() -> anyhow::Result<()> {
+    let app = Xilem::new_simple(AppData::default(), app_logic, WindowOptions::new("Boomaga-IPP"));
+    app.run_in(EventLoop::with_user_event())?;
     Ok(())
 }
 ```
 
+> Custom drawing (the PDF page canvas, Phase C) is still a **Masonry** `Widget`
+> wrapped as a Xilem `View` — that layer's exact method set should be checked against
+> `masonry 0.4` when we get there.
+
 ## Migration Phases (revised for the actual remaining work)
 
-### Phase A: Get to a compiling Xilem skeleton (highest priority)
-1. Delete the dangling Druid modules and the incorrect Xilem scaffolds
+### Phase A: Get to a compiling Xilem skeleton — ✅ DONE (2026-07-13)
+1. ✅ Deleted the dangling Druid modules and the incorrect Xilem scaffolds
    (`main_xilem.rs`, `app_xilem.rs`, `document_renderer_xilem.rs`, the Druid-shaped
    `widgets/`, `handlers/`, `window.rs`, `menu_bar.rs`, `toolbar.rs`,
-   `document_view.rs`, `viewer/`). Keep `document_renderer.rs`.
-2. Rewrite `app.rs` as a plain `AppData` value (no `Data`/`Lens` derives).
-3. Rewrite `main.rs` with `app_logic` + `Xilem::new(...).run_windowed(...)`.
-4. Confirm `cargo build -p boomaga-preview` links (host-side — no toolchain in sandbox).
+   `document_view.rs`, `viewer/`). Kept `document_renderer.rs` (dormant).
+2. ✅ Rewrote `app.rs` as a plain `AppData` value (no `Data`/`Lens` derives).
+3. ✅ Rewrote `main.rs` with `app_logic` + `Xilem::new_simple(...).run_in(...)`
+   (see the verified API above).
+4. ✅ `cargo check -p boomaga-preview` clean (warnings only) on branch `xilem-phase-a`.
 
 ### Phase B: Core view tree
 - `flex`/`sized_box` layout: toolbar row + page canvas + status row.
@@ -225,8 +232,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Next Steps
 1. ✅ Correct this plan to reflect the real (broken, mid-migration) state.
-2. 🚧 **Phase A** — delete Druid + pseudo-Xilem code; stand up a compiling Xilem skeleton.
-3. 🚧 Phase B — core view tree (toolbar, navigation, zoom).
+2. ✅ **Phase A** — deleted Druid + pseudo-Xilem code; compiling Xilem skeleton (branch `xilem-phase-a`).
+3. 🚧 **Phase B (next)** — core view tree (toolbar row, navigation, zoom, status), real layout.
 4. 🚧 Phase C — Masonry PDF page canvas.
 5. 🚧 Phase D — document loading & async rendering.
 6. 🚧 Phase E — imposition + IPC wiring.

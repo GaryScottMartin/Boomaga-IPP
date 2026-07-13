@@ -27,11 +27,11 @@ closed. This session was tooling/hygiene, not code: reconciled `PROJECT_PLAN.md`
 `XILEM_MIGRATION.md` with the real code (both were badly stale), **vendored** the `.claude/`
 handoff config so it's portable and version-controlled, and added **host-verified** OpenShell
 provisioning — `openshell/create-bipp-sandbox.sh` auto-clones the repo and launches claude
-(the `--from` image route was tried and abandoned; see §2). **Biggest finding:** the
-workspace **does not compile** — `boomaga-preview` is a broken Druid→Xilem half-migration (Druid
-removed from all manifests, but Druid code still active; the Xilem scaffolds import a
-non-existent API). **Next up (the one real code task left):** `XILEM_MIGRATION.md` **Phase A** —
-delete the broken GUI trees and stand up a compiling Xilem skeleton, then `cargo check --workspace`.
+(the `--from` image route was tried and abandoned; see §2). **GUI migration:** `boomaga-preview` was a broken Druid→Xilem
+half-migration; **Phase A is now done** (branch `xilem-phase-a`) — both broken trees deleted, a
+minimal Xilem 0.4 skeleton compiles (`cargo check -p boomaga-preview` clean). **Next up:** merge
+`xilem-phase-a` → `main`, then Phase B (real view tree). Separately, `boomaga-ipp-backend` /
+`boomaga-ipc` still don't compile (their own stub/bug issues, independent of the GUI).
 
 ## 2. Active threads / in progress
 <!-- The heart of the file. Each item: what, state, concrete next action. Delete when done. -->
@@ -52,8 +52,13 @@ delete the broken GUI trees and stand up a compiling Xilem skeleton, then `cargo
       was abandoned:** OpenShell does not serve a `--from` image's `/usr/local/bin` at runtime (a
       baked script is absent in the running sandbox); PATH is fine, and a long inline `--` one-liner
       corrupts on paste — hence the script. See `openshell/README.md` for the diagnostics.
-- [ ] **GUI does not compile — start `XILEM_MIGRATION.md` Phase A** on the host (delete dangling
-      Druid modules + the pseudo-Xilem scaffolds; rebuild a compiling Xilem skeleton).
+- [x] **XILEM Phase A — DONE (branch `xilem-phase-a`, 2026-07-13).** Deleted both broken GUI trees;
+      `app.rs` = plain `AppData`, `main.rs` = minimal Xilem 0.4 app. `cargo check -p boomaga-preview`
+      is clean (warnings only) on Denali. Verified xilem 0.4.0 API recorded in `XILEM_MIGRATION.md`
+      (button takes a child view; `flex(Axis, seq)`; `Xilem::new_simple(...).run_in(...)`).
+      `document_renderer.rs` kept dormant. **Next: Phase B** (real view tree/layout), then Phase C
+      (Masonry PDF canvas). NB: this compiles the GUI + core + config only — `boomaga-ipp-backend`
+      and `boomaga-ipc` still have their own errors (separate from the GUI migration).
 
 ## 3. Open questions / waiting on
 <!-- Decisions or inputs owned by the human, or external events being awaited. -->
