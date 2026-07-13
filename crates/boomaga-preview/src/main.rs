@@ -15,8 +15,8 @@ mod app;
 
 use app::AppData;
 use tracing::{info, Level};
-use xilem::view::{button, flex, label};
-use xilem::{EventLoop, WidgetView, Xilem};
+use xilem::view::{button, flex, label, Axis};
+use xilem::{EventLoop, WidgetView, WindowOptions, Xilem};
 
 /// The Xilem view tree, rebuilt from `AppData` on every state change.
 fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
@@ -31,16 +31,19 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
         )
     };
 
-    flex((
-        label(status),
-        button("|< first", |d: &mut AppData| d.first_page()),
-        button("< prev", |d: &mut AppData| d.previous_page()),
-        button("next >", |d: &mut AppData| d.next_page()),
-        button("last >|", |d: &mut AppData| d.last_page()),
-        button("zoom -", |d: &mut AppData| d.zoom_out()),
-        button("100%", |d: &mut AppData| d.reset_zoom()),
-        button("zoom +", |d: &mut AppData| d.zoom_in()),
-    ))
+    flex(
+        Axis::Vertical,
+        (
+            label(status),
+            button(label("|< first"), |d: &mut AppData| d.first_page()),
+            button(label("< prev"), |d: &mut AppData| d.previous_page()),
+            button(label("next >"), |d: &mut AppData| d.next_page()),
+            button(label("last >|"), |d: &mut AppData| d.last_page()),
+            button(label("zoom -"), |d: &mut AppData| d.zoom_out()),
+            button(label("100%"), |d: &mut AppData| d.reset_zoom()),
+            button(label("zoom +"), |d: &mut AppData| d.zoom_in()),
+        ),
+    )
 }
 
 fn main() -> anyhow::Result<()> {
@@ -56,7 +59,13 @@ fn main() -> anyhow::Result<()> {
         boomaga_core::constants::APP_VERSION
     );
 
-    let app = Xilem::new(AppData::default(), app_logic);
-    app.run_windowed(EventLoop::with_user_event(), boomaga_core::constants::APP_NAME.into())?;
+    // Single-window convenience: wraps `AppData` in `ExitOnClose` (→ `AppState`)
+    // and the view returned by `app_logic` into one window.
+    let app = Xilem::new_simple(
+        AppData::default(),
+        app_logic,
+        WindowOptions::new(boomaga_core::constants::APP_NAME),
+    );
+    app.run_in(EventLoop::with_user_event())?;
     Ok(())
 }
