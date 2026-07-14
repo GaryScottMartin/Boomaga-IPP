@@ -51,7 +51,9 @@ minimal Xilem 0.4 skeleton compiles (`cargo check -p boomaga-preview` clean). **
       was absent — i.e. *always* in a fresh clone — even though `docs/HANDOFF.md` loads via CLAUDE.md's
       `@`-import. Not a path bug (the hook `cd`s to `git rev-parse --show-toplevel`); the two handoff
       channels are just separate by design. Now it points at the shared handoff instead of implying
-      nothing loaded.
+      nothing loaded. **`BIPP_VERIFY=1` now also runs the hook** (`b7286c1`) so the smoke test shows
+      the exact fresh-clone context message. **Host-verified on Denali 2026-07-14** — the new message
+      renders correctly in a fresh-clone sandbox.
 - [x] **OpenShell auto-clone provisioning — DONE & host-verified 2026-07-13.** Final form is a
       host-side script `openshell/create-bipp-sandbox.sh` that runs `openshell sandbox create …
       -- bash -lc '<clone-if-absent; cd; exec claude>'`. `BIPP_VERIFY=1 ./openshell/create-bipp-sandbox.sh`
@@ -70,6 +72,10 @@ minimal Xilem 0.4 skeleton compiles (`cargo check -p boomaga-preview` clean). **
       `document_renderer.rs` kept dormant. **Next: Phase B** (real view tree/layout), then Phase C
       (Masonry PDF canvas). NB: this compiles the GUI + core + config only — `boomaga-ipp-backend`
       and `boomaga-ipc` still have their own errors (separate from the GUI migration).
+      **⚠ NOT PUSHED (found 2026-07-14):** `xilem-phase-a` exists only on Denali's local disk —
+      `git ls-remote origin` shows `main` only. The Phase A skeleton is unbacked-up until someone
+      runs `git push -u origin xilem-phase-a` from the host. (Its local upstream is also mis-set to a
+      remote ref that "no such ref was fetched" — the push will fix that too.)
 
 ## 3. Open questions / waiting on
 <!-- Decisions or inputs owned by the human, or external events being awaited. -->
