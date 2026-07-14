@@ -104,7 +104,6 @@ boomaga-ipp/
 ├── README.md
 ├── LICENSE                             # GPLv3
 ├── CLAUDE.md
-├── BIPP-project-policy.yaml            # sandbox network/fs policy
 ├── docs/
 │   ├── PROJECT_PLAN.md
 │   ├── XILEM_MIGRATION.md
@@ -112,6 +111,10 @@ boomaga-ipp/
 │   ├── SW-Reqrmnts-Spec--*.pdf         # SRS (latest == v0.2.2)
 │   ├── User-Interface-Spec--*.pdf      # UIS (latest == v0.2.2)
 │   └── uml/                            # code-conformant PlantUML (spec Appendix C)
+├── openshell/
+│   ├── create-bipp-sandbox.sh          # host-side sandbox provisioning
+│   ├── BIPP-project-policy.yaml        # sandbox network/fs policy
+│   └── README.md
 └── scripts/
 
 # Core crates (6 total; 2 emit binaries)

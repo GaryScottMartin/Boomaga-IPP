@@ -7,7 +7,7 @@ inline a long command into every `openshell sandbox create`.
 ## Usage
 
 Run **on the OpenShell host** (e.g. Denali), from the repo root (so
-`./BIPP-project-policy.yaml` resolves):
+`./openshell/BIPP-project-policy.yaml` resolves):
 
 ```bash
 ./openshell/create-bipp-sandbox.sh [sandbox-name]   # create + launch claude (default name: BIPP)
