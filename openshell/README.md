@@ -14,8 +14,9 @@ Run **on the OpenShell host** (e.g. Denali), from the repo root (so
 BIPP_VERIFY=1 ./openshell/create-bipp-sandbox.sh     # non-interactive smoke test (--no-keep)
 ```
 
-The verify mode prints `PWD=/sandbox/BIPP`, `GIT_OK`, and `handoff.md`, then the
-sandbox self-deletes. (Verified working 2026-07-13.)
+The verify mode prints `PWD=/sandbox/BIPP`, `GIT_OK`, and `handoff.md`, then runs
+the SessionStart hook (so you see the exact context message a fresh-clone launch
+would show), then the sandbox self-deletes. (Verified working 2026-07-13.)
 
 Repo URL / clone dir are near the top of the script if you need to change them
 (keep the `.git` suffix — see below).

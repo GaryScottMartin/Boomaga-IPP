@@ -25,8 +25,9 @@ CLONE="[ -e $DIR/.git ] || git clone $REPO_URL $DIR"
 if [ -n "${BIPP_VERIFY:-}" ]; then
   NAME="BIPP-verify"
   EXTRA=(--no-keep)
-  # Print the three pass-criteria markers, then exit (no interactive agent).
-  ENTRY="$CLONE; cd $DIR; echo \"PWD=\$(pwd)\"; test -d .git && echo GIT_OK; ls .claude/commands/"
+  # Print the three pass-criteria markers, then run the SessionStart hook exactly
+  # as a fresh-clone claude launch would (no interactive agent).
+  ENTRY="$CLONE; cd $DIR; echo \"PWD=\$(pwd)\"; test -d .git && echo GIT_OK; ls .claude/commands/; echo '--- SessionStart hook ---'; .claude/hooks/session-start.sh"
 else
   NAME="${1:-BIPP}"
   EXTRA=()
