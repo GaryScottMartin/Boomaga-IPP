@@ -29,10 +29,11 @@ closed. This session was tooling/hygiene, not code: reconciled `PROJECT_PLAN.md`
 handoff config so it's portable and version-controlled, and added **host-verified** OpenShell
 provisioning — `openshell/create-bipp-sandbox.sh` auto-clones the repo and launches claude
 (the `--from` image route was tried and abandoned; see §2). **GUI migration:** `boomaga-preview` was a broken Druid→Xilem
-half-migration; **Phase A is now done** (branch `xilem-phase-a`) — both broken trees deleted, a
-minimal Xilem 0.4 skeleton compiles (`cargo check -p boomaga-preview` clean). **Next up:** merge
-`xilem-phase-a` → `main`, then Phase B (real view tree). Separately, `boomaga-ipp-backend` /
-`boomaga-ipc` still don't compile (their own stub/bug issues, independent of the GUI).
+half-migration; **Phase A is done and already on `main`** (skeleton commits `37445fd`/`8f47a5c` +
+`d785e66`) — both broken trees deleted, a minimal Xilem 0.4 skeleton compiles
+(`cargo check -p boomaga-preview` clean). **Next up:** Phase B (real view tree). Separately,
+`boomaga-ipp-backend` / `boomaga-ipc` still don't compile (their own stub/bug issues, independent
+of the GUI).
 
 ## 2. Active threads / in progress
 <!-- The heart of the file. Each item: what, state, concrete next action. Delete when done. -->
@@ -65,17 +66,19 @@ minimal Xilem 0.4 skeleton compiles (`cargo check -p boomaga-preview` clean). **
       the script that consumes it); `--policy` path + README/PROJECT_PLAN refs updated. Filename
       unchanged so the enforced policy matching is unaffected. Re-verified on Denali with
       `BIPP_VERIFY=1` (all three markers pass; sandbox auto-deleted).
-- [x] **XILEM Phase A — DONE (branch `xilem-phase-a`, 2026-07-13).** Deleted both broken GUI trees;
+- [x] **XILEM Phase A — DONE and merged to `main` (2026-07-13).** Deleted both broken GUI trees;
       `app.rs` = plain `AppData`, `main.rs` = minimal Xilem 0.4 app. `cargo check -p boomaga-preview`
       is clean (warnings only) on Denali. Verified xilem 0.4.0 API recorded in `XILEM_MIGRATION.md`
       (button takes a child view; `flex(Axis, seq)`; `Xilem::new_simple(...).run_in(...)`).
       `document_renderer.rs` kept dormant. **Next: Phase B** (real view tree/layout), then Phase C
       (Masonry PDF canvas). NB: this compiles the GUI + core + config only — `boomaga-ipp-backend`
       and `boomaga-ipc` still have their own errors (separate from the GUI migration).
-      **⚠ NOT PUSHED (found 2026-07-14):** `xilem-phase-a` exists only on Denali's local disk —
-      `git ls-remote origin` shows `main` only. The Phase A skeleton is unbacked-up until someone
-      runs `git push -u origin xilem-phase-a` from the host. (Its local upstream is also mis-set to a
-      remote ref that "no such ref was fetched" — the push will fix that too.)
+      **Branch note (corrected 2026-07-14):** the Phase A commits (`37445fd`/`8f47a5c` + `d785e66`)
+      have been on `main` all along — `main` is linear and 6+ commits *ahead* of tag `8f47a5c`. The
+      `xilem-phase-a` branch just points at that ancestor; it was pushed to origin 2026-07-14 but is
+      **redundant** (fully contained in `main`, `git merge-base --is-ancestor` = true) and can be
+      deleted. There was never a "merge to main" pending or a backup risk — an earlier note claiming
+      the branch was unbacked-up was wrong (it keyed off "not on remote" without checking ancestry).
 
 ## 3. Open questions / waiting on
 <!-- Decisions or inputs owned by the human, or external events being awaited. -->
