@@ -16,7 +16,8 @@
 # Boomaga-IPP — Session Handoff
 
 > **Last updated:** 2026-07-14 · **By:** Claude (Opus 4.8, 1M) + @GaryScottMartin
-> **This session's focus:** sandbox/tooling hardening + reconciling the planning docs with real code.
+> **This session's focus:** sandbox/tooling hygiene — relocated the OpenShell policy file into
+> `openshell/` and re-verified provisioning on Denali (`0e62911`, `cbdb0a1`). No code changes.
 
 ---
 
@@ -107,6 +108,11 @@ minimal Xilem 0.4 skeleton compiles (`cargo check -p boomaga-preview` clean). **
   wired into git's credential flow — feed it via `GIT_ASKPASS` (a script echoing `x-access-token` /
   `$GITHUB_TOKEN`). Raw `curl` to github is egress-blocked; use `gh api` or git-with-askpass.
   `git ls-remote` is authoritative (API reads can lag a fresh push).
+- **No git identity in a fresh sandbox** — the first `git commit` fails with "Author identity
+  unknown". Set it repo-locally to match the owner: `git config user.name "Gary S. Martin"` /
+  `git config user.email "gmartin@martin-fam.net"` (matches prior commit authorship; Claude stays
+  a co-author via the trailer). Also note `git commit` only stages what's already staged — after a
+  `git mv` plus separate edits, `git add -A` (or `--amend` afterward) so all files land in one commit.
 - **Workspace won't compile** — `boomaga-preview` half-migration (see §1). Don't trust "80% done"
   language in older docs; `PROJECT_PLAN.md` now has the honest per-crate status.
 - **Sandbox persistence:** container is `restart=unless-stopped` (files survive reboot), BUT
