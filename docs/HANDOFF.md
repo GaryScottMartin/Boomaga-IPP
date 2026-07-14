@@ -16,8 +16,10 @@
 # Boomaga-IPP — Session Handoff
 
 > **Last updated:** 2026-07-14 · **By:** Claude (Opus 4.8, 1M) + @GaryScottMartin
-> **This session's focus:** sandbox/tooling hygiene — relocated the OpenShell policy file into
-> `openshell/` and re-verified provisioning on Denali (`0e62911`, `cbdb0a1`). No code changes.
+> **This session's focus:** sandbox/tooling hygiene (no code changes) — relocated the OpenShell
+> policy file into `openshell/`; clarified the SessionStart hook's fresh-clone message and made
+> `BIPP_VERIFY` exercise it; deleted the redundant `xilem-phase-a` branch (already on `main`). All
+> host-verified on Denali. `main` @ `26a6a1d`.
 
 ---
 
@@ -75,15 +77,17 @@ of the GUI).
       and `boomaga-ipc` still have their own errors (separate from the GUI migration).
       **Branch note (corrected 2026-07-14):** the Phase A commits (`37445fd`/`8f47a5c` + `d785e66`)
       have been on `main` all along — `main` is linear and 6+ commits *ahead* of tag `8f47a5c`. The
-      `xilem-phase-a` branch just points at that ancestor; it was pushed to origin 2026-07-14 but is
-      **redundant** (fully contained in `main`, `git merge-base --is-ancestor` = true) and can be
-      deleted. There was never a "merge to main" pending or a backup risk — an earlier note claiming
-      the branch was unbacked-up was wrong (it keyed off "not on remote" without checking ancestry).
+      `xilem-phase-a` branch just pointed at that ancestor (fully contained in `main`,
+      `git merge-base --is-ancestor` = true) — **redundant, so deleted 2026-07-14** (remote + Denali
+      local + pruned; `origin` now has `main` only). There was never a "merge to main" pending or a
+      backup risk — an earlier note claiming the branch was unbacked-up was wrong (it keyed off "not
+      on remote" without checking ancestry).
 
 ## 3. Open questions / waiting on
 <!-- Decisions or inputs owned by the human, or external events being awaited. -->
-- **Workspace still not compile-verified** here (no toolchain). It *won't* build until the Xilem
-  migration (Phase A) lands. Run `cargo check --workspace` on the host once that's done.
+- **Workspace still not compile-verified** here (no toolchain). Phase A has landed, so
+  `cargo check -p boomaga-preview` is green on the host; **`cargo check --workspace` is still red**
+  because `boomaga-ipp-backend` / `boomaga-ipc` have their own errors (see §2). Re-run both on the host.
 - Also fix `FileType` in `boomaga-core` to match decision #4 (still lists `PostScript`/`Ps`; needs
   `Pdf`/`PwgRaster`/`Jpeg`).
 
