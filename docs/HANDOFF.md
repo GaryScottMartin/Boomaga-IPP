@@ -15,7 +15,7 @@
 
 # Boomaga-IPP — Session Handoff
 
-> **Last updated:** 2026-07-13 · **By:** Claude (Opus 4.8, 1M) + @GaryScottMartin
+> **Last updated:** 2026-07-14 · **By:** Claude (Opus 4.8, 1M) + @GaryScottMartin
 > **This session's focus:** sandbox/tooling hardening + reconciling the planning docs with real code.
 
 ---
@@ -52,6 +52,10 @@ minimal Xilem 0.4 skeleton compiles (`cargo check -p boomaga-preview` clean). **
       was abandoned:** OpenShell does not serve a `--from` image's `/usr/local/bin` at runtime (a
       baked script is absent in the running sandbox); PATH is fine, and a long inline `--` one-liner
       corrupts on paste — hence the script. See `openshell/README.md` for the diagnostics.
+      **Update 2026-07-14 (`0e62911`):** `BIPP-project-policy.yaml` moved to `openshell/` (next to
+      the script that consumes it); `--policy` path + README/PROJECT_PLAN refs updated. Filename
+      unchanged so the enforced policy matching is unaffected. Re-verified on Denali with
+      `BIPP_VERIFY=1` (all three markers pass; sandbox auto-deleted).
 - [x] **XILEM Phase A — DONE (branch `xilem-phase-a`, 2026-07-13).** Deleted both broken GUI trees;
       `app.rs` = plain `AppData`, `main.rs` = minimal Xilem 0.4 app. `cargo check -p boomaga-preview`
       is clean (warnings only) on Denali. Verified xilem 0.4.0 API recorded in `XILEM_MIGRATION.md`
