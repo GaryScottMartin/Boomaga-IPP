@@ -46,6 +46,12 @@ minimal Xilem 0.4 skeleton compiles (`cargo check -p boomaga-preview` clean). **
       settings.json/hooks/commands/skills; **vendored** the handoff hooks + `/handoff` command from
       symlinks → real files; removed the dangling `.gitmodules`; normalized handoff.md CRLF→LF;
       fixed SKILL.md (machine path + "C++"→Rust). `settings.local.json` stays local. See CLAUDE.md.
+      **Update 2026-07-14 (`d82420f`):** clarified the SessionStart hook message. It was printing
+      "No handoff context found" whenever the gitignored local scratch (`.claude/context.md` etc.)
+      was absent — i.e. *always* in a fresh clone — even though `docs/HANDOFF.md` loads via CLAUDE.md's
+      `@`-import. Not a path bug (the hook `cd`s to `git rev-parse --show-toplevel`); the two handoff
+      channels are just separate by design. Now it points at the shared handoff instead of implying
+      nothing loaded.
 - [x] **OpenShell auto-clone provisioning — DONE & host-verified 2026-07-13.** Final form is a
       host-side script `openshell/create-bipp-sandbox.sh` that runs `openshell sandbox create …
       -- bash -lc '<clone-if-absent; cd; exec claude>'`. `BIPP_VERIFY=1 ./openshell/create-bipp-sandbox.sh`
