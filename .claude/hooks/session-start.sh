@@ -43,7 +43,13 @@ if [ -f ".claude/task-history.md" ]; then
 fi
 
 if [ ! -f ".claude/context.md" ] && [ ! -f ".claude/current-task.md" ] && [ ! -f ".claude/current-bug.md" ]; then
-    echo "No handoff context found. Run /handoff before ending a session to save context."
+    if [ -f "docs/HANDOFF.md" ]; then
+        echo "No local scratch context (.claude/context.md etc.) — these are gitignored and"
+        echo "absent in a fresh clone. Shared handoff present in docs/HANDOFF.md (loaded via"
+        echo "CLAUDE.md's @-import), so session state is already in context."
+    else
+        echo "No handoff context found. Run /handoff before ending a session to save context."
+    fi
 fi
 
 echo "=== Ready ==="
