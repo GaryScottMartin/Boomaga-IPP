@@ -1,10 +1,10 @@
 # Xilem Migration Plan
 
 > **Last reviewed against code:** 2026-07-19.
-> **Status:** **Phase B IMPLEMENTED (verification pending)** — `boomaga-preview` has a Xilem
-> 0.4 skeleton (`cargo check -p boomaga-preview` clean, warnings only, on the
-> `xilem-phase-a` branch). Both broken GUI trees (dangling Druid modules +
-> fabricated-Xilem scaffolds) were deleted; `app.rs` is a plain `AppData` and
+> **Status:** **Phase B DONE and merged to `main`** (`4b761e6`) — host verification on
+> Denali confirmed `cargo check -p boomaga-preview`, all three Phase B unit tests,
+> and the Wayland preview window. Both broken GUI trees (dangling Druid modules +
+> fabricated-Xilem scaffolds) are gone; `app.rs` is a plain `AppData` and
 > `main.rs` now has the Phase B toolbar, canvas placeholder, and status row.
 > `document_renderer.rs` is retained but dormant (re-wired in Phase C). Next: **Phase C**
 > (Masonry PDF canvas). The verified xilem 0.4.0 API is recorded below — use it,
@@ -28,37 +28,23 @@ Target architecture: SRS/UIS **v0.2.2** Appendix C and [`docs/uml/`](./uml/)
 - The Linebender community moved to Xilem (and its Masonry widget layer)
 - Long-term viability concerns for production software
 
-## Current Status — the real picture
+## Current Status
 
-**This is a half-finished migration, not a fresh start.** Concretely:
+Phases A and B are complete. The preview is now a compiling Xilem 0.4 application
+with a real view tree; Phase C will replace the canvas placeholder with PDF rendering.
 
-**Dependencies (already changed):**
+**Dependencies:**
 - Workspace `Cargo.toml` and `crates/boomaga-preview/Cargo.toml` declare
   `xilem = "0.4"`, `kurbo = "0.11"`, `winit = "0.30"`, plus `cairo-rs = "0.18"`
   and `poppler = "0.6"` for rendering.
 - **`druid` is not a dependency in any manifest.** (Verified: no `druid` entry in
   any `Cargo.toml`.)
 
-**Code (inconsistent — this is why it won't build):**
-- The **active** entry point and several modules still call Druid, with no `druid`
-  crate available:
-  - `src/main.rs` — `druid::WindowDesc::new()`, `druid::run_app(...)`
-  - `src/app.rs` — `use druid::{AppLauncher, Data, Env, Lens}`, `#[derive(Clone, Data, Lens)]`
-  - `src/menu_bar.rs`, `src/toolbar.rs` — Druid `Widget` impls (`paint`/`layout`/`event`/`lifecycle`)
-  - `src/widgets/page_container.rs` — `use druid::kurbo::Vec2`, `druid::ImageData`
-  - `src/document_view.rs`, `src/viewer/` — Druid custom widgets
-  → every one of these is a dangling reference to a crate that isn't linked.
-- Parallel **Xilem scaffolds** exist but were written against a **non-existent API**:
-  - `src/main_xilem.rs` — `use xilem::{App, Color, Event, EventCtx, LifeCycle, LifeCycleCtx, PaintCtx, Env, Widget}`
-  - `src/widgets/{document_viewer,page_container}.rs` — `use xilem::{Widget, Flex, Label, PaintCtx, ...}` with `paint`/`event`/`lifecycle` methods
-  - `src/window.rs` — `use xilem::WindowConfig`
-  - `src/handlers/{document,navigation}.rs` — `use xilem::{Event, EventCtx, WindowCtx}`
-  → **Xilem 0.4 exports none of these** (`xilem::Widget`, `Flex`, `Label`, `App`,
-  `WindowConfig`, `PaintCtx`, `EventCtx`, `LifeCycle` at the crate root). These files
-  are essentially Druid code with the import path renamed to `xilem::`. They must be
-  rewritten, not patched.
-
-**What is salvageable:**
+**Code:**
+- `src/main.rs` contains the Phase B Xilem view tree: horizontal navigation/zoom
+  toolbar, canvas placeholder, and status row.
+- `src/app.rs` contains framework-independent `AppData` transitions plus three
+  host-verified unit tests for navigation and zoom behavior.
 - `src/document_renderer.rs` — **real poppler + cairo rendering** (loads a PDF via
   `poppler::Document`, extracts metadata, renders pages to a Cairo surface). This is
   framework-agnostic and should be **kept**; only the surface→GPU-image handoff needs
@@ -147,9 +133,9 @@ fn main() -> anyhow::Result<()> {
 2. ✅ Rewrote `app.rs` as a plain `AppData` value (no `Data`/`Lens` derives).
 3. ✅ Rewrote `main.rs` with `app_logic` + `Xilem::new_simple(...).run_in(...)`
    (see the verified API above).
-4. ✅ `cargo check -p boomaga-preview` clean (warnings only) on branch `xilem-phase-a`.
+4. ✅ `cargo check -p boomaga-preview` clean (warnings only); merged to `main`.
 
-### Phase B: Core view tree — ✅ IMPLEMENTED (2026-07-19; host verification pending)
+### Phase B: Core view tree — ✅ DONE (2026-07-19; host-verified on Denali)
 - ✅ `flex` layout: toolbar row + page canvas placeholder + status row.
 - ✅ Navigation (prev/next/first/last) and zoom (in/out/reset) as `button` callbacks on `AppData`.
 - ✅ Page counter / status via `label`.
@@ -219,8 +205,6 @@ fn main() -> anyhow::Result<()> {
   Pin `xilem = 0.4` and verify against that exact version.
 - **Custom PDF canvas**: bridging poppler/Cairo output into a Masonry paint pass and
   onto Xilem's GPU (Vello) renderer is the hardest integration point.
-- **Two dead code paths today**: the repo currently carries *both* broken Druid and
-  broken pseudo-Xilem trees; deleting confidently (Phase A) is prerequisite to progress.
 
 ### Medium Risk
 - **State/reactivity model**: declarative rebuild-and-diff is a different mental model
@@ -233,7 +217,7 @@ fn main() -> anyhow::Result<()> {
 
 ## Next Steps
 1. ✅ Correct this plan to reflect the real (broken, mid-migration) state.
-2. ✅ **Phase A** — deleted Druid + pseudo-Xilem code; compiling Xilem skeleton (branch `xilem-phase-a`).
+2. ✅ **Phase A** — deleted Druid + pseudo-Xilem code; compiling Xilem skeleton on `main`.
 3. ✅ **Phase B** — core view tree (toolbar row, navigation, zoom, status).
 4. 🚧 **Phase C (next)** — Masonry PDF page canvas.
 5. 🚧 Phase D — document loading & async rendering.
