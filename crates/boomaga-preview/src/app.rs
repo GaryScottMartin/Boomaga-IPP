@@ -86,3 +86,69 @@ impl AppData {
         self.zoom = 1.0;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use boomaga_core::{FileType, Orientation, Page};
+
+    fn document_with_pages(page_count: usize) -> Document {
+        let mut document = Document::new(
+            "test-document".to_string(),
+            PathBuf::from("test.pdf"),
+            FileType::Pdf,
+        );
+
+        for number in 0..page_count {
+            document.add_page(Page::new(number, 595.0, 842.0, Orientation::Portrait));
+        }
+
+        document
+    }
+
+    #[test]
+    fn navigation_stays_within_document_bounds() {
+        let mut data = AppData {
+            document: Some(document_with_pages(3)),
+            ..AppData::default()
+        };
+
+        data.previous_page();
+        assert_eq!(data.current_page, 0);
+
+        data.next_page();
+        data.next_page();
+        data.next_page();
+        assert_eq!(data.current_page, 2);
+
+        data.first_page();
+        assert_eq!(data.current_page, 0);
+
+        data.last_page();
+        assert_eq!(data.current_page, 2);
+    }
+
+    #[test]
+    fn navigation_without_a_document_stays_on_first_page() {
+        let mut data = AppData::default();
+
+        data.next_page();
+        data.last_page();
+
+        assert_eq!(data.current_page, 0);
+    }
+
+    #[test]
+    fn zoom_is_clamped_and_can_be_reset() {
+        let mut data = AppData::default();
+
+        data.set_zoom(0.1);
+        assert_eq!(data.zoom, 0.25);
+
+        data.set_zoom(10.0);
+        assert_eq!(data.zoom, 4.0);
+
+        data.reset_zoom();
+        assert_eq!(data.zoom, 1.0);
+    }
+}

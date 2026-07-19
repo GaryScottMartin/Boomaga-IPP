@@ -1,12 +1,12 @@
 # Xilem Migration Plan
 
-> **Last reviewed against code:** 2026-07-13.
-> **Status:** **Phase A DONE** — `boomaga-preview` now compiles as a minimal Xilem
+> **Last reviewed against code:** 2026-07-19.
+> **Status:** **Phase B IMPLEMENTED (verification pending)** — `boomaga-preview` has a Xilem
 > 0.4 skeleton (`cargo check -p boomaga-preview` clean, warnings only, on the
 > `xilem-phase-a` branch). Both broken GUI trees (dangling Druid modules +
 > fabricated-Xilem scaffolds) were deleted; `app.rs` is a plain `AppData` and
-> `main.rs` is a real Xilem app. `document_renderer.rs` is retained but dormant
-> (re-wired in Phase C). Next: **Phase B** (real view tree / layout) then **Phase C**
+> `main.rs` now has the Phase B toolbar, canvas placeholder, and status row.
+> `document_renderer.rs` is retained but dormant (re-wired in Phase C). Next: **Phase C**
 > (Masonry PDF canvas). The verified xilem 0.4.0 API is recorded below — use it,
 > not the pre-Phase-A guesses.
 
@@ -149,10 +149,11 @@ fn main() -> anyhow::Result<()> {
    (see the verified API above).
 4. ✅ `cargo check -p boomaga-preview` clean (warnings only) on branch `xilem-phase-a`.
 
-### Phase B: Core view tree
-- `flex`/`sized_box` layout: toolbar row + page canvas + status row.
-- Navigation (prev/next/first/last) and zoom (in/out/reset) as `button` callbacks on `AppData`.
-- Page counter / status via `label`.
+### Phase B: Core view tree — ✅ IMPLEMENTED (2026-07-19; host verification pending)
+- ✅ `flex` layout: toolbar row + page canvas placeholder + status row.
+- ✅ Navigation (prev/next/first/last) and zoom (in/out/reset) as `button` callbacks on `AppData`.
+- ✅ Page counter / status via `label`.
+- ✅ Focused unit tests for navigation bounds and zoom clamping/reset.
 
 ### Phase C: PDF page canvas (Masonry custom widget)
 - Implement a Masonry `Widget` that paints the Cairo/poppler-rendered page image.
@@ -233,8 +234,8 @@ fn main() -> anyhow::Result<()> {
 ## Next Steps
 1. ✅ Correct this plan to reflect the real (broken, mid-migration) state.
 2. ✅ **Phase A** — deleted Druid + pseudo-Xilem code; compiling Xilem skeleton (branch `xilem-phase-a`).
-3. 🚧 **Phase B (next)** — core view tree (toolbar row, navigation, zoom, status), real layout.
-4. 🚧 Phase C — Masonry PDF page canvas.
+3. ✅ **Phase B** — core view tree (toolbar row, navigation, zoom, status).
+4. 🚧 **Phase C (next)** — Masonry PDF page canvas.
 5. 🚧 Phase D — document loading & async rendering.
 6. 🚧 Phase E — imposition + IPC wiring.
 7. 🚧 Phase F — print dialog & downstream submit.

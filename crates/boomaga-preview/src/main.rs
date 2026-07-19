@@ -1,10 +1,9 @@
 //! Preview application for the Boomaga-IPP virtual printer.
 //!
-//! Native Wayland GUI built with **Xilem** (0.4). This is the Phase-A skeleton
-//! of the Druid→Xilem migration (see `docs/XILEM_MIGRATION.md`): a compiling
-//! Xilem app with state (`AppData`) and a minimal reactive view tree
-//! (navigation + zoom + status). Document rendering (`document_renderer.rs`,
-//! currently dormant), imposition, and the IPC/print wiring come in later phases.
+//! Native Wayland GUI built with **Xilem** (0.4). Phase B of the Druid→Xilem
+//! migration (see `docs/XILEM_MIGRATION.md`) provides the core reactive view
+//! tree and controls. Document rendering (`document_renderer.rs`, currently
+//! dormant), imposition, and the IPC/print wiring come in later phases.
 
 mod app;
 // `document_renderer` (poppler + cairo) is retained on disk but not yet wired
@@ -20,30 +19,37 @@ use xilem::{EventLoop, WidgetView, WindowOptions, Xilem};
 
 /// The Xilem view tree, rebuilt from `AppData` on every state change.
 fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
+    let toolbar = flex(
+        Axis::Horizontal,
+        (
+            button(label("⏮ First"), |d: &mut AppData| d.first_page()),
+            button(label("◀ Previous"), |d: &mut AppData| d.previous_page()),
+            button(label("Next ▶"), |d: &mut AppData| d.next_page()),
+            button(label("Last ⏭"), |d: &mut AppData| d.last_page()),
+            button(label("−"), |d: &mut AppData| d.zoom_out()),
+            button(label("100%"), |d: &mut AppData| d.reset_zoom()),
+            button(label("+"), |d: &mut AppData| d.zoom_in()),
+        ),
+    );
+
+    let canvas = if data.page_count() == 0 {
+        label("No document loaded")
+    } else {
+        label(format!("Page {} preview", data.current_page + 1))
+    };
+
     let status = if data.page_count() == 0 {
-        format!("No document loaded   ·   zoom {:.0}%", data.zoom * 100.0)
+        format!("0 pages   ·   zoom {:.0}%", data.zoom * 100.0)
     } else {
         format!(
-            "page {} / {}   ·   zoom {:.0}%",
+            "Page {} of {}   ·   zoom {:.0}%",
             data.current_page + 1,
             data.page_count(),
             data.zoom * 100.0
         )
     };
 
-    flex(
-        Axis::Vertical,
-        (
-            label(status),
-            button(label("|< first"), |d: &mut AppData| d.first_page()),
-            button(label("< prev"), |d: &mut AppData| d.previous_page()),
-            button(label("next >"), |d: &mut AppData| d.next_page()),
-            button(label("last >|"), |d: &mut AppData| d.last_page()),
-            button(label("zoom -"), |d: &mut AppData| d.zoom_out()),
-            button(label("100%"), |d: &mut AppData| d.reset_zoom()),
-            button(label("zoom +"), |d: &mut AppData| d.zoom_in()),
-        ),
-    )
+    flex(Axis::Vertical, (toolbar, canvas, label(status)))
 }
 
 fn main() -> anyhow::Result<()> {
