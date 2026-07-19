@@ -125,11 +125,13 @@ of the GUI).
   `/GaryScottMartin/Boomaga-IPP*/...`; a bare `.../Boomaga-IPP` URL 403s at the proxy.
 - **There is a real `.git` here with a working `origin`** — commit/push work in-sandbox. (`--upload`
   provisioning would give NO `.git`; the clone-based `--from` image is why push works.)
-- **Pushing over HTTPS:** `GITHUB_TOKEN` is gateway-injected and can't be cleared, so `gh auth login`
-  refuses. It's fine-grained (403s on some REST like `/user`) but has git push/data access. It's not
-  wired into git's credential flow — feed it via `GIT_ASKPASS` (a script echoing `x-access-token` /
-  `$GITHUB_TOKEN`). Raw `curl` to github is egress-blocked; use `gh api` or git-with-askpass.
-  `git ls-remote` is authoritative (API reads can lag a fresh push).
+- **GitHub authentication is gateway-mediated.** The visible `GITHUB_TOKEN` is an intentional
+  placeholder; OpenShell substitutes the real fine-grained PAT at the gateway. Do not use
+  `gh auth status` or `/user` to validate it because the PAT lacks user-profile privileges. Git
+  remotes must keep the `.git` suffix and pushes must supply the token through `GIT_ASKPASS` or a
+  credential helper. REST calls must use explicit policy-allowed repository subpaths. A 403 with
+  `X-Openshell-Policy`, `policy_denied`, or `rule_missing` means the OpenShell allow rule did not
+  match; it does not mean the PAT is invalid. See `openshell/codex/README.md`.
 - **No git identity in a fresh sandbox** — the first `git commit` fails with "Author identity
   unknown". Set it repo-locally to match the owner: `git config user.name "Gary S. Martin"` /
   `git config user.email "gmartin@martin-fam.net"` (matches prior commit authorship; Claude stays

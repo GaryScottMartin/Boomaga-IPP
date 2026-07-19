@@ -197,6 +197,27 @@ controlled**, so a fresh clone picks it up automatically:
 See `.gitignore` for the exact split. The session-context automation is therefore
 provided by the repo — no per-machine setup is required beyond the executable bit.
 
+## GitHub access from OpenShell
+
+- `GITHUB_TOKEN` appears as a placeholder inside the sandbox. This is expected:
+  OpenShell substitutes the real fine-grained PAT at its gateway. Never print or
+  persist the token value.
+- Do not use `gh auth status` or the `/user` endpoint to judge repository access.
+  The PAT intentionally lacks user-profile privileges; test an explicit permitted
+  repository subpath instead.
+- Git HTTPS remotes must retain the `.git` suffix:
+  `https://github.com/GaryScottMartin/Boomaga-IPP.git`.
+- Git fetch/push uses the `github_git` policy and the injected token through a
+  credential helper or `GIT_ASKPASS`.
+- GitHub API calls must be REST-only and use explicit subpaths allowed by
+  `openshell/codex/BIPP-project-policy--Codex.yaml`. The repository-root path
+  can be denied even when nested Git Data endpoints are permitted.
+- A 403 response containing `X-Openshell-Policy`, `policy_denied`, or
+  `rule_missing` is an OpenShell routing-policy failure, not proof that the PAT
+  is invalid.
+
+See `openshell/codex/README.md` for commands and diagnostics.
+
 ## Behavioral Guidelines
 
 1. Think before coding. State your assumptions out loud. If the request is ambiguous, ask. If a simpler approach exists, push back. Stop when you are confused, name what is unclear, do not just pick one interpretation and run.
