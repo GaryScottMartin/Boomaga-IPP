@@ -546,7 +546,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "boomaga-core",
- "boomaga-plugins",
  "config",
  "directories",
  "serde",
@@ -614,20 +613,6 @@ dependencies = [
  "serde",
  "thiserror 1.0.69",
  "tracing",
-]
-
-[[package]]
-name = "boomaga-plugins"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "boomaga-core",
- "libloading",
- "once_cell",
- "serde",
- "thiserror 1.0.69",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
