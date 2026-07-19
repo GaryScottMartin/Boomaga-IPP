@@ -11,9 +11,9 @@
 #     split tokens (e.g. `git clone` from its URL). Keeping it in a file avoids
 #     that: the entry command is passed as one clean argv element.
 #
-# USAGE (run from the repo root so ./openshell/BIPP-project-policy.yaml resolves):
-#   ./openshell/create-bipp-sandbox.sh [sandbox-name]   # create + launch claude
-#   BIPP_VERIFY=1 ./openshell/create-bipp-sandbox.sh    # non-interactive smoke test (--no-keep)
+# USAGE (run from the repo root so ./openshell/claude/BIPP-project-policy.yaml resolves):
+#   ./openshell/claude/create-bipp-sandbox.sh [sandbox-name]   # create + launch claude
+#   BIPP_VERIFY=1 ./openshell/claude/create-bipp-sandbox.sh    # non-interactive smoke test (--no-keep)
 
 set -euo pipefail
 
@@ -36,7 +36,7 @@ fi
 
 exec openshell sandbox create \
   --name "$NAME" \
-  --policy ./openshell/BIPP-project-policy--Claude.yaml \
+  --policy ./openshell/claude/BIPP-project-policy--Claude.yaml \
   --provider claude-code --provider github-BIPP \
   "${EXTRA[@]}" \
   -- bash -lc "$ENTRY"
