@@ -214,6 +214,10 @@ provided by the repo — no per-machine setup is required beyond the executable 
   permissions to create a new namespace`. This is an OpenShell/kernel sandbox
   limitation, not a bad path or malformed patch; retrying the same helper through
   an escalated shell does not fix it.
+- The same namespace failure can stop ordinary sandbox shell commands before
+  execution, including read-only commands such as `sed`. Treat this as an
+  environment failure, not a command/path failure; rerun only the necessary,
+  narrowly scoped command through approved host execution.
 - When that happens, use an approved host-execution command and apply a
   well-formed unified diff with `git apply`. Run `git apply --check` first, then
   apply the identical patch. Keep paths relative to `/sandbox/BIPP` and keep the
@@ -252,9 +256,10 @@ provided by the repo — no per-machine setup is required beyond the executable 
   git config --local user.email "gmartin@martin-fam.net"
   ```
 
-- A plain non-interactive `git push` cannot prompt for a username. Pass the
-  gateway-injected token through a command-scoped credential helper; this neither
-  prints nor persists the token:
+- Non-interactive authenticated Git operations (`fetch`, `pull`, `push`, and
+  remote-branch deletion) cannot prompt for credentials. Pass the gateway-injected
+  token through a command-scoped credential helper; this neither prints nor
+  persists the token. Substitute the required Git operation in the example:
 
   ```bash
   git -c 'credential.helper=!f() { echo username=x-access-token; echo password=$GITHUB_TOKEN; }; f' \

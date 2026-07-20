@@ -131,11 +131,16 @@ of the GUI).
   `/GaryScottMartin/Boomaga-IPP*/...`; a bare `.../Boomaga-IPP` URL 403s at the proxy.
 - **There is a real `.git` here with a working `origin`** — commit/push work in-sandbox. (`--upload`
   provisioning would give NO `.git`; the clone-based `--from` image is why push works.)
+- **Default sandbox execution can fail before a command starts.** A `bwrap: No permissions to
+  create a new namespace` error can affect patching and ordinary read-only shell commands. Rerun
+  only the necessary, narrowly scoped command through approved host execution; do not diagnose it
+  as a bad command or path.
 - **GitHub authentication is gateway-mediated.** The visible `GITHUB_TOKEN` is an intentional
   placeholder; OpenShell substitutes the real fine-grained PAT at the gateway. Do not use
   `gh auth status` or `/user` to validate it because the PAT lacks user-profile privileges. Git
-  remotes must keep the `.git` suffix and pushes must supply the token through `GIT_ASKPASS` or a
-  credential helper. REST calls must use explicit policy-allowed repository subpaths. A 403 with
+  remotes must keep the `.git` suffix; authenticated `fetch`, `pull`, `push`, and remote-branch
+  deletion must supply the token through `GIT_ASKPASS` or a command-scoped credential helper.
+  REST calls must use explicit policy-allowed repository subpaths. A 403 with
   `X-Openshell-Policy`, `policy_denied`, or `rule_missing` means the OpenShell allow rule did not
   match; it does not mean the PAT is invalid. See `openshell/codex/README.md`.
 - **No git identity in a fresh sandbox** — the first `git commit` fails with "Author identity

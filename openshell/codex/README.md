@@ -19,8 +19,10 @@ Keep the `.git` suffix on the remote URL so the enforced `github_git` rules matc
 https://github.com/GaryScottMartin/Boomaga-IPP.git
 ```
 
-For non-interactive pushes, pass the injected token through `GIT_ASKPASS` or a
-scoped credential helper. Do not place it in the remote URL or commit it to disk.
+For non-interactive authenticated Git operations—including `fetch`, `pull`,
+`push`, and remote-branch deletion—pass the injected token through `GIT_ASKPASS`
+or a command-scoped credential helper. Do not place it in the remote URL or
+commit it to disk.
 `git ls-remote` is the authoritative read-only transport check.
 
 ## REST API
