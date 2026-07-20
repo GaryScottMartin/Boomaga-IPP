@@ -4,7 +4,7 @@
 > **Phase C status:** **DONE and host-verified on Denali (2026-07-20)** — the
 > Masonry canvas displays real Poppler/Cairo-rendered PDF pages; navigation and
 > zoom work as expected, and all seven preview tests pass.
-> **Status:** Phases A/B/C are complete on `xilem-phase-c`; Phase D is next.
+> **Status:** Phases A/B/C are complete on `main`; Phase D is next.
 > The verified Xilem 0.4.0 API is recorded below — use it, not pre-Phase-A guesses.
 
 ## Overview
@@ -179,22 +179,22 @@ fn main() -> anyhow::Result<()> {
 ## Success Criteria
 
 ### Functional
-- [ ] Load and display PDF documents
-- [ ] Navigate pages (next, previous, first, last)
-- [ ] Zoom in/out/reset
+- [x] Load and display PDF documents
+- [x] Navigate pages (next, previous, first, last)
+- [x] Zoom in/out/reset
 - [ ] Apply imposition (N-up, booklet) in preview
 - [ ] Select downstream printer and submit
 - [ ] Toolbar + menu
 - [ ] Keyboard shortcuts (Space, N, P, +/-, 0)
 
 ### Technical
-- [ ] `cargo build` succeeds with **no Druid references** and a coherent Xilem tree
-- [ ] Runs on Linux/Wayland (winit)
+- [x] `cargo build` succeeds with **no Druid references** and a coherent Xilem tree
+- [x] Runs on Linux/Wayland (winit)
 - [ ] Page load < 100 ms typical; smooth zoom
 - [ ] Reasonable memory footprint
 
 ### Code Quality
-- [ ] Uses the real Xilem 0.4 view-based API (verified against docs.rs), not renamed Druid
+- [x] Uses the real Xilem 0.4 view-based API (verified against docs.rs), not renamed Druid
 - [ ] Test coverage > 70% for state logic
 - [ ] Clear, documented modules; no dead `_xilem.rs` duplicates
 
@@ -203,8 +203,6 @@ fn main() -> anyhow::Result<()> {
 ### High Risk
 - **API drift**: Xilem is pre-1.0; symbol names/signatures change between releases.
   Pin `xilem = 0.4` and verify against that exact version.
-- **Custom PDF canvas**: bridging poppler/Cairo output into a Masonry paint pass and
-  onto Xilem's GPU (Vello) renderer is the hardest integration point.
 
 ### Medium Risk
 - **State/reactivity model**: declarative rebuild-and-diff is a different mental model
@@ -212,6 +210,8 @@ fn main() -> anyhow::Result<()> {
 - **Async rendering + IPC**: feeding worker/IPC results back into state correctly.
 
 ### Low Risk
+- **Custom PDF canvas**: the Poppler/Cairo-to-Masonry/Vello bridge is implemented
+  and host-verified through Phase C.
 - **Document loading** (`document_renderer.rs`) — reusable as-is.
 - **Configuration / domain types** — framework-independent.
 

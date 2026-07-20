@@ -29,7 +29,7 @@ boomaga-ipp/
 
 ### Prerequisites
 
-- Rust 1.70 or later
+- Rust 1.88 or later
 - CUPS development libraries
 - Poppler development libraries
 - Wayland development libraries
@@ -67,8 +67,11 @@ sudo systemctl start boomaga-ipp-backend
 ### Manual Preview
 
 ```bash
-# Run the preview application
+# Open the preview without a document
 boomaga-preview
+
+# Open and render a PDF
+boomaga-preview /path/to/document.pdf
 ```
 
 ### Command-line Options
@@ -80,7 +83,7 @@ boomaga-ipp-backend --socket /tmp/boomaga.sock --port 631
 
 **Preview:**
 ```bash
-boomaga-preview --window 1200x900
+boomaga-preview [--debug] [/path/to/document.pdf]
 ```
 
 ## Project Status
@@ -112,7 +115,7 @@ cargo test -p boomaga-ipp-backend
 # Host-verified preview checks
 cargo check -p boomaga-preview
 cargo test -p boomaga-preview
-cargo run -p boomaga-preview
+cargo run -p boomaga-preview -- /path/to/document.pdf
 ```
 
 ### Code Style

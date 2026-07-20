@@ -16,7 +16,7 @@
 # Boomaga-IPP — Session Handoff
 
 > **Last updated:** 2026-07-20 · **By:** Codex + Gary Scott Martin
-> **Session focus:** completed and host-verified Xilem Phase C on `xilem-phase-c`;
+> **Session focus:** completed and host-verified Xilem Phase C, fast-forwarded it to `main`,
 > real PDF rendering, navigation, zoom, and all seven tests pass on Denali.
 
 ---
@@ -28,7 +28,7 @@ closed. This session was tooling/hygiene, not code: reconciled `PROJECT_PLAN.md`
 `XILEM_MIGRATION.md` with the real code (both were badly stale), **vendored** the `.claude/`
 handoff config so it's portable and version-controlled, and added **host-verified** OpenShell
 provisioning — `openshell/create-bipp-sandbox.sh` auto-clones the repo and launches claude
-(the `--from` image route was tried and abandoned; see §2). **GUI migration:** Phases A/B/C are complete on `xilem-phase-c`. The Xilem 0.4
+(the `--from` image route was tried and abandoned; see §2). **GUI migration:** Phases A/B/C are complete on `main`. The Xilem 0.4
 preview loads real PDFs through Poppler/Cairo into a Masonry canvas; all seven tests pass, and
 navigation/zoom were visually verified on Denali. **Next up:** Phase D file-open UI and async
 rendering. Separately,
@@ -90,7 +90,8 @@ of the GUI).
       into startup with cached rendered pages. On Denali, `cargo check -p boomaga-preview`
       passed, all seven tests passed, and a real multi-page PDF rendered with working navigation
       and zoom. Evidence: `docs/screenshots/Bommaga-IPP-Preview-Screenshot_2026-07-19_185221.png`.
-      Work is on `xilem-phase-c`; **next: Phase D** file-open UI and async rendering.
+      Phase C was fast-forwarded to `main`; its feature branch was deleted locally and remotely.
+      **Next: Phase D** file-open UI and async rendering.
 
 ## 3. Open questions / waiting on
 <!-- Decisions or inputs owned by the human, or external events being awaited. -->

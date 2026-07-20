@@ -92,7 +92,7 @@ cargo run -p boomaga-preview
 
 ### Rust Toolchain
 
-- Rust 1.70+ (currently 1.87.0)
+- Rust 1.88+ (workspace minimum; verified on Denali)
 - Cargo workspace with resolver v2
 
 ### System Dependencies
