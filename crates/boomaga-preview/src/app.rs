@@ -18,8 +18,8 @@ pub struct AppData {
     pub document: Option<Document>,
     /// Zero-based index of the page currently shown.
     pub current_page: usize,
-    /// Rasterized current page, ready for the Masonry canvas.
-    pub rendered_page: Option<CanvasImage>,
+    /// Rasterized pages, ready for the Masonry canvas.
+    pub rendered_pages: Vec<CanvasImage>,
     /// Zoom factor (1.0 == 100%).
     pub zoom: f64,
     /// Imposition / print options.
@@ -34,7 +34,7 @@ impl Default for AppData {
             document_path: None,
             document: None,
             current_page: 0,
-            rendered_page: None,
+            rendered_pages: Vec::new(),
             zoom: 1.0,
             print_options: PrintOptions::default(),
             job_history: Vec::new(),
@@ -43,6 +43,11 @@ impl Default for AppData {
 }
 
 impl AppData {
+    /// Rasterized image for the page currently selected, if available.
+    pub fn current_canvas_image(&self) -> Option<&CanvasImage> {
+        self.rendered_pages.get(self.current_page)
+    }
+
     /// Number of pages in the loaded document (0 if none).
     pub fn page_count(&self) -> usize {
         self.document.as_ref().map_or(0, Document::page_count)
