@@ -15,9 +15,9 @@
 
 # Boomaga-IPP — Session Handoff
 
-> **Last updated:** 2026-07-19 · **By:** Codex + Gary Scott Martin
-> **Session focus:** completed Xilem Phase B (`4b761e6`) and host-verified it on Denali;
-> merged it to `main`. Host-side Cargo/OpenShell policy updates followed in `7946383`.
+> **Last updated:** 2026-07-20 · **By:** Codex + Gary Scott Martin
+> **Session focus:** completed and host-verified Xilem Phase C on `xilem-phase-c`;
+> real PDF rendering, navigation, zoom, and all seven tests pass on Denali.
 
 ---
 
@@ -28,10 +28,10 @@ closed. This session was tooling/hygiene, not code: reconciled `PROJECT_PLAN.md`
 `XILEM_MIGRATION.md` with the real code (both were badly stale), **vendored** the `.claude/`
 handoff config so it's portable and version-controlled, and added **host-verified** OpenShell
 provisioning — `openshell/create-bipp-sandbox.sh` auto-clones the repo and launches claude
-(the `--from` image route was tried and abandoned; see §2). **GUI migration:** Phases A and B
-are done on `main`; the Xilem 0.4 preview now has navigation/zoom controls, a canvas placeholder,
-and a status row. It compiles, all three Phase B unit tests pass, and the window was visually
-verified on Denali. **Next up:** Phase C (Masonry PDF canvas). Separately,
+(the `--from` image route was tried and abandoned; see §2). **GUI migration:** Phases A/B/C are complete on `xilem-phase-c`. The Xilem 0.4
+preview loads real PDFs through Poppler/Cairo into a Masonry canvas; all seven tests pass, and
+navigation/zoom were visually verified on Denali. **Next up:** Phase D file-open UI and async
+rendering. Separately,
 `boomaga-ipp-backend` / `boomaga-ipc` still don't compile (their own stub/bug issues, independent
 of the GUI).
 
@@ -70,8 +70,7 @@ of the GUI).
       `app.rs` = plain `AppData`, `main.rs` = minimal Xilem 0.4 app. `cargo check -p boomaga-preview`
       is clean (warnings only) on Denali. Verified xilem 0.4.0 API recorded in `XILEM_MIGRATION.md`
       (button takes a child view; `flex(Axis, seq)`; `Xilem::new_simple(...).run_in(...)`).
-      `document_renderer.rs` kept dormant. Phase B is also complete; **next: Phase C**
-      (Masonry PDF canvas). NB: this compiles the GUI + core + config only — `boomaga-ipp-backend`
+      `document_renderer.rs` was kept dormant at that milestone; it is active as of Phase C. NB: this compiles the GUI + core + config only — `boomaga-ipp-backend`
       and `boomaga-ipc` still have their own errors (separate from the GUI migration).
       **Branch note (corrected 2026-07-14):** the Phase A commits (`37445fd`/`8f47a5c` + `d785e66`)
       have been on `main` all along — `main` is linear and 6+ commits *ahead* of tag `8f47a5c`. The
@@ -85,11 +84,17 @@ of the GUI).
       row. Added three `AppData` tests covering navigation bounds, empty-document navigation, and
       zoom clamp/reset. On Denali, `cargo check -p boomaga-preview` and all three tests passed; the
       Wayland preview window rendered correctly. The temporary `xilem-phase-b` branch was deleted
-      locally and remotely after its fast-forward merge to `main`. **Next: Phase C.**
+      locally and remotely after its fast-forward merge to `main`.
+- [x] **XILEM Phase C — DONE and host-verified (2026-07-20).** Added the custom Masonry
+      PDF canvas, repaired the Poppler/Cairo renderer handoff, and wired an optional PDF path
+      into startup with cached rendered pages. On Denali, `cargo check -p boomaga-preview`
+      passed, all seven tests passed, and a real multi-page PDF rendered with working navigation
+      and zoom. Evidence: `docs/screenshots/Bommaga-IPP-Preview-Screenshot_2026-07-19_185221.png`.
+      Work is on `xilem-phase-c`; **next: Phase D** file-open UI and async rendering.
 
 ## 3. Open questions / waiting on
 <!-- Decisions or inputs owned by the human, or external events being awaited. -->
-- **Workspace still not compile-verified** here (no toolchain). Phase B is green on the host;
+- **Workspace still not compile-verified** here (no toolchain). Phase C is green on the host;
   **`cargo check --workspace` is still red**
   because `boomaga-ipp-backend` / `boomaga-ipc` have their own errors (see §2). Re-run both on the host.
 - Also fix `FileType` in `boomaga-core` to match decision #4 (still lists `PostScript`/`Ps`; needs
@@ -106,7 +111,7 @@ of the GUI).
 - **Imposition (N-up/booklet/scale/rotate/margins/gutter) computed in `boomaga-layout-engine`**;
   qpdf-rs assembles/applies content-preserving transforms; poppler-rs renders preview. (Issue #11.)
 - **No plugin system.** `boomaga-plugins` deleted; specs stay silent. (Issue #10.) Code fully clean.
-- **GUI = Xilem** (Druid deprecated). Phases A/B are complete; Phase C is the Masonry PDF canvas.
+- **GUI = Xilem** (Druid deprecated). Phases A/B/C are complete; Phase D is next.
 - **SRS/UIS v0.2.2 Appendix C now conforms to code** (`c471a71`); `docs/uml/*.puml` is the
   maintained source. (Supersedes the earlier "Appendix C is an unreconciled Perplexity model" note.)
 - **`.claude/` handoff config is repo-shipped and vendored** (real files — no symlinks, no
@@ -138,7 +143,7 @@ of the GUI).
   a co-author via the trailer). Also note `git commit` only stages what's already staged — after a
   `git mv` plus separate edits, `git add -A` (or `--amend` afterward) so all files land in one commit.
 - **Workspace won't compile as a whole** because backend/IPC gaps remain; `boomaga-preview`
-  itself is green through Phase B. Don't trust "80% done" language in older docs.
+  itself is green through Phase C. Don't trust "80% done" language in older docs.
 - **Sandbox persistence:** container is `restart=unless-stopped` (files survive reboot), BUT
   networking + gateway JWT are fragile — a live session isn't reliably restorable. Back up to git.
 - **No Rust toolchain in the sandbox** — no `cargo`/`rustc`; compile-check on the host.
@@ -156,7 +161,7 @@ of the GUI).
 <!-- Where the real detail lives. Keep this file thin; link out. -->
 - `README.md`, `CLAUDE.md` — project overview, build, inter-crate patterns, Claude Code setup.
 - `docs/PROJECT_PLAN.md` — architecture, phases, honest per-crate status.
-- `docs/XILEM_MIGRATION.md` — GUI migration plan (Phase C is the next code step).
+- `docs/XILEM_MIGRATION.md` — GUI migration plan (Phase D is the next code step).
 - `docs/SW-Reqrmnts-Spec--latest.pdf`, `docs/User-Interface-Spec--latest.pdf` — current specs (v0.2.2).
 - `docs/uml/*.puml` — code-conformant PlantUML (now also embedded in spec Appendix C).
 - `openshell/create-bipp-sandbox.sh` + `openshell/README.md` — host-side sandbox

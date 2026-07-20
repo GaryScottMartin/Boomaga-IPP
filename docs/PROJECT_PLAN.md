@@ -69,9 +69,10 @@ component diagram (solid = present in code; dashed = decided-but-not-yet-wired).
 - Active development by the Linebender community
 - Druid (the original choice) is unmaintained — see [`docs/XILEM_MIGRATION.md`](./XILEM_MIGRATION.md)
 
-**Status:** migration Phases A and B are complete. The Xilem 0.4 preview builds,
-its navigation/zoom tests pass, and the application was visually verified on the
-Denali host. Phase C—the Masonry PDF canvas—is next. See the migration plan for
+**Status:** migration Phases A, B, and C are complete. The Xilem 0.4 preview
+builds, all seven tests pass, and Denali visually verified real PDF rendering,
+navigation, and zoom. Phase D (file-open UI and async rendering) is next. See
+the migration plan for
 the remaining work.
 
 ### Display: Native Wayland
@@ -138,7 +139,7 @@ crates/
 
 ### Phase 2: Core Functionality (Weeks 5-8)
 - Print job processing
-- GUI foundation with Xilem (Phases A/B complete; Phase C canvas next)
+- Xilem GUI through Phase C (real PDF canvas; Phase D async rendering next)
 - Layout engine (N-up, booklet)
 - Document rendering
 
@@ -247,7 +248,7 @@ crates/
 - Cancellation support
 
 ### Week 6: GUI Foundation
-- Xilem migration Phases A/B complete; implement Phase C Masonry PDF canvas
+- Xilem migration Phases A/B/C complete; implement Phase D async rendering
   (see `XILEM_MIGRATION.md`)
 - Main window (winit)
 - Preview rendering
@@ -321,7 +322,7 @@ crates/
 > **Reality check (2026-07-20):** the workspace **does not currently compile**
 > as a whole because `boomaga-ipp-backend` and `boomaga-ipc` retain independent
 > stub/compile gaps. `boomaga-preview` is no longer the blocker: Xilem migration
-> Phases A/B build, test, and run on Denali. Percentages below are estimates of
+> Phases A/B/C build, test, and run on Denali. Percentages below are estimates of
 > *design + partial implementation*, not of green-workspace completeness.
 
 ### Per-crate state
@@ -331,7 +332,7 @@ crates/
 | `boomaga-core` | lib | Types complete; compiles | 0 | Plugin residue removed. `FileType` still lists PostScript/Ps — update to PDF/PWG/JPEG (decision #4). `parse_metadata()` is a TODO no-op. |
 | `boomaga-config` | lib | Complete | 3 | `ConfigManager` wired; plugin settings removed. |
 | `boomaga-layout-engine` | lib | Real & usable | 6 | N-up, booklet, transforms implemented; a few TODOs for page-size lookup. |
-| `boomaga-preview` | bin | Phases A/B complete | 4 | Xilem 0.4 navigation/zoom UI builds, tests, and runs on Denali; Phase C Masonry PDF canvas is next. |
+| `boomaga-preview` | bin | Phases A/B/C complete | 7 | Xilem 0.4 renders real PDFs; seven tests plus navigation/zoom visually verified on Denali; Phase D is next. |
 | `boomaga-ipc` | lib | Skeleton, **unused** | 0 | Protocol defined; Unix-socket transport stubbed; not yet imported by backend/GUI. |
 | `boomaga-ipp-backend` | bin | Scaffolded, partial | 0 | `IppServer`/`JobProcessor`/`JobQueue` present; request parsing incomplete; processor has a compile bug; no CUPS/downstream code. |
 
@@ -363,7 +364,7 @@ crates/
 - IPC protocol message types defined
 
 #### Remaining Phase 2 Tasks
-- Phase C Masonry PDF canvas, then remaining menu/print-dialog GUI work
+- Phase D file-open/async rendering, then remaining menu/print-dialog GUI work
 - Wire imposition (layout engine) into the GUI preview
 - Complete document-ready / job-status IPC round trip
 - Downstream submit path (CUPS/IPP client)

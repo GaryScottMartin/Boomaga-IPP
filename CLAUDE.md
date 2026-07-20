@@ -71,9 +71,11 @@ cargo build -p boomaga-ipp-backend
 ```
 ## Current State
 
-The Xilem migration’s Phases A and B are complete. On Denali,
-`boomaga-preview` builds, its tests pass, and the application runs; Phase C (the
-Masonry PDF canvas) is next. The workspace as a whole is still not green because
+The Xilem migration’s Phases A, B, and C are complete. On Denali,
+`boomaga-preview` builds, all seven tests pass, and Denali has verified real PDF
+rendering, navigation, and zoom. Xilem migration Phases A/B/C are complete; Phase D
+(file-open UI and asynchronous rendering) is next. The workspace as a whole is
+still not green because
 `boomaga-ipp-backend` and `boomaga-ipc` have independent stub/compile gaps. See
 `docs/HANDOFF.md` for the current, verified session state rather than relying on
 old workspace-wide error counts.
@@ -144,7 +146,7 @@ cargo run -p boomaga-preview
 
 - `crates/boomaga-preview/src/main.rs` \- Xilem application entry
 - `crates/boomaga-preview/src/app.rs` \- Main application state
-- `crates/boomaga-preview/src/document_renderer.rs` \- Dormant poppler/cairo renderer for Phase C integration
+- `crates/boomaga-preview/src/document_renderer.rs` \- Active Poppler/Cairo PDF renderer
 
 ### Configuration
 
@@ -162,7 +164,7 @@ cargo run -p boomaga-preview
 
 - `cargo check --workspace` remains red because of backend/IPC stub and compile
   gaps; consult current compiler output before recording specific counts or causes.
-- `boomaga-preview` is green through Phase B; Phase C is not yet implemented.
+- `boomaga-preview` is green through Phase C; Phase D async rendering is next.
 - `FileType` in `boomaga-core` still needs to match the accepted PDF/PWG
   Raster/JPEG formats.
 
