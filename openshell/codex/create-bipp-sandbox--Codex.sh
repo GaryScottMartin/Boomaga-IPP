@@ -1,12 +1,13 @@
 #!/bin/bash
 #
-# Host-side helper — run this on the OpenShell host to create a disposable
-# BIPP sandbox, clone the repository into /sandbox/BIPP, authenticate Codex
-# against a ChatGPT account when necessary, and launch Codex in the project.
+# Host-side helper — run this on the OpenShell host to replace any unusable
+# BIPP sandbox, create a fresh one, update the bundled Codex CLI, clone the
+# repository into /sandbox/BIPP, authenticate Codex against a ChatGPT account
+# when necessary, and launch Codex in the project.
 #
 # Assumptions:
 #   * NVIDIA OpenShell 0.0.86 with a running local gateway.
-#   * A gateway provider named "github" already exists.
+#   * A gateway provider named "github-BIPP" already exists.
 #   * ChatGPT device-code login is enabled for the account.
 #   * Run from the repository root so the policy path below resolves.
 #
@@ -14,7 +15,9 @@
 #   ./openshell/codex/create-bipp-sandbox.sh [sandbox-name]
 #   BIPP_VERIFY=1 ./openshell/codex/create-bipp-sandbox.sh
 #
-# A sandbox is disposable and must be recreated after a gateway restart.
+# After a gateway restart, an existing sandbox may remain stuck in provisioning.
+# OpenShell 0.0.86 cannot resurrect it, so this script deletes any sandbox with
+# the selected name before creating its replacement.
 
 set -euo pipefail
 
@@ -26,18 +29,29 @@ GITHUB_PROVIDER="github-BIPP"
 # Keep the .git suffix: the project policy may allow this exact URL only.
 CLONE="[ -d '$DIR/.git' ] || git clone '$REPO_URL' '$DIR'"
 
+# The Codex CLI bundled in the published sandbox image may be stale. The
+# sandbox user cannot replace the system copy under /usr/lib/node_modules, so
+# install the current CLI into a user-writable prefix and put it first in PATH.
+CODEX_PREFIX="/sandbox/.local"
+UPDATE_CODEX="mkdir -p '$CODEX_PREFIX/bin' && npm install -g --prefix '$CODEX_PREFIX' @openai/codex@latest && export PATH='$CODEX_PREFIX/bin':\$PATH && hash -r && command -v codex && codex --version"
+
 if [ -n "${BIPP_VERIFY:-}" ]; then
   NAME="BIPP-codex-verify"
   EXTRA=(--no-keep)
-  ENTRY="$CLONE; cd '$DIR'; echo \"PWD=\$(pwd)\"; test -d .git && echo GIT_OK; command -v codex >/dev/null && echo CODEX_OK; codex --version"
+  ENTRY="set -e; $UPDATE_CODEX; $CLONE; cd '$DIR'; echo \"PWD=\$(pwd)\"; test -d .git && echo GIT_OK; command -v codex >/dev/null && echo CODEX_OK; codex --version"
 else
   NAME="${1:-BIPP-codex}"
   EXTRA=()
 
   # Fresh sandboxes normally have no ChatGPT session. Check first so this also
   # works if authentication is restored by another mechanism in the future.
-  ENTRY="$CLONE; cd '$DIR'; if ! codex login status >/dev/null 2>&1; then echo 'Codex authentication required; complete the device-code flow in your browser.'; codex login --device-auth; fi; exec codex"
+  ENTRY="set -e; $UPDATE_CODEX; $CLONE; cd '$DIR'; if ! codex login status >/dev/null 2>&1; then echo 'Codex authentication required; complete the device-code flow in your browser.'; codex login --device-auth; fi; exec codex"
 fi
+
+# Ignore "not found" and similar deletion failures so first-time creation works.
+# A same-named sandbox that still exists will cause the create command to fail
+# rather than silently targeting the wrong sandbox.
+openshell sandbox delete "$NAME" 2>/dev/null || true
 
 exec openshell sandbox create \
   --name "$NAME" \
