@@ -1,14 +1,17 @@
 # Xilem Migration Plan
 
-> **Last reviewed against code:** 2026-07-19.
+> **Last reviewed against code:** 2026-07-20.
+> **Phase C status:** **IN PROGRESS** — the Masonry `PdfCanvasWidget`, Xilem
+> view adapter, and reactive rendered-page state are implemented locally; host
+> compilation and the repaired Poppler/Cairo renderer handoff remain pending.
 > **Status:** **Phase B DONE and merged to `main`** (`4b761e6`) — host verification on
 > Denali confirmed `cargo check -p boomaga-preview`, all three Phase B unit tests,
 > and the Wayland preview window. Both broken GUI trees (dangling Druid modules +
 > fabricated-Xilem scaffolds) are gone; `app.rs` is a plain `AppData` and
-> `main.rs` now has the Phase B toolbar, canvas placeholder, and status row.
-> `document_renderer.rs` is retained but dormant (re-wired in Phase C). Next: **Phase C**
-> (Masonry PDF canvas). The verified xilem 0.4.0 API is recorded below — use it,
-> not the pre-Phase-A guesses.
+> `main.rs` now has the Phase B toolbar, Phase C Masonry canvas, and status row.
+> `document_renderer.rs` is retained but dormant; repairing it and completing the
+> Cairo-surface handoff is the next Phase C slice. The verified xilem 0.4.0 API is
+> recorded below — use it, not the pre-Phase-A guesses.
 
 ## Overview
 This document tracks replacing Druid with Xilem for the `boomaga-preview` GUI.
@@ -31,7 +34,8 @@ Target architecture: SRS/UIS **v0.2.2** Appendix C and [`docs/uml/`](./uml/)
 ## Current Status
 
 Phases A and B are complete. The preview is now a compiling Xilem 0.4 application
-with a real view tree; Phase C will replace the canvas placeholder with PDF rendering.
+with a real view tree. Phase C has replaced the placeholder with a custom Masonry
+canvas locally; host compilation and the Poppler/Cairo handoff remain pending.
 
 **Dependencies:**
 - Workspace `Cargo.toml` and `crates/boomaga-preview/Cargo.toml` declare
@@ -42,7 +46,7 @@ with a real view tree; Phase C will replace the canvas placeholder with PDF rend
 
 **Code:**
 - `src/main.rs` contains the Phase B Xilem view tree: horizontal navigation/zoom
-  toolbar, canvas placeholder, and status row.
+  toolbar, Phase C custom canvas, and status row.
 - `src/app.rs` contains framework-independent `AppData` transitions plus three
   host-verified unit tests for navigation and zoom behavior.
 - `src/document_renderer.rs` — **real poppler + cairo rendering** (loads a PDF via
@@ -142,9 +146,12 @@ fn main() -> anyhow::Result<()> {
 - ✅ Focused unit tests for navigation bounds and zoom clamping/reset.
 
 ### Phase C: PDF page canvas (Masonry custom widget)
-- Implement a Masonry `Widget` that paints the Cairo/poppler-rendered page image.
-- Feed it the surface produced by `document_renderer::render_page_to_surface`.
-- Wrap it as a Xilem `View` and place it in the tree.
+- ✅ Implemented a Masonry `PdfCanvasWidget` that paints a rendered page image.
+- ✅ Wrapped it as a reactive Xilem `View` and placed it in the Phase B tree.
+- ✅ Added validated Cairo-compatible premultiplied-BGRA page image state.
+- 🚧 Repair and re-enable `document_renderer`, then feed its Cairo surface bytes
+  into the canvas.
+- 🚧 Compile, test, and visually verify the canvas on Denali.
 
 ### Phase D: Document loading & async rendering
 - File-open → load via `DocumentRenderer::load` (keep existing poppler code).
@@ -219,7 +226,7 @@ fn main() -> anyhow::Result<()> {
 1. ✅ Correct this plan to reflect the real (broken, mid-migration) state.
 2. ✅ **Phase A** — deleted Druid + pseudo-Xilem code; compiling Xilem skeleton on `main`.
 3. ✅ **Phase B** — core view tree (toolbar row, navigation, zoom, status).
-4. 🚧 **Phase C (next)** — Masonry PDF page canvas.
+4. 🚧 **Phase C (in progress)** — host-verify the canvas, then repair the renderer handoff.
 5. 🚧 Phase D — document loading & async rendering.
 6. 🚧 Phase E — imposition + IPC wiring.
 7. 🚧 Phase F — print dialog & downstream submit.

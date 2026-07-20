@@ -1,18 +1,19 @@
 //! Preview application for the Boomaga-IPP virtual printer.
 //!
-//! Native Wayland GUI built with **Xilem** (0.4). Phase B of the Druid→Xilem
-//! migration (see `docs/XILEM_MIGRATION.md`) provides the core reactive view
-//! tree and controls. Document rendering (`document_renderer.rs`, currently
-//! dormant), imposition, and the IPC/print wiring come in later phases.
+//! Native Wayland GUI built with **Xilem** (0.4). Phase C of the Druid→Xilem
+//! migration (see `docs/XILEM_MIGRATION.md`) adds a Masonry PDF canvas to the
+//! Phase B view tree. Document loading and background rendering follow in Phase D.
 
 mod app;
-// `document_renderer` (poppler + cairo) is retained on disk but not yet wired
-// into the view tree — it is re-introduced in Phase C (needs a `poppler::{Document,
+mod pdf_canvas;
+// `document_renderer` (poppler + cairo) is retained on disk but not yet wired.
+// Repairing and re-introducing it is the next Phase C slice (it needs a `poppler::{Document,
 // Page}` vs `boomaga_core::{Document, Page}` import-collision fix). Keeping it
-// un-`mod`-ded keeps the Phase-A skeleton minimal and compiling.
+// un-`mod`-ded preserves the last host-verified build until that repair is ready.
 // mod document_renderer;
 
 use app::AppData;
+use pdf_canvas::pdf_canvas;
 use tracing::{info, Level};
 use xilem::view::{button, flex, label, Axis};
 use xilem::{EventLoop, WidgetView, WindowOptions, Xilem};
@@ -32,11 +33,7 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
         ),
     );
 
-    let canvas = if data.page_count() == 0 {
-        label("No document loaded")
-    } else {
-        label(format!("Page {} preview", data.current_page + 1))
-    };
+    let canvas = pdf_canvas(data.rendered_page.clone(), data.zoom);
 
     let status = if data.page_count() == 0 {
         format!("0 pages   ·   zoom {:.0}%", data.zoom * 100.0)

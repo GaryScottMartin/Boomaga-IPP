@@ -8,6 +8,8 @@
 use boomaga_core::{Document, JobId, PrintOptions};
 use std::path::PathBuf;
 
+use crate::pdf_canvas::CanvasImage;
+
 /// Preview application state.
 pub struct AppData {
     /// Path of the document being previewed, if any.
@@ -16,6 +18,8 @@ pub struct AppData {
     pub document: Option<Document>,
     /// Zero-based index of the page currently shown.
     pub current_page: usize,
+    /// Rasterized current page, ready for the Masonry canvas.
+    pub rendered_page: Option<CanvasImage>,
     /// Zoom factor (1.0 == 100%).
     pub zoom: f64,
     /// Imposition / print options.
@@ -30,6 +34,7 @@ impl Default for AppData {
             document_path: None,
             document: None,
             current_page: 0,
+            rendered_page: None,
             zoom: 1.0,
             print_options: PrintOptions::default(),
             job_history: Vec::new(),
