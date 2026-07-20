@@ -1,245 +1,202 @@
-//! Document rendering module using Poppler
+//! Synchronous PDF loading and page rendering with Poppler and Cairo.
 //!
-//! This module provides functionality to load, parse, and render PDF/PostScript
-//! documents using the Poppler library.
+//! Poppler documents are not `Send` or `Sync`; Phase D will define the worker
+//! ownership model. This module therefore keeps one document on one thread and
+//! exposes a direct Cairo-to-Masonry image handoff.
 
-use boomaga_core::{Document, Page, PageSize, Orientation, GraphicsElement, PathElement, Color, FileType};
-use cairo::{ImageSurface, Context as CairoContext, Format};
-use poppler::{Document, Page};
 use std::path::Path;
-use std::sync::{Arc, Mutex};
-use tracing::{info, error};
 
-/// Error types for document rendering
+use boomaga_core::{
+    Color, Document as CoreDocument, FileType, GraphicsElement, Orientation, Page as CorePage,
+    PageContents,
+};
+use cairo::{Context, Format, ImageSurface};
+use poppler::{PopplerDocument, PopplerPage};
+use tracing::info;
+
+use crate::pdf_canvas::{CanvasImage, CanvasImageError};
+
+/// Failures while loading or rasterizing a PDF document.
 #[derive(Debug, thiserror::Error)]
 pub enum RenderError {
-    #[error("IO error: {0}")]
-    Io(#[from] std::io::Error),
-
     #[error("Poppler error: {0}")]
     Poppler(String),
 
-    #[error("Invalid document path")]
-    InvalidPath,
+    #[error("Cairo error: {0}")]
+    Cairo(#[from] cairo::Error),
 
-    #[error("Document is empty")]
+    #[error("document contains no pages")]
     EmptyDocument,
 
-    #[error("Unsupported file type: {0}")]
-    UnsupportedFileType(String),
+    #[error("page {0} does not exist")]
+    InvalidPage(usize),
 
-    #[error("Failed to render page {0}")]
-    RenderFailed(usize),
+    #[error("DPI must be finite and greater than zero")]
+    InvalidDpi,
+
+    #[error("rendered page dimensions exceed Cairo limits")]
+    InvalidDimensions,
+
+    #[error("failed to borrow rendered Cairo pixels: {0}")]
+    SurfaceData(String),
+
+    #[error(transparent)]
+    CanvasImage(#[from] CanvasImageError),
 }
 
-/// Document renderer that loads and renders PDF/PostScript files
+/// Owns one Poppler document and renders its pages synchronously.
 pub struct DocumentRenderer {
-    poppler_doc: Arc<Mutex<Option<PopplerDocument>>>,
-    doc_id: String,
+    poppler_document: Option<PopplerDocument>,
+    document_id: String,
 }
 
 impl DocumentRenderer {
-    /// Create a new document renderer
-    pub fn new(doc_id: String) -> Self {
+    /// Create an empty renderer for the given application document id.
+    pub fn new(document_id: impl Into<String>) -> Self {
         Self {
-            poppler_doc: Arc::new(Mutex::new(None)),
-            doc_id,
+            poppler_document: None,
+            document_id: document_id.into(),
         }
     }
 
-    /// Load a document from file path
-    pub fn load(&self, path: &Path) -> Result<Document, RenderError> {
-        info!("Loading document: {:?}", path);
+    /// Load a PDF and build the framework-independent document model.
+    pub fn load(&mut self, path: &Path) -> Result<CoreDocument, RenderError> {
+        info!(path = ?path, "loading PDF document");
 
-        // Open the PDF file using Poppler
-        let doc = PopplerDocument::from_file(path, None)?;
-        let doc_lock = self.poppler_doc.lock().map_err(|e| {
-            error!("Failed to acquire lock: {}", e);
-            RenderError::RenderFailed(0)
-        })?;
-
-        *doc_lock = Some(doc);
-
-        // Parse metadata
-        let mut core_doc = Document::new(self.doc_id.clone(), path.to_path_buf(), FileType::Pdf);
-
-        // Try to get document information
-        if let Some(info) = doc_lock.as_ref().unwrap().info() {
-            if let Some(title) = info.title() {
-                core_doc.title = title.to_string();
-            }
-            if let Some(author) = info.author() {
-                core_doc.author = Some(author.to_string());
-            }
-            if let Some(creator) = info.creator() {
-                core_doc.creator = Some(creator.to_string());
-            }
-            if let Some(subject) = info.subject() {
-                core_doc.subject = Some(subject.to_string());
-            }
+        let poppler_document = PopplerDocument::new_from_file(path, None)
+            .map_err(|error| RenderError::Poppler(error.to_string()))?;
+        if poppler_document.is_empty() {
+            return Err(RenderError::EmptyDocument);
         }
 
-        // Parse pages
-        let page_count = doc_lock.as_ref().unwrap().pages().len();
-        info!("Document has {} pages", page_count);
-
-        for (index, poppler_page) in doc_lock.as_ref().unwrap().pages().iter().enumerate() {
-            // Parse page properties
-            let (width, height) = poppler_page.size();
-            let orientation = poppler_page.orientation();
-
-            // Convert to boomaga-core types
-            let page_size = self.convert_page_size(width, height);
-            let page_orientation = self.convert_orientation(orientation);
-
-            // Create page object
-            let mut page = Page::new(index + 1, width, height, page_orientation);
-
-            // Extract page contents
-            let elements = self.extract_page_contents(poppler_page);
-            page.contents = boomaga_core::PageContents::Vector(elements);
-
-            core_doc.add_page(page);
+        let mut document = CoreDocument::new(
+            self.document_id.clone(),
+            path.to_path_buf(),
+            FileType::Pdf,
+        );
+        if let Some(title) = poppler_document.get_title() {
+            document.title = title;
         }
 
-        // Parse metadata
-        core_doc.parse_metadata().await?;
+        for (index, poppler_page) in poppler_document.pages().enumerate() {
+            let (width, height) = poppler_page.get_size();
+            let orientation = page_orientation(width, height);
+            let mut page = CorePage::new(index, width, height, orientation);
+            page.contents = PageContents::Vector(extract_page_contents(&poppler_page));
+            document.add_page(page);
+        }
 
-        Ok(core_doc)
+        info!(pages = document.page_count(), "loaded PDF document");
+        self.poppler_document = Some(poppler_document);
+        Ok(document)
     }
 
-    /// Render a page to a Cairo image surface
-    ///
-    /// Returns an ImageSurface with the rendered page
+    /// Render a zero-based page index directly into a Masonry canvas image.
+    pub fn render_page(&self, page_index: usize, dpi: f64) -> Result<CanvasImage, RenderError> {
+        let mut surface = self.render_page_to_surface(page_index, dpi)?;
+        surface.flush();
+
+        let width = u32::try_from(surface.width()).map_err(|_| RenderError::InvalidDimensions)?;
+        let height = u32::try_from(surface.height()).map_err(|_| RenderError::InvalidDimensions)?;
+        let stride = usize::try_from(surface.stride()).map_err(|_| RenderError::InvalidDimensions)?;
+        let row_bytes = width as usize * 4;
+        let pixels = {
+            let data = surface
+                .data()
+                .map_err(|error| RenderError::SurfaceData(error.to_string()))?;
+            let mut pixels = Vec::with_capacity(row_bytes * height as usize);
+            for row in data.chunks(stride).take(height as usize) {
+                pixels.extend_from_slice(&row[..row_bytes]);
+            }
+            pixels
+        };
+
+        CanvasImage::from_cairo_bgra(pixels, width, height).map_err(Into::into)
+    }
+
+    /// Render a zero-based page index to a Cairo ARGB32 image surface.
     pub fn render_page_to_surface(
         &self,
-        page_number: usize,
-        width_points: f64,
-        height_points: f64,
+        page_index: usize,
         dpi: f64,
     ) -> Result<ImageSurface, RenderError> {
-        let doc_lock = self.poppler_doc.lock().map_err(|e| {
-            error!("Failed to acquire lock: {}", e);
-            RenderError::RenderFailed(page_number)
-        })?;
-
-        let doc = doc_lock.as_ref().ok_or(RenderError::EmptyDocument)?;
-
-        let poppler_page = doc
-            .page(page_number)
-            .ok_or(RenderError::RenderFailed(page_number))?;
-
-        // Convert points to pixels at given DPI
-        let width_px = (width_points * dpi / 72.0) as i32;
-        let height_px = (height_points * dpi / 72.0) as i32;
-
-        // Create image surface
-        let surface = ImageSurface::create(Format::ARgb32, width_px, height_px)
-            .map_err(|e| RenderError::RenderFailed(page_number))?;
-
-        let cairo_ctx = CairoContext::new(&surface);
-        cairo_ctx.scale(dpi / 72.0, dpi / 72.0);
-
-        // Render page
-        let error = poppler_page.render(&cairo_ctx);
-        if error != poppler::RenderError::Success {
-            return Err(RenderError::RenderFailed(page_number));
+        if !dpi.is_finite() || dpi <= 0.0 {
+            return Err(RenderError::InvalidDpi);
         }
+
+        let document = self
+            .poppler_document
+            .as_ref()
+            .ok_or(RenderError::EmptyDocument)?;
+        let page = document
+            .get_page(page_index)
+            .ok_or(RenderError::InvalidPage(page_index))?;
+        let (width_points, height_points) = page.get_size();
+        let scale = dpi / 72.0;
+        let width = pixel_dimension(width_points, scale)?;
+        let height = pixel_dimension(height_points, scale)?;
+
+        let surface = ImageSurface::create(Format::ARgb32, width, height)?;
+        let context = Context::new(&surface)?;
+        context.set_source_rgb(1.0, 1.0, 1.0);
+        context.paint()?;
+        context.scale(scale, scale);
+        page.render(&context);
+        surface.flush();
 
         Ok(surface)
     }
+}
 
-    /// Extract graphics elements from a poppler page
-    fn extract_page_contents(&self, poppler_page: &PopplerPage) -> Vec<GraphicsElement> {
-        let mut elements = Vec::new();
-
-        // Extract text elements
-        if let Some(text) = poppler_page.text() {
-            if !text.is_empty() {
-                elements.push(GraphicsElement::Text {
-                    content: text.to_string(),
-                    font: "Times-Roman".to_string(),
-                    size: 12.0,
-                    x: 50.0,
-                    y: 750.0,
-                    color: Color::black(),
-                });
-            }
-        }
-
-        // Extract form fields (if any)
-        if let Some(annots) = poppler_page.annots() {
-            for annot in annots {
-                if let Some(rect) = annot.rect() {
-                    elements.push(GraphicsElement::Rectangle {
-                        x: rect.x0,
-                        y: rect.y0,
-                        width: rect.x1 - rect.x0,
-                        height: rect.y1 - rect.y0,
-                        fill: None,
-                        stroke: Some(Color::black()),
-                        stroke_width: 1.0,
-                    });
-                }
-            }
-        }
-
-        elements
+fn pixel_dimension(points: f64, scale: f64) -> Result<i32, RenderError> {
+    let pixels = (points * scale).ceil();
+    if !pixels.is_finite() || pixels <= 0.0 || pixels > i32::MAX as f64 {
+        return Err(RenderError::InvalidDimensions);
     }
+    Ok(pixels as i32)
+}
 
-    /// Convert Poppler page size to boomaga PageSize
-    fn convert_page_size(&self, width: f64, height: f64) -> PageSize {
-        // Compare with standard sizes
-        let a4_width_mm = 210.0;
-        let a4_height_mm = 297.0;
-        let letter_width_mm = 215.9;
-        let letter_height_mm = 279.4;
-
-        let pdf_width_mm = width * 25.4 / 72.0;
-        let pdf_height_mm = height * 25.4 / 72.0;
-
-        // Check if close to A4 (within 5% tolerance)
-        if self.is_close_to(pdf_width_mm, a4_width_mm) && self.is_close_to(pdf_height_mm, a4_height_mm) {
-            return PageSize::A4;
-        }
-
-        // Check if close to Letter
-        if self.is_close_to(pdf_width_mm, letter_width_mm) && self.is_close_to(pdf_height_mm, letter_height_mm) {
-            return PageSize::Letter;
-        }
-
-        // Otherwise, create custom size
-        PageSize::Custom { width, height }
-    }
-
-    /// Check if two values are close within tolerance
-    fn is_close_to(&self, value: f64, target: f64) -> bool {
-        let tolerance = target * 0.05; // 5% tolerance
-        (value - target).abs() < tolerance
-    }
-
-    /// Convert Poppler orientation to boomaga Orientation
-    fn convert_orientation(&self, orientation: poppler::PageOrientation) -> Orientation {
-        match orientation {
-            poppler::PageOrientation::Portrait => Orientation::Portrait,
-            poppler::PageOrientation::Landscape => Orientation::Landscape,
-            poppler::PageOrientation::UpsideDownPortrait => Orientation::UpsideDownPortrait,
-            poppler::PageOrientation::UpsideDownLandscape => Orientation::UpsideDownLandscape,
-        }
+fn page_orientation(width: f64, height: f64) -> Orientation {
+    if width > height {
+        Orientation::Landscape
+    } else {
+        Orientation::Portrait
     }
 }
 
+fn extract_page_contents(page: &PopplerPage) -> Vec<GraphicsElement> {
+    page.get_text()
+        .filter(|text| !text.is_empty())
+        .map(|text| {
+            vec![GraphicsElement::Text {
+                content: text.to_owned(),
+                font: "sans-serif".to_owned(),
+                size: 12.0,
+                x: 0.0,
+                y: 0.0,
+                color: Color::black(),
+            }]
+        })
+        .unwrap_or_default()
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_file_type_detection() {
-        assert_eq!(FileType::from_path(Path::new("test.pdf")), FileType::Pdf);
-        assert_eq!(FileType::from_path(Path::new("test.PDF")), FileType::Pdf);
-        assert_eq!(FileType::from_path(Path::new("test.ps")), FileType::PostScript);
-        assert_eq!(FileType::from_path(Path::new("test.eps")), FileType::PostScript);
-        assert_eq!(FileType::from_path(Path::new("test.txt")), FileType::Unknown);
+    fn detects_page_orientation_from_dimensions() {
+        assert_eq!(page_orientation(842.0, 595.0), Orientation::Landscape);
+        assert_eq!(page_orientation(595.0, 842.0), Orientation::Portrait);
+        assert_eq!(page_orientation(500.0, 500.0), Orientation::Portrait);
+    }
+
+    #[test]
+    fn validates_pixel_dimensions() {
+        assert_eq!(pixel_dimension(72.0, 2.0).unwrap(), 144);
+        assert!(matches!(
+            pixel_dimension(0.0, 1.0),
+            Err(RenderError::InvalidDimensions)
+        ));
     }
 }

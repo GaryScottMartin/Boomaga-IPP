@@ -23,10 +23,10 @@ rust-version = "1.88"
 xilem = "0.4"
 kurbo = "0.11"
 winit = "0.30"
-cairo-rs = "0.18"
+cairo-rs = "0.20"
 
 # Document Rendering
-poppler = "0.6"
+poppler = { version = "0.6", features = ["render"] }
 
 # IPC
 zbus = "4.4.0"

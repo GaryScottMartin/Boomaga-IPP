@@ -5,12 +5,8 @@
 //! Phase B view tree. Document loading and background rendering follow in Phase D.
 
 mod app;
+mod document_renderer;
 mod pdf_canvas;
-// `document_renderer` (poppler + cairo) is retained on disk but not yet wired.
-// Repairing and re-introducing it is the next Phase C slice (it needs a `poppler::{Document,
-// Page}` vs `boomaga_core::{Document, Page}` import-collision fix). Keeping it
-// un-`mod`-ded preserves the last host-verified build until that repair is ready.
-// mod document_renderer;
 
 use app::AppData;
 use pdf_canvas::pdf_canvas;
