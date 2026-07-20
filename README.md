@@ -6,9 +6,9 @@ Boomaga-IPP is a rewrite of the classic Boomaga (Booklet Manager) application, r
 
 ## Features
 
-- **IPP Everywhere Support**: Full CUPS IPP protocol implementation
+- **IPP Everywhere Direction**: Driverless print-service ingress (implementation incomplete)
 - **Native Wayland GUI**: Built with Xilem for maximum performance and integration
-- **Modern Document Rendering**: PDF and PostScript support using Poppler and Ghostscript
+- **Modern Document Rendering**: PDF preview foundation using Poppler
 - **Advanced Layout Engine**: N-up printing, booklet creation, custom page layouts
 - **Systemd Integration**: Fully managed as a systemd service
 - **Memory Safety**: Rust guarantees memory safety and thread safety
@@ -32,7 +32,6 @@ boomaga-ipp/
 - Rust 1.70 or later
 - CUPS development libraries
 - Poppler development libraries
-- Ghostscript
 - Wayland development libraries
 
 ### Building from source
@@ -86,13 +85,12 @@ boomaga-preview --window 1200x900
 
 ## Project Status
 
-**Phase 1 (Foundation)**: 80% Complete ✅
-- Project structure and workspace setup
-- Core infrastructure (config, error handling, types)
-- IPP backend service with job queue
-- Preview application with Xilem GUI framework
-- Layout engine with N-up and booklet algorithms
-- Configuration management system
+The six-crate workspace remains under active development and does not yet build
+as a whole because the backend and IPC crates retain stub/compile gaps. The
+Xilem preview migration’s Phases A and B are complete and host-verified on
+Denali; Phase C (the Masonry PDF canvas) is next. See
+[`docs/HANDOFF.md`](docs/HANDOFF.md) for current session state and
+[`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) for detailed status.
 
 ## Development
 
@@ -109,6 +107,11 @@ cargo test
 # Run tests for specific crate
 cargo test -p boomaga-core
 cargo test -p boomaga-ipp-backend
+
+# Host-verified preview checks
+cargo check -p boomaga-preview
+cargo test -p boomaga-preview
+cargo run -p boomaga-preview
 ```
 
 ### Code Style
@@ -127,25 +130,25 @@ Contributions are welcome! Please see CONTRIBUTING.md for guidelines.
 
 ## Roadmap
 
-### Phase 1: Foundation (Weeks 1-4) - ✅ 80% Complete
+### Phase 1: Foundation (Weeks 1-4) - 🚧 In progress
 - [x] Project foundation
 - [x] Core infrastructure
-- [x] IPP server implementation
-- [x] Preview application UI
+- [ ] Complete IPP server implementation
+- [x] Xilem preview Phases A/B
 - [x] Layout engine
 - [x] Configuration management system
-- [ ] Document rendering (poppler integration)
+- [x] PDF rendering foundation (Poppler)
 - [ ] Comprehensive error handling
-- [ ] Basic IPC transport
-- [ ] D-Bus integration
+- [ ] Wire Unix-socket JSON IPC transport
+- [ ] Systemd lifecycle integration
 - [ ] Unit tests
 
-### Phase 2: Core Functionality (Weeks 5-8) - 🚧 60% Complete
+### Phase 2: Core Functionality (Weeks 5-8) - 🚧 In progress
 - [ ] Complete document rendering pipeline
-- [ ] Full D-Bus integration
-- [ ] Xilem GUI rendering
-- [ ] Document viewer implementation
-- [ ] Navigation and zoom controls
+- [ ] Complete Unix-socket JSON IPC integration
+- [ ] Phase C Masonry PDF canvas
+- [ ] Complete document viewer implementation
+- [x] Navigation and zoom controls
 - [ ] Print dialog UI
 
 ### Phase 3: Advanced Features (Weeks 9-12) - 📋 Planned

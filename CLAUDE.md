@@ -71,14 +71,20 @@ cargo build -p boomaga-ipp-backend
 ```
 ## Current State
 
-The project is in **Phase 1 (Foundation)** at 80% completion. Recent work has
-focused on:
+The Xilem migration’s Phases A and B are complete. On Denali,
+`boomaga-preview` builds, its tests pass, and the application runs; Phase C (the
+Masonry PDF canvas) is next. The workspace as a whole is still not green because
+`boomaga-ipp-backend` and `boomaga-ipc` have independent stub/compile gaps. See
+`docs/HANDOFF.md` for the current, verified session state rather than relying on
+old workspace-wide error counts.
 
-- Resolving compilation errors (manifest parsing resolved, code compilation ~82
-  errors remaining)
-- Systematic crate-by-crate dependency and import fixes
-- Adding missing type exports to boomaga_core
-- Fixing Eq trait issues with f64 fields
+Preview verification commands used on Denali:
+
+```bash
+cargo check -p boomaga-preview
+cargo test -p boomaga-preview
+cargo run -p boomaga-preview
+```
 
 ## Development Prerequisites
 
@@ -91,7 +97,6 @@ focused on:
 
 - libpoppler-dev (PDF rendering)
 - libpoppler-cpp-dev (PDF API)
-- libghostscript-dev (PostScript)
 - CUPS development libraries
 - Wayland development libraries (for GUI)
 
@@ -139,14 +144,13 @@ focused on:
 
 - `crates/boomaga-preview/src/main.rs` \- Xilem application entry
 - `crates/boomaga-preview/src/app.rs` \- Main application state
-- `crates/boomaga-preview/src/viewer/document_view.rs` \- Document viewer widget
-- `crates/boomaga-preview/src/toolbar.rs` \- Toolbar implementation
+- `crates/boomaga-preview/src/document_renderer.rs` \- Dormant poppler/cairo renderer for Phase C integration
 
 ### Configuration
 
 - `crates/boomaga-config/src/lib.rs` \- Configuration module exports
-- `crates/boomaga-config/src/backend.rs` \- IPP service configuration
-- `crates/boomaga-config/src/preview.rs` \- GUI preferences
+- `crates/boomaga-config/src/backend_config.rs` \- IPP service configuration
+- `crates/boomaga-config/src/preview_config.rs` \- GUI preferences
 
 ### Layout Engine
 
@@ -156,10 +160,15 @@ focused on:
 
 ## Known Issues
 
-- Compilation errors remain ~82 across all crates
-- boomaga-config has ~38 errors (missing type exports)
-- boomaga-ipp-backend needs Arc wrapping fixes for async patterns
-- boomaga-ipc has channel type mismatches and zbus attribute issues
+- `cargo check --workspace` remains red because of backend/IPC stub and compile
+  gaps; consult current compiler output before recording specific counts or causes.
+- `boomaga-preview` is green through Phase B; Phase C is not yet implemented.
+- `FileType` in `boomaga-core` still needs to match the accepted PDF/PWG
+  Raster/JPEG formats.
+
+Historical note: earlier reports of roughly 82 workspace errors and roughly 38
+`boomaga-config` errors predate the crate-by-crate repairs and must not be treated
+as current diagnostics.
 
 ## Reference Material
 
