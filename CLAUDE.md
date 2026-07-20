@@ -206,6 +206,22 @@ controlled**, so a fresh clone picks it up automatically:
 See `.gitignore` for the exact split. The session-context automation is therefore
 provided by the repo — no per-machine setup is required beyond the executable bit.
 
+## Editing files in the OpenShell sandbox
+
+- The normal patch helper may fail before reading a file with `bwrap: No
+  permissions to create a new namespace`. This is an OpenShell/kernel sandbox
+  limitation, not a bad path or malformed patch; retrying the same helper through
+  an escalated shell does not fix it.
+- When that happens, use an approved host-execution command and apply a
+  well-formed unified diff with `git apply`. Run `git apply --check` first, then
+  apply the identical patch. Keep paths relative to `/sandbox/BIPP` and keep the
+  diff limited to the requested files.
+- Do not improvise broad file rewrites. If `git apply` reports a corrupt or
+  non-applicable patch, regenerate the hunk with accurate context and validate it
+  again rather than forcing it.
+- After editing, run `git diff --check`, inspect `git diff`, and scan for any stale
+  text the edit was meant to remove.
+
 ## GitHub access from OpenShell
 
 - `GITHUB_TOKEN` appears as a placeholder inside the sandbox. This is expected:
@@ -216,11 +232,43 @@ provided by the repo — no per-machine setup is required beyond the executable 
   repository subpath instead.
 - Git HTTPS remotes must retain the `.git` suffix:
   `https://github.com/GaryScottMartin/Boomaga-IPP.git`.
-- Git fetch/push uses the `github_git` policy and the injected token through a
-  credential helper or `GIT_ASKPASS`.
-- GitHub API calls must be REST-only and use explicit subpaths allowed by
+- Use `gh api` with explicit REST subpaths for repository metadata, issues, pull
+  requests, refs, and verification. GraphQL-backed `gh` commands are blocked.
+  API calls must use subpaths allowed by
   `openshell/codex/BIPP-project-policy--Codex.yaml`. The repository-root path
   can be denied even when nested Git Data endpoints are permitted.
+- Do not assume `jq` is installed. Prefer `gh api --jq` for response filtering and
+  native `-f`/`-F` fields for simple request bodies.
+- For publishing working-tree changes, make a normal local commit and use the Git
+  HTTPS transport. Do not build commits through the Git Data REST API: multi-step
+  blob/tree/commit requests have repeatedly returned transient HTTP 503 responses
+  in this sandbox.
+- A fresh sandbox has no Git identity. Before the first commit, set it repo-locally:
+
+  ```bash
+  git config --local user.name "Gary S. Martin"
+  git config --local user.email "gmartin@martin-fam.net"
+  ```
+
+- A plain non-interactive `git push` cannot prompt for a username. Pass the
+  gateway-injected token through a command-scoped credential helper; this neither
+  prints nor persists the token:
+
+  ```bash
+  git -c 'credential.helper=!f() { echo username=x-access-token; echo password=$GITHUB_TOKEN; }; f' \
+    push origin main
+  ```
+
+- Before committing, use `git status --short` and stage only the intended files.
+  After pushing, verify the remote ref through REST and confirm the working tree is
+  clean:
+
+  ```bash
+  gh api repos/GaryScottMartin/Boomaga-IPP/git/ref/heads/main \
+    --jq '{ref: .ref, sha: .object.sha}'
+  git status --short
+  ```
+
 - A 403 response containing `X-Openshell-Policy`, `policy_denied`, or
   `rule_missing` is an OpenShell routing-policy failure, not proof that the PAT
   is invalid.
