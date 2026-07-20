@@ -1,6 +1,6 @@
 //! Masonry PDF-page canvas and its Xilem view adapter.
 
-use xilem::core::{MessageContext, Mut, ViewMarker};
+use xilem::core::{MessageContext, MessageResult, Mut, View, ViewMarker};
 use xilem::masonry::accesskit::{Node, Role};
 use xilem::masonry::core::{
     AccessCtx, BoxConstraints, ChildrenIds, LayoutCtx, NoAction, PaintCtx, PropertiesMut,
@@ -11,7 +11,7 @@ use xilem::masonry::peniko::{Color, Fill, ImageBrush, ImageFormat};
 use xilem::masonry::properties::ObjectFit;
 use xilem::masonry::vello::peniko::{ImageAlphaType, ImageData};
 use xilem::masonry::vello::Scene;
-use xilem::{MessageResult, Pod, View, ViewCtx};
+use xilem::{Pod, ViewCtx};
 
 /// A rendered PDF page ready for Masonry/Vello painting.
 #[derive(Clone, PartialEq)]
