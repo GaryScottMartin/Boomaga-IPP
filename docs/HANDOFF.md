@@ -16,8 +16,8 @@
 # Boomaga-IPP — Session Handoff
 
 > **Last updated:** 2026-07-22 · **By:** Codex + Gary Scott Martin
-> **Session focus:** completed and host-verified Xilem Phase D on `xilem-phase-d`;
-> check and all ten tests pass, with runtime evidence committed. Merge to `main` is next.
+> **Session focus:** completed, host-verified, and fast-forwarded Xilem Phase D to `main`;
+> check and all ten tests pass, with runtime evidence committed. Phase E is next.
 
 ---
 
@@ -28,9 +28,9 @@ closed. This session was tooling/hygiene, not code: reconciled `PROJECT_PLAN.md`
 `XILEM_MIGRATION.md` with the real code (both were badly stale), **vendored** the `.claude/`
 handoff config so it's portable and version-controlled, and added **host-verified** OpenShell
 provisioning — `openshell/create-bipp-sandbox.sh` auto-clones the repo and launches claude
-(the `--from` image route was tried and abandoned; see §2). **GUI migration:** Phases A/B/C
-are complete on `main`. Phase D is complete and host-verified on `xilem-phase-d`: native PDF
-selection, thread-confined Poppler loading/rendering through Xilem's worker/message path,
+(the `--from` image route was tried and abandoned; see §2). **GUI migration:** Phases A/B/C/D
+are complete and host-verified on `main`: native PDF selection, thread-confined Poppler
+loading/rendering through Xilem's worker/message path,
 loading/error/progress state, and an on-demand page cache. Denali passed the preview check and
 all ten tests; runtime evidence is committed. Separately, `boomaga-ipp-backend` /
 `boomaga-ipc` still don't compile (independent stub/bug issues).
@@ -91,7 +91,7 @@ all ten tests; runtime evidence is committed. Separately, `boomaga-ipp-backend` 
       passed, all seven tests passed, and a real multi-page PDF rendered with working navigation
       and zoom. Evidence: `docs/screenshots/Bommaga-IPP-Preview-Screenshot_2026-07-19_185221.png`.
       Phase C was fast-forwarded to `main`; its feature branch was deleted locally and remotely.
-      Phase D follows on the `xilem-phase-d` branch.
+      Phase D followed and is now also on `main`.
 - [x] **XILEM Phase D — DONE and host-verified (2026-07-22).** Added native PDF selection,
       asynchronous CLI-path loading, a dedicated renderer thread retaining the non-`Send`/`Sync`
       Poppler document, Xilem `worker`/`MessageProxy` delivery, explicit loading/error/progress
@@ -99,7 +99,7 @@ all ten tests; runtime evidence is committed. Separately, `boomaga-ipp-backend` 
       `Cargo.lock`; `cargo check -p boomaga-preview` passed and all ten tests passed. Runtime
       evidence: `docs/screenshots/Boomaga-IPP-Preview-Screenshot_2026-07-21_232928.png`.
       Preview Clippy remains blocked only by the independent pre-existing `boomaga-config`
-      absurd `u16 > 65535` comparison. **Next: merge Phase D to `main`.**
+      absurd `u16 > 65535` comparison. **Next: Phase E imposition and IPC wiring.**
 
 ## 3. Open questions / waiting on
 <!-- Decisions or inputs owned by the human, or external events being awaited. -->
@@ -122,8 +122,8 @@ all ten tests; runtime evidence is committed. Separately, `boomaga-ipp-backend` 
 - **Imposition (N-up/booklet/scale/rotate/margins/gutter) computed in `boomaga-layout-engine`**;
   qpdf-rs assembles/applies content-preserving transforms; poppler-rs renders preview. (Issue #11.)
 - **No plugin system.** `boomaga-plugins` deleted; specs stay silent. (Issue #10.) Code fully clean.
-- **GUI = Xilem** (Druid deprecated). Phases A/B/C are on `main`; Phase D is complete and
-  host-verified on `xilem-phase-d`, awaiting merge.
+- **GUI = Xilem** (Druid deprecated). Phases A/B/C/D are complete and host-verified on
+  `main`; Phase E is next.
 - **SRS/UIS v0.2.2 Appendix C now conforms to code** (`c471a71`); `docs/uml/*.puml` is the
   maintained source. (Supersedes the earlier "Appendix C is an unreconciled Perplexity model" note.)
 - **`.claude/` handoff config is repo-shipped and vendored** (real files — no symlinks, no
@@ -160,7 +160,7 @@ all ten tests; runtime evidence is committed. Separately, `boomaga-ipp-backend` 
   a co-author via the trailer). Also note `git commit` only stages what's already staged — after a
   `git mv` plus separate edits, `git add -A` (or `--amend` afterward) so all files land in one commit.
 - **Workspace won't compile as a whole** because backend/IPC gaps remain; `boomaga-preview`
-  itself is green through Phase C. Don't trust "80% done" language in older docs.
+  itself is green through Phase D. Don't trust "80% done" language in older docs.
 - **Sandbox persistence:** container is `restart=unless-stopped` (files survive reboot), BUT
   networking + gateway JWT are fragile — a live session isn't reliably restorable. Back up to git.
 - **No Rust toolchain in the sandbox** — no `cargo`/`rustc`; compile-check on the host.
@@ -178,7 +178,7 @@ all ten tests; runtime evidence is committed. Separately, `boomaga-ipp-backend` 
 <!-- Where the real detail lives. Keep this file thin; link out. -->
 - `README.md`, `CLAUDE.md` — project overview, build, inter-crate patterns, Claude Code setup.
 - `docs/PROJECT_PLAN.md` — architecture, phases, honest per-crate status.
-- `docs/XILEM_MIGRATION.md` — GUI migration plan (Phase D is verified; merge is next).
+- `docs/XILEM_MIGRATION.md` — GUI migration plan (Phase E is next).
 - `docs/SW-Reqrmnts-Spec--latest.pdf`, `docs/User-Interface-Spec--latest.pdf` — current specs (v0.2.2).
 - `docs/uml/*.puml` — code-conformant PlantUML (now also embedded in spec Appendix C).
 - `openshell/create-bipp-sandbox.sh` + `openshell/README.md` — host-side sandbox

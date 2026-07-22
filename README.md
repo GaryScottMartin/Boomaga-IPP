@@ -90,9 +90,9 @@ boomaga-preview [--debug] [/path/to/document.pdf]
 
 The six-crate workspace remains under active development and does not yet build
 as a whole because the backend and IPC crates retain stub/compile gaps. The
-Xilem preview migration Phases A, B, and C are complete and host-verified on
-Denali. Real PDF rendering, navigation, zoom, and all seven tests pass; Phase D
-(file-open UI and asynchronous rendering) is next. See
+Xilem preview migration Phases A through D are complete and host-verified on
+Denali. Native file selection, asynchronous on-demand PDF rendering, navigation,
+zoom, and all ten tests pass; Phase E (imposition and IPC wiring) is next. See
 [`docs/HANDOFF.md`](docs/HANDOFF.md) for current session state and
 [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) for detailed status.
 
@@ -138,7 +138,7 @@ Contributions are welcome! Please see CONTRIBUTING.md for guidelines.
 - [x] Project foundation
 - [x] Core infrastructure
 - [ ] Complete IPP server implementation
-- [x] Xilem preview Phases A/B/C
+- [x] Xilem preview Phases A/B/C/D
 - [x] Layout engine
 - [x] Configuration management system
 - [x] PDF rendering foundation (Poppler)
@@ -151,7 +151,7 @@ Contributions are welcome! Please see CONTRIBUTING.md for guidelines.
 - [ ] Complete document rendering pipeline
 - [ ] Complete Unix-socket JSON IPC integration
 - [x] Phase C Masonry PDF canvas
-- [ ] Phase D file-open UI and asynchronous rendering
+- [x] Phase D file-open UI and asynchronous rendering
 - [ ] Complete document viewer implementation
 - [x] Navigation and zoom controls
 - [ ] Print dialog UI

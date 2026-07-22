@@ -69,11 +69,10 @@ component diagram (solid = present in code; dashed = decided-but-not-yet-wired).
 - Active development by the Linebender community
 - Druid (the original choice) is unmaintained — see [`docs/XILEM_MIGRATION.md`](./XILEM_MIGRATION.md)
 
-**Status:** migration Phases A, B, and C are complete. The Xilem 0.4 preview
-builds, all seven tests pass, and Denali visually verified real PDF rendering,
-navigation, and zoom. Phase D (file-open UI and async rendering) is next. See
-the migration plan for
-the remaining work.
+**Status:** migration Phases A through D are complete. The Xilem 0.4 preview
+builds, all ten tests pass, and Denali verified native PDF selection,
+asynchronous on-demand rendering, navigation, and zoom. Phase E (imposition and
+IPC wiring) is next. See the migration plan for the remaining work.
 
 ### Display: Native Wayland
 - Direct Wayland compositor access (via winit)
@@ -139,7 +138,7 @@ crates/
 
 ### Phase 2: Core Functionality (Weeks 5-8)
 - Print job processing
-- Xilem GUI through Phase C (real PDF canvas; Phase D async rendering next)
+- Xilem GUI through Phase D (native file-open and asynchronous on-demand rendering)
 - Layout engine (N-up, booklet)
 - Document rendering
 
@@ -248,7 +247,7 @@ crates/
 - Cancellation support
 
 ### Week 6: GUI Foundation
-- Xilem migration Phases A/B/C complete; implement Phase D async rendering
+- Xilem migration Phases A/B/C/D complete; Phase E imposition and IPC wiring next
   (see `XILEM_MIGRATION.md`)
 - Main window (winit)
 - Preview rendering
@@ -319,10 +318,10 @@ crates/
 
 ## Implementation Status
 
-> **Reality check (2026-07-20):** the workspace **does not currently compile**
+> **Reality check (2026-07-22):** the workspace **does not currently compile**
 > as a whole because `boomaga-ipp-backend` and `boomaga-ipc` retain independent
 > stub/compile gaps. `boomaga-preview` is no longer the blocker: Xilem migration
-> Phases A/B/C build, test, and run on Denali. Percentages below are estimates of
+> Phases A/B/C/D build, test, and run on Denali. Percentages below are estimates of
 > *design + partial implementation*, not of green-workspace completeness.
 
 ### Per-crate state
@@ -332,7 +331,7 @@ crates/
 | `boomaga-core` | lib | Types complete; compiles | 0 | Plugin residue removed. `FileType` still lists PostScript/Ps — update to PDF/PWG/JPEG (decision #4). `parse_metadata()` is a TODO no-op. |
 | `boomaga-config` | lib | Complete | 3 | `ConfigManager` wired; plugin settings removed. |
 | `boomaga-layout-engine` | lib | Real & usable | 6 | N-up, booklet, transforms implemented; a few TODOs for page-size lookup. |
-| `boomaga-preview` | bin | Phases A/B/C complete | 7 | Xilem 0.4 renders real PDFs; seven tests plus navigation/zoom visually verified on Denali; Phase D is next. |
+| `boomaga-preview` | bin | Phases A/B/C/D complete | 10 | Xilem 0.4 provides native PDF selection and asynchronous on-demand rendering; ten tests and runtime behavior verified on Denali. |
 | `boomaga-ipc` | lib | Skeleton, **unused** | 0 | Protocol defined; Unix-socket transport stubbed; not yet imported by backend/GUI. |
 | `boomaga-ipp-backend` | bin | Scaffolded, partial | 0 | `IppServer`/`JobProcessor`/`JobQueue` present; request parsing incomplete; processor has a compile bug; no CUPS/downstream code. |
 
@@ -364,12 +363,12 @@ crates/
 - IPC protocol message types defined
 
 #### Remaining Phase 2 Tasks
-- Phase D file-open/async rendering, then remaining menu/print-dialog GUI work
+- Phase E imposition/IPC wiring, then remaining menu/print-dialog GUI work
 - Wire imposition (layout engine) into the GUI preview
 - Complete document-ready / job-status IPC round trip
 - Downstream submit path (CUPS/IPP client)
 
-### Preview host verification (Denali, 2026-07-19)
+### Preview host verification (Denali, 2026-07-22)
 
 ```bash
 cargo check -p boomaga-preview
@@ -377,8 +376,10 @@ cargo test -p boomaga-preview
 cargo run -p boomaga-preview
 ```
 
-All three commands succeeded; the running Phase B window was visually verified.
-No absolute host screenshot path is recorded here.
+The preview check passed, all ten tests passed, and Phase D runtime behavior was
+verified. Evidence: `docs/screenshots/Boomaga-IPP-Preview-Screenshot_2026-07-21_232928.png`.
+Preview Clippy remains blocked by the independent pre-existing `boomaga-config`
+absurd `u16 > 65535` comparison.
 
 ---
 

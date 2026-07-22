@@ -4,8 +4,8 @@
 > **Phase C status:** **DONE and host-verified on Denali (2026-07-20)** — the
 > Masonry canvas displays real Poppler/Cairo-rendered PDF pages; navigation and
 > zoom work as expected, and all seven preview tests pass.
-> **Status:** Phases A/B/C are complete on `main`; Phase D is complete and
-> host-verified on `xilem-phase-d`. Merging the feature branch is next.
+> **Status:** Phases A/B/C/D are complete and host-verified on `main`;
+> Phase E (imposition and IPC wiring) is next.
 
 ## Overview
 This document tracks replacing Druid with Xilem for the `boomaga-preview` GUI.
@@ -27,9 +27,8 @@ Target architecture: SRS/UIS **v0.2.2** Appendix C and [`docs/uml/`](./uml/)
 
 ## Current Status
 
-Phases A, B, and C are complete on `main`. Phase D is complete and
-host-verified on the `xilem-phase-d` feature branch: a native PDF chooser and
-command-line paths feed one background renderer thread through Xilem 0.4's
+Phases A through D are complete and host-verified on `main`: a native PDF chooser
+and command-line paths feed one background renderer thread through Xilem 0.4's
 `worker`/`MessageProxy` mechanism. `AppData` holds loading/error/progress state
 and a sparse on-demand page cache. Denali regenerated `Cargo.lock`, passed
 `cargo check -p boomaga-preview` and all ten tests, and recorded runtime evidence.
@@ -233,7 +232,7 @@ fn main() -> anyhow::Result<()> {
 2. ✅ **Phase A** — deleted Druid + pseudo-Xilem code; compiling Xilem skeleton on `main`.
 3. ✅ **Phase B** — core view tree (toolbar row, navigation, zoom, status).
 4. ✅ **Phase C** — custom canvas + Poppler/Cairo renderer handoff, host-verified.
-5. ✅ **Phase D** — file-open UI, async rendering, worker delivery, and on-demand cache; host-verified.
+5. ✅ **Phase D** — file-open UI, async rendering, worker delivery, and on-demand cache; host-verified on `main`.
 6. 🚧 Phase E — imposition + IPC wiring.
 7. 🚧 Phase F — print dialog & downstream submit.
 8. 🚧 Phase G — testing, polish, docs.
