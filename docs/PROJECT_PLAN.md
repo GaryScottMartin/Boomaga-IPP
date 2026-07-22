@@ -1,6 +1,6 @@
 # Modern Boomaga Virtual Printer - Implementation Plan
 
-> **Last reviewed against code:** 2026-07-20 (6-crate workspace; 2 binaries).
+> **Last reviewed against code:** 2026-07-22 (6-crate workspace; 2 binaries).
 > **Authoritative architecture:** SRS & UIS **v0.2.2**, Appendix C, and the
 > code-conformant PlantUML in [`docs/uml/`](./uml/) (conforms to code @ `34652fa`).
 > Where this plan and the specs/UML disagree, the specs/UML win — this document
@@ -20,9 +20,8 @@ Need to create a modern version of boomaga (BOOklet MANager), a virtual printer 
 - **UI**: Full-featured document preview & imposition UI. **No plugin system**
   (decision #10 — the `boomaga-plugins` crate and all plugin hooks were removed)
 - **Supported input formats**: PDF, PWG Raster, JPEG. **PostScript and Ghostscript
-  were dropped** (not IPP-mandatory; decision #4). *Code gap:* `FileType` in
-  `boomaga-core` still enumerates `Pdf`/`PostScript`/`Ps` and lacks `PwgRaster`/`Jpeg`
-  — it must be updated to match this decision.
+  were dropped** (not IPP-mandatory; decision #4). `FileType` now matches the
+  accepted `Pdf`/`PwgRaster`/`Jpeg` set.
 
 ## Architecture Overview
 
@@ -33,7 +32,7 @@ component diagram (solid = present in code; dashed = decided-but-not-yet-wired).
 1. **Backend Service** (`boomaga-ipp-backend`, systemd service)
    - Receives print jobs via an IPP Everywhere print service (`IppServer`, TCP)
    - Queues and processes jobs (`JobQueue`, `JobProcessor`)
-   - Notifies the GUI over the Unix-socket IPC (planned wiring)
+   - Notifies the GUI over versioned Unix-socket JSON IPC
 
 2. **Preview Application** (`boomaga-preview`, Wayland GUI · Xilem)
    - Document viewer (`DocumentRenderer` via poppler)
@@ -69,10 +68,11 @@ component diagram (solid = present in code; dashed = decided-but-not-yet-wired).
 - Active development by the Linebender community
 - Druid (the original choice) is unmaintained — see [`docs/XILEM_MIGRATION.md`](./XILEM_MIGRATION.md)
 
-**Status:** migration Phases A through D are complete. The Xilem 0.4 preview
-builds, all ten tests pass, and Denali verified native PDF selection,
-asynchronous on-demand rendering, navigation, and zoom. Phase E (imposition and
-IPC wiring) is next. See the migration plan for the remaining work.
+**Status:** migration Phases A through E are complete. The Xilem 0.4 preview
+builds, all 19 tests pass, and Denali verified native PDF selection,
+asynchronous on-demand rendering, navigation, zoom, N-up imposition, and backend
+job-status notifications. Phase F (print options and downstream submission) is
+next. See the migration plan for the remaining work.
 
 ### Display: Native Wayland
 - Direct Wayland compositor access (via winit)
@@ -138,7 +138,7 @@ crates/
 
 ### Phase 2: Core Functionality (Weeks 5-8)
 - Print job processing
-- Xilem GUI through Phase D (native file-open and asynchronous on-demand rendering)
+- Xilem GUI through Phase E (native file-open, asynchronous rendering, N-up, and IPC)
 - Layout engine (N-up, booklet)
 - Document rendering
 
@@ -193,9 +193,10 @@ crates/
 - `src/job_queue.rs` - `JobQueue` (tokio mpsc + atomic size)
 
 ### GUI (`boomaga-preview`)
-- `src/main.rs` - Xilem 0.4 GUI entry point and Phase B view
-- `src/app.rs` - application state (`AppData`) and navigation/zoom tests
+- `src/main.rs` - Xilem 0.4 GUI entry point and view tree
+- `src/app.rs` - application state (`AppData`), imposition, and job-status handling
 - `src/document_renderer.rs` - poppler + cairo rendering (real)
+- `src/ipc_worker.rs` - Unix-socket notification worker and Xilem delivery
 
 ### Layout Engine (`boomaga-layout-engine`)
 - `src/n_up.rs` - N-up layout (`NUpCalculator`)
@@ -211,7 +212,7 @@ crates/
 
 ### IPC (`boomaga-ipc`)
 - `src/protocol.rs` - `Message` types / JSON protocol
-- `src/transport.rs` - `UnixSocket` transport (stubbed)
+- `src/transport.rs` - framed, versioned Unix-socket JSON transport
 - `src/d_bus.rs` - zbus lifecycle skeleton (systemd only)
 
 ## Step-by-Step Implementation
@@ -247,7 +248,7 @@ crates/
 - Cancellation support
 
 ### Week 6: GUI Foundation
-- Xilem migration Phases A/B/C/D complete; Phase E imposition and IPC wiring next
+- Xilem migration Phases A/B/C/D/E complete; Phase F print workflow next
   (see `XILEM_MIGRATION.md`)
 - Main window (winit)
 - Preview rendering
@@ -318,22 +319,21 @@ crates/
 
 ## Implementation Status
 
-> **Reality check (2026-07-22):** the workspace **does not currently compile**
-> as a whole because `boomaga-ipp-backend` and `boomaga-ipc` retain independent
-> stub/compile gaps. `boomaga-preview` is no longer the blocker: Xilem migration
-> Phases A/B/C/D build, test, and run on Denali. Percentages below are estimates of
-> *design + partial implementation*, not of green-workspace completeness.
+> **Reality check (2026-07-22):** focused checks and tests for the four Phase E
+> crates pass on Denali. A fresh workspace-wide `cargo check --workspace` has not
+> yet been recorded, so this plan does not claim a completely green workspace.
+> Percentages below remain estimates of *design + partial implementation*.
 
 ### Per-crate state
 
 | Crate | Kind | State | Tests | Notes |
 |-------|------|-------|-------|-------|
-| `boomaga-core` | lib | Types complete; compiles | 0 | Plugin residue removed. `FileType` still lists PostScript/Ps — update to PDF/PWG/JPEG (decision #4). `parse_metadata()` is a TODO no-op. |
+| `boomaga-core` | lib | Types complete; compiles | 0 | Plugin residue removed. `FileType` matches PDF/PWG Raster/JPEG. `parse_metadata()` is a TODO no-op. |
 | `boomaga-config` | lib | Complete | 3 | `ConfigManager` wired; plugin settings removed. |
-| `boomaga-layout-engine` | lib | Real & usable | 6 | N-up, booklet, transforms implemented; a few TODOs for page-size lookup. |
-| `boomaga-preview` | bin | Phases A/B/C/D complete | 10 | Xilem 0.4 provides native PDF selection and asynchronous on-demand rendering; ten tests and runtime behavior verified on Denali. |
-| `boomaga-ipc` | lib | Skeleton, **unused** | 0 | Protocol defined; Unix-socket transport stubbed; not yet imported by backend/GUI. |
-| `boomaga-ipp-backend` | bin | Scaffolded, partial | 0 | `IppServer`/`JobProcessor`/`JobQueue` present; request parsing incomplete; processor has a compile bug; no CUPS/downstream code. |
+| `boomaga-layout-engine` | lib | Real & usable | 7 | N-up, booklet, transforms implemented; N-up partial-sheet behavior is tested. |
+| `boomaga-preview` | bin | Phases A/B/C/D/E complete | 19 | Native PDF selection, asynchronous rendering, N-up preview, navigation/zoom, and IPC status updates verified on Denali. |
+| `boomaga-ipc` | lib | Transport wired | 3 | Versioned newline-delimited JSON framing is used by backend and preview; focused tests pass. |
+| `boomaga-ipp-backend` | bin | Scaffolded, partial | 1 | Queue/processor compile and emit ordered lifecycle notifications; real IPP parsing and downstream submission remain incomplete. |
 
 ### Phase 1: Foundation (Weeks 1-4) — 🚧 **~65%** (was reported 80%)
 
@@ -346,12 +346,10 @@ crates/
 - IPP service scaffolding (`IppServer`, `JobQueue`, `JobProcessor`)
 
 #### Remaining Phase 1 Tasks
-- **Make the workspace compile** — fix the remaining backend/IPC compile gaps
-- Update `FileType` to PDF/PWG Raster/JPEG; drop PostScript variants (decision #4)
-- Wire Unix-socket IPC transport (`boomaga-ipc`) into backend + GUI (currently unused)
-- Complete IPP request parsing / response generation; fix `JobProcessor`/`JobQueue` mismatch
+- Record a fresh workspace-wide compiler/test baseline
+- Complete IPP request parsing / response generation
 - systemd socket activation (zbus_systemd) — not yet wired
-- Unit tests for `boomaga-core`, `boomaga-ipc`, `boomaga-ipp-backend` (currently 0)
+- Expand core, IPC, and backend coverage beyond the focused Phase E tests
 
 ---
 
@@ -363,9 +361,9 @@ crates/
 - IPC protocol message types defined
 
 #### Remaining Phase 2 Tasks
-- Phase E imposition/IPC wiring, then remaining menu/print-dialog GUI work
-- Wire imposition (layout engine) into the GUI preview
-- Complete document-ready / job-status IPC round trip
+- Phase F print-options dialog and downstream printer workflow
+- Add booklet controls (deferred from the accepted Phase E N-up scope)
+- Complete document-ready IPC and captured-document handoff
 - Downstream submit path (CUPS/IPP client)
 
 ### Preview host verification (Denali, 2026-07-22)
@@ -373,13 +371,16 @@ crates/
 ```bash
 cargo check -p boomaga-preview
 cargo test -p boomaga-preview
-cargo run -p boomaga-preview
+cargo check -p boomaga-ipc
+cargo test -p boomaga-ipc
+cargo check -p boomaga-ipp-backend
+cargo test -p boomaga-ipp-backend
+cargo test -p boomaga-layout-engine
 ```
 
-The preview check passed, all ten tests passed, and Phase D runtime behavior was
-verified. Evidence: `docs/screenshots/Boomaga-IPP-Preview-Screenshot_2026-07-21_232928.png`.
-Preview Clippy remains blocked by the independent pre-existing `boomaga-config`
-absurd `u16 > 65535` comparison.
+All focused checks passed. Denali reported 19 preview tests, 3 IPC tests,
+1 backend test, and 7 layout-engine tests passing. Phase E preview behavior was
+also reviewed interactively; the impossible `u16 > 65535` lint blocker was fixed.
 
 ---
 

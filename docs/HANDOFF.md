@@ -16,24 +16,20 @@
 # Boomaga-IPP — Session Handoff
 
 > **Last updated:** 2026-07-22 · **By:** Codex + Gary Scott Martin
-> **Session focus:** completed, host-verified, and fast-forwarded Xilem Phase D to `main`;
-> check and all ten tests pass, with runtime evidence committed. Phase E is next.
+> **Session focus:** completed, host-verified, and merged Xilem Phase E to `main`;
+> N-up imposition and backend-to-preview job-status IPC are green. Phase F is next.
 
 ---
 
 ## 1. TL;DR — where things stand
 <!-- One short paragraph. What just happened, what's the single most important next step. -->
-Specs **v0.2.2** now embed the code-conformant Appendix C UML (`c471a71`), so that thread is
-closed. This session was tooling/hygiene, not code: reconciled `PROJECT_PLAN.md` +
-`XILEM_MIGRATION.md` with the real code (both were badly stale), **vendored** the `.claude/`
-handoff config so it's portable and version-controlled, and added **host-verified** OpenShell
-provisioning — `openshell/create-bipp-sandbox.sh` auto-clones the repo and launches claude
-(the `--from` image route was tried and abandoned; see §2). **GUI migration:** Phases A/B/C/D
-are complete and host-verified on `main`: native PDF selection, thread-confined Poppler
-loading/rendering through Xilem's worker/message path,
-loading/error/progress state, and an on-demand page cache. Denali passed the preview check and
-all ten tests; runtime evidence is committed. Separately, `boomaga-ipp-backend` /
-`boomaga-ipc` still don't compile (independent stub/bug issues).
+Xilem migration Phases A through E are complete, host-verified, and merged to `main`.
+The preview supports native PDF loading, asynchronous sparse rendering, navigation/zoom,
+and 1/2/4/6/8-up imposition with horizontal/vertical fill and the intended sheet
+orientations. Versioned Unix-socket JSON IPC now carries backend job lifecycle messages into
+typed, deduplicated preview state. Focused Denali checks pass; tests are 7 layout-engine,
+3 IPC, 1 backend, and 19 preview. The next implementation thread is Phase F: print options,
+printer selection, and downstream submission. Booklet UI remains a deliberate follow-up.
 
 ## 2. Active threads / in progress
 <!-- The heart of the file. Each item: what, state, concrete next action. Delete when done. -->
@@ -98,18 +94,23 @@ all ten tests; runtime evidence is committed. Separately, `boomaga-ipp-backend` 
       state, generation-safe stale-result rejection, and on-demand caching. Denali regenerated
       `Cargo.lock`; `cargo check -p boomaga-preview` passed and all ten tests passed. Runtime
       evidence: `docs/screenshots/Boomaga-IPP-Preview-Screenshot_2026-07-21_232928.png`.
-      Preview Clippy remains blocked only by the independent pre-existing `boomaga-config`
-      absurd `u16 > 65535` comparison. **Next: Phase E imposition and IPC wiring.**
+      The focused Phase D baseline remains useful historical evidence; Phase E superseded its
+      test count and removed the independent config lint blocker.
+- [x] **XILEM Phase E — DONE, host-verified, and merged to `main` (2026-07-22).** Added
+      1/2/4/6/8-up preview imposition, horizontal/vertical fill, correct sheet orientation,
+      sheet navigation, and the finalized toolbar/footer layout. Added protocol-v1 framed JSON
+      IPC, backend lifecycle notifications, and a Xilem IPC worker that updates deduplicated
+      `AppData` job status. Denali passed 7 layout, 3 IPC, 1 backend, and 19 preview tests.
+      The feature branch was deleted after the fast-forward merge. Booklet controls were
+      deferred; Phase F print options and downstream submission are next.
 
 ## 3. Open questions / waiting on
 <!-- Decisions or inputs owned by the human, or external events being awaited. -->
-- **Preview Clippy is blocked by an independent config lint:** `boomaga-config` compares a
-  `u16` IPP port with `> 65535`; Phase D check and tests are green.
-- **Workspace still not compile-verified** here (no toolchain). Phase C is green on the host;
-  **`cargo check --workspace` is still red**
-  because `boomaga-ipp-backend` / `boomaga-ipc` have their own errors (see §2). Re-run both on the host.
-- Also fix `FileType` in `boomaga-core` to match decision #4 (still lists `PostScript`/`Ps`; needs
-  `Pdf`/`PwgRaster`/`Jpeg`).
+- A fresh workspace-wide `cargo check --workspace` has not been recorded. The focused Phase E
+  crates are green on Denali; establish the full-workspace baseline before broader claims.
+- Real IPP request parsing/response generation, captured-document handoff, and downstream
+  printer submission remain incomplete.
+- Booklet controls were outside the accepted Phase E N-up scope and remain open.
 
 ## 4. Key decisions & rationale (durable — don't re-litigate)
 <!-- Settled calls a future session should honor unless explicitly revisited. -->
@@ -118,12 +119,12 @@ all ten tests; runtime evidence is committed. Separately, `boomaga-ipp-backend` 
 - **Capture side exposes an IPP Everywhere print *service*** (driverless queue CUPS forwards to);
   downstream *may* act as an IPP client. (Issue #1.)
 - **Accepted formats: PDF, PWG Raster, JPEG.** PostScript & **Ghostscript dropped** — poppler-rs +
-  qpdf + Boomaga-IPP code cover the residuals. (Issue #4.) *Code still lags — see §3.*
+  qpdf + Boomaga-IPP code cover the residuals. (Issue #4.) `FileType` now matches this set.
 - **Imposition (N-up/booklet/scale/rotate/margins/gutter) computed in `boomaga-layout-engine`**;
   qpdf-rs assembles/applies content-preserving transforms; poppler-rs renders preview. (Issue #11.)
 - **No plugin system.** `boomaga-plugins` deleted; specs stay silent. (Issue #10.) Code fully clean.
-- **GUI = Xilem** (Druid deprecated). Phases A/B/C/D are complete and host-verified on
-  `main`; Phase E is next.
+- **GUI = Xilem** (Druid deprecated). Phases A/B/C/D/E are complete and host-verified on
+  `main`; Phase F is next.
 - **SRS/UIS v0.2.2 Appendix C now conforms to code** (`c471a71`); `docs/uml/*.puml` is the
   maintained source. (Supersedes the earlier "Appendix C is an unreconciled Perplexity model" note.)
 - **`.claude/` handoff config is repo-shipped and vendored** (real files — no symlinks, no
@@ -159,11 +160,12 @@ all ten tests; runtime evidence is committed. Separately, `boomaga-ipp-backend` 
   `git config user.email "gmartin@martin-fam.net"` (matches prior commit authorship; Claude stays
   a co-author via the trailer). Also note `git commit` only stages what's already staged — after a
   `git mv` plus separate edits, `git add -A` (or `--amend` afterward) so all files land in one commit.
-- **Workspace won't compile as a whole** because backend/IPC gaps remain; `boomaga-preview`
-  itself is green through Phase D. Don't trust "80% done" language in older docs.
+- **Focused Phase E crates are green; full-workspace status is unrecorded.** Do not convert
+  focused results into a workspace-wide claim without running the workspace command.
 - **Sandbox persistence:** container is `restart=unless-stopped` (files survive reboot), BUT
   networking + gateway JWT are fragile — a live session isn't reliably restorable. Back up to git.
-- **No Rust toolchain in the sandbox** — no `cargo`/`rustc`; compile-check on the host.
+- **The sandbox now has a Rust toolchain.** Native libraries, cached dependencies, or network
+  policy can still differ from Denali, so record where verification was performed.
 - **Spec PDFs use subset fonts** — plain text extraction is garbage; decode via embedded ToUnicode
   CMaps. `docs/*--latest.pdf` == **v0.2.2** (byte-identical); v0.1.0/v0.2.0/v0.2.1 baselines kept.
 
@@ -178,7 +180,7 @@ all ten tests; runtime evidence is committed. Separately, `boomaga-ipp-backend` 
 <!-- Where the real detail lives. Keep this file thin; link out. -->
 - `README.md`, `CLAUDE.md` — project overview, build, inter-crate patterns, Claude Code setup.
 - `docs/PROJECT_PLAN.md` — architecture, phases, honest per-crate status.
-- `docs/XILEM_MIGRATION.md` — GUI migration plan (Phase E is next).
+- `docs/XILEM_MIGRATION.md` — GUI migration plan (Phase F is next).
 - `docs/SW-Reqrmnts-Spec--latest.pdf`, `docs/User-Interface-Spec--latest.pdf` — current specs (v0.2.2).
 - `docs/uml/*.puml` — code-conformant PlantUML (now also embedded in spec Appendix C).
 - `openshell/create-bipp-sandbox.sh` + `openshell/README.md` — host-side sandbox
