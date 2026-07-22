@@ -78,7 +78,7 @@ fn grid_dimensions(pages_per_sheet: u8) -> (usize, usize) {
 }
 
 fn imposed_sheet_size(source_size: Size, pages_per_sheet: u8) -> Size {
-    if pages_per_sheet == 2 {
+    if matches!(pages_per_sheet, 2 | 8) {
         Size::new(source_size.height, source_size.width)
     } else {
         source_size
@@ -303,5 +303,6 @@ mod tests {
         assert_eq!(imposed_sheet_size(portrait, 1), portrait);
         assert_eq!(imposed_sheet_size(portrait, 2), Size::new(842.0, 595.0));
         assert_eq!(imposed_sheet_size(portrait, 4), portrait);
+        assert_eq!(imposed_sheet_size(portrait, 8), Size::new(842.0, 595.0));
     }
 }
