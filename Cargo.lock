@@ -631,6 +631,7 @@ dependencies = [
  "anyhow",
  "boomaga-config",
  "boomaga-core",
+ "boomaga-layout-engine",
  "cairo-rs",
  "chrono",
  "kurbo 0.11.3",
