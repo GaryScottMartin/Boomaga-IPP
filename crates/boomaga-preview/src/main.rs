@@ -6,11 +6,13 @@
 
 mod app;
 mod document_renderer;
+mod ipc_worker;
 mod pdf_canvas;
 mod render_worker;
 
 use app::{AppData, FillOrder, LoadState};
 use boomaga_core::PagesPerSheet;
+use ipc_worker::ipc_worker;
 use pdf_canvas::pdf_canvas;
 use render_worker::renderer_worker;
 use std::ffi::OsStr;
@@ -92,7 +94,7 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
     .expand_height();
     let interface = flex(Axis::Vertical, (content.flex(1.0), footer)).must_fill_major_axis(true);
 
-    fork(interface, renderer_worker())
+    fork(fork(interface, renderer_worker()), ipc_worker())
 }
 
 fn status_text(data: &AppData) -> String {

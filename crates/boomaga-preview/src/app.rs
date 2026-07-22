@@ -4,11 +4,13 @@
 //! `app_logic` (see `main.rs`) and delivers renderer events through the worker
 //! channel stored here. Matches the `AppData` in `docs/uml/C2-class.puml`.
 
-use boomaga_core::{Document, JobId, PageSize, PagesPerSheet, PrintOptions};
+use boomaga_core::{Document, JobId, JobStatus, PageSize, PagesPerSheet, PrintOptions};
+use boomaga_ipc::MessagePayload;
 use boomaga_layout_engine::NUpCalculator;
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 use std::path::PathBuf;
 
+use crate::ipc_worker::{IpcCommand, IpcEvent, IpcSender};
 use crate::pdf_canvas::CanvasImage;
 use crate::render_worker::{RendererCommand, RendererEvent, RendererSender};
 
@@ -26,6 +28,14 @@ pub enum LoadState {
 pub enum FillOrder {
     Horizontal,
     Vertical,
+}
+
+/// Connection state for backend job notifications.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IpcState {
+    Connecting,
+    Connected,
+    Disconnected,
 }
 
 /// Preview application state.
@@ -57,6 +67,12 @@ pub struct AppData {
     pub print_options: PrintOptions,
     /// Ids of jobs submitted this session.
     pub job_history: Vec<JobId>,
+    /// Latest status received for each backend job.
+    pub job_statuses: HashMap<String, JobStatus>,
+    /// Current backend notification connection state.
+    pub ipc_state: IpcState,
+    /// Most recent IPC connection error.
+    pub ipc_error: Option<String>,
 }
 
 impl Default for AppData {
@@ -72,6 +88,9 @@ impl Default for AppData {
             choosing_file: false,
             print_options: PrintOptions::default(),
             job_history: Vec::new(),
+            job_statuses: HashMap::new(),
+            ipc_state: IpcState::Disconnected,
+            ipc_error: None,
             renderer_sender: None,
             pending_document_path: None,
             render_generation: 0,
@@ -121,6 +140,48 @@ impl AppData {
         if let Some(path) = self.pending_document_path.take() {
             self.load_document(path);
         }
+    }
+
+    /// Start receiving backend notifications on the configured Unix socket.
+    pub fn install_ipc(&mut self, sender: IpcSender) {
+        self.ipc_state = IpcState::Connecting;
+        if sender
+            .send(IpcCommand::Connect(PathBuf::from(
+                boomaga_core::constants::IPC_SOCKET_PATH,
+            )))
+            .is_err()
+        {
+            self.ipc_state = IpcState::Disconnected;
+            self.ipc_error = Some("IPC worker is unavailable".to_owned());
+        }
+    }
+
+    /// Apply a backend notification delivered on Xilem's UI thread.
+    pub fn handle_ipc_event(&mut self, event: IpcEvent) {
+        match event {
+            IpcEvent::Message(message) => {
+                self.ipc_state = IpcState::Connected;
+                self.ipc_error = None;
+                if let MessagePayload::PrintJobStatus { job_id, status } = message.payload {
+                    let key = job_id.to_string();
+                    if !self.job_statuses.contains_key(&key) {
+                        self.job_history.push(job_id);
+                    }
+                    self.job_statuses.insert(key, status);
+                }
+            }
+            IpcEvent::Disconnected(error) => {
+                self.ipc_state = IpcState::Disconnected;
+                self.ipc_error = Some(error);
+            }
+        }
+    }
+
+    /// Most recently seen backend job and its current status.
+    pub fn latest_job_status(&self) -> Option<(&JobId, JobStatus)> {
+        let job_id = self.job_history.last()?;
+        let status = *self.job_statuses.get(&job_id.to_string())?;
+        Some((job_id, status))
     }
 
     /// Open the native PDF chooser without blocking the UI thread.
@@ -335,6 +396,7 @@ impl AppData {
 mod tests {
     use super::*;
     use boomaga_core::{FileType, Orientation, Page};
+    use boomaga_ipc::{Message, MessageDestination, MessageSource};
 
     fn document_with_pages(page_count: usize) -> Document {
         let mut document = Document::new(
@@ -496,5 +558,29 @@ mod tests {
             }
         }
         assert!(receiver.try_recv().is_err());
+    }
+
+    #[test]
+    fn job_notifications_update_existing_status_without_duplicates() {
+        let job_id: JobId =
+            serde_json::from_str("\"f7f04d62-a28d-4f7c-a55a-cf35dc913918\"").unwrap();
+        let mut data = AppData::default();
+
+        for status in [JobStatus::Queued, JobStatus::Processing] {
+            data.handle_ipc_event(IpcEvent::Message(Message::new_notification(
+                MessageSource::Backend,
+                MessageDestination::Preview,
+                MessagePayload::PrintJobStatus {
+                    job_id: job_id.clone(),
+                    status,
+                },
+            )));
+        }
+
+        assert_eq!(data.ipc_state, IpcState::Connected);
+        assert_eq!(data.job_history.len(), 1);
+        let (latest_id, latest_status) = data.latest_job_status().unwrap();
+        assert_eq!(latest_id.to_string(), job_id.to_string());
+        assert_eq!(latest_status, JobStatus::Processing);
     }
 }

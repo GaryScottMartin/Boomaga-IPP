@@ -12,6 +12,7 @@ path = "src/main.rs"
 [dependencies]
 boomaga-core = { path = "../boomaga-core" }
 boomaga-config = { path = "../boomaga-config" }
+boomaga-ipc = { path = "../boomaga-ipc" }
 boomaga-layout-engine = { path = "../boomaga-layout-engine" }
 cairo-rs = { workspace = true }
 poppler = { workspace = true }

@@ -632,6 +632,7 @@ dependencies = [
  "anyhow",
  "boomaga-config",
  "boomaga-core",
+ "boomaga-ipc",
  "boomaga-layout-engine",
  "cairo-rs",
  "chrono",

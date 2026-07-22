@@ -7,5 +7,8 @@
 pub mod protocol;
 pub mod transport;
 
-pub use protocol::{Message, MessageType, Request, Response};
+pub use protocol::{
+    Message, MessageDestination, MessagePayload, MessageSource, MessageType, Request, Response,
+    PROTOCOL_VERSION,
+};
 pub use transport::{UnixSocket, UnixSocketTransport};
