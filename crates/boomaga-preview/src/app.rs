@@ -4,7 +4,8 @@
 //! `app_logic` (see `main.rs`) and delivers renderer events through the worker
 //! channel stored here. Matches the `AppData` in `docs/uml/C2-class.puml`.
 
-use boomaga_core::{Document, JobId, PrintOptions};
+use boomaga_core::{Document, JobId, PageSize, PagesPerSheet, PrintOptions};
+use boomaga_layout_engine::NUpCalculator;
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 
@@ -42,6 +43,7 @@ pub struct AppData {
     pending_document_path: Option<PathBuf>,
     render_generation: u64,
     rendering_pages: BTreeSet<usize>,
+    imposition_revision: u64,
     /// Imposition / print options.
     pub print_options: PrintOptions,
     /// Ids of jobs submitted this session.
@@ -65,6 +67,7 @@ impl Default for AppData {
             pending_document_path: None,
             render_generation: 0,
             rendering_pages: BTreeSet::new(),
+            imposition_revision: 0,
         }
     }
 }
@@ -80,8 +83,9 @@ impl AppData {
 
     /// Rasterized image for the page currently selected, if available.
     pub fn current_canvas_image(&self) -> Option<&CanvasImage> {
+        let source_page = self.current_sheet_pages().into_iter().next()?;
         self.rendered_pages
-            .get(self.current_page)
+            .get(source_page)
             .and_then(Option::as_ref)
     }
 
@@ -198,26 +202,60 @@ impl AppData {
     }
 
     fn request_current_page(&mut self) {
-        let page_index = self.current_page;
-        if self.document.is_none()
-            || self.rendered_pages.get(page_index).is_none()
-            || self.rendered_pages[page_index].is_some()
-            || !self.rendering_pages.insert(page_index)
-        {
-            return;
-        }
-
-        if !self.send_command(RendererCommand::RenderPage {
-            generation: self.render_generation,
-            page_index,
-        }) {
-            self.rendering_pages.remove(&page_index);
+        for page_index in self.current_sheet_pages() {
+            if self.rendered_pages.get(page_index).is_none()
+                || self.rendered_pages[page_index].is_some()
+                || !self.rendering_pages.insert(page_index)
+            {
+                continue;
+            }
+            if !self.send_command(RendererCommand::RenderPage {
+                generation: self.render_generation,
+                page_index,
+            }) {
+                self.rendering_pages.remove(&page_index);
+            }
         }
     }
 
-    /// Number of pages in the loaded document (0 if none).
-    pub fn page_count(&self) -> usize {
+    fn source_page_count(&self) -> usize {
         self.document.as_ref().map_or(0, Document::page_count)
+    }
+
+    pub fn current_sheet_pages(&self) -> Vec<usize> {
+        self.sheet_pages()
+            .get(self.current_page)
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    fn sheet_pages(&self) -> Vec<Vec<usize>> {
+        let pages: Vec<_> = (0..self.source_page_count()).collect();
+        NUpCalculator::new(self.print_options.pages_per_sheet as u8)
+            .and_then(|calculator| calculator.calculate(&pages, PageSize::A4))
+            .map(|layout| {
+                layout
+                    .pages
+                    .into_iter()
+                    .map(|page| page.input_pages)
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    /// Number of imposed sheets in the loaded document (0 if none).
+    pub fn page_count(&self) -> usize {
+        self.sheet_pages().len()
+    }
+
+    pub fn set_pages_per_sheet(&mut self, pages_per_sheet: PagesPerSheet) {
+        if self.print_options.pages_per_sheet == pages_per_sheet {
+            return;
+        }
+        self.print_options.pages_per_sheet = pages_per_sheet;
+        self.current_page = 0;
+        self.imposition_revision = self.imposition_revision.wrapping_add(1);
+        self.request_current_page();
     }
 
     /// Advance to the next page, clamped to the last page.
@@ -381,6 +419,56 @@ mod tests {
                 assert_eq!(page_index, 0);
             }
             command => panic!("unexpected renderer command: {command:?}"),
+        }
+        assert!(receiver.try_recv().is_err());
+    }
+
+    #[test]
+    fn two_up_navigation_uses_sheet_count() {
+        let mut data = AppData {
+            document: Some(document_with_pages(5)),
+            ..AppData::default()
+        };
+        data.set_pages_per_sheet(PagesPerSheet::Two);
+        assert_eq!(data.page_count(), 3);
+        assert_eq!(data.current_sheet_pages(), vec![0, 1]);
+        data.last_page();
+        assert_eq!(data.current_sheet_pages(), vec![4]);
+    }
+
+    #[test]
+    fn changing_n_up_invalidates_imposition_without_discarding_rasters() {
+        let image = CanvasImage::from_cairo_bgra(vec![0; 4], 1, 1).unwrap();
+        let mut data = AppData {
+            document: Some(document_with_pages(2)),
+            current_page: 1,
+            rendered_pages: vec![Some(image), None],
+            ..AppData::default()
+        };
+        let revision = data.imposition_revision;
+        data.set_pages_per_sheet(PagesPerSheet::Two);
+        assert_eq!(data.current_page, 0);
+        assert_eq!(data.imposition_revision, revision + 1);
+        assert_eq!(data.rendered_page_count(), 1);
+    }
+
+    #[test]
+    fn two_up_requests_every_page_on_current_sheet() {
+        let mut data = AppData {
+            document: Some(document_with_pages(3)),
+            rendered_pages: vec![None; 3],
+            ..AppData::default()
+        };
+        let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
+        data.install_renderer(sender);
+        data.set_pages_per_sheet(PagesPerSheet::Two);
+        for expected_page in [0, 1] {
+            match receiver.try_recv().unwrap() {
+                RendererCommand::RenderPage { page_index, .. } => {
+                    assert_eq!(page_index, expected_page);
+                }
+                command => panic!("unexpected renderer command: {command:?}"),
+            }
         }
         assert!(receiver.try_recv().is_err());
     }
