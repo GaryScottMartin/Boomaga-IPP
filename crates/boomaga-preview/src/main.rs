@@ -10,6 +10,7 @@ mod pdf_canvas;
 mod render_worker;
 
 use app::{AppData, LoadState};
+use boomaga_core::PagesPerSheet;
 use pdf_canvas::pdf_canvas;
 use render_worker::renderer_worker;
 use std::ffi::OsStr;
@@ -35,9 +36,33 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
         ),
     );
 
+    let imposition_toolbar = flex(
+        Axis::Horizontal,
+        (
+            button(label("1-up"), |d: &mut AppData| {
+                d.set_pages_per_sheet(PagesPerSheet::One)
+            }),
+            button(label("2-up"), |d: &mut AppData| {
+                d.set_pages_per_sheet(PagesPerSheet::Two)
+            }),
+            button(label("4-up"), |d: &mut AppData| {
+                d.set_pages_per_sheet(PagesPerSheet::Four)
+            }),
+            button(label("6-up"), |d: &mut AppData| {
+                d.set_pages_per_sheet(PagesPerSheet::Six)
+            }),
+            button(label("8-up"), |d: &mut AppData| {
+                d.set_pages_per_sheet(PagesPerSheet::Eight)
+            }),
+        ),
+    );
+
     let canvas = pdf_canvas(data.current_canvas_image().cloned(), data.zoom);
     let status = status_text(data);
-    let interface = flex(Axis::Vertical, (toolbar, canvas, label(status)));
+    let interface = flex(
+        Axis::Vertical,
+        (toolbar, imposition_toolbar, canvas, label(status)),
+    );
 
     fork(interface, renderer_worker())
 }
@@ -67,8 +92,10 @@ fn status_text(data: &AppData) -> String {
                 "rendering"
             };
             format!(
-                "Page {} of {page_count} ({page_status})   ·   cached {rendered}/{page_count}   ·   zoom {:.0}%",
+                "Sheet {} of {page_count} ({page_status})   ·   {}-up   ·   cached {rendered}/{}   ·   zoom {:.0}%",
                 data.current_page + 1,
+                data.print_options.pages_per_sheet as u8,
+                data.rendered_pages.len(),
                 data.zoom * 100.0
             )
         }
