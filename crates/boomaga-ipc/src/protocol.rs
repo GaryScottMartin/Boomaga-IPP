@@ -1,8 +1,11 @@
 //! IPC protocol messages
 
+use boomaga_core::{JobId, JobStatus, PrintOptions};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use boomaga_core::{JobId, PrintOptions, PageSize, Error, Result};
+
+/// Current JSON protocol version.
+pub const PROTOCOL_VERSION: u16 = 1;
 
 /// Message type enumeration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -22,6 +25,8 @@ pub enum MessageType {
 /// IPC message
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Message {
+    /// JSON protocol version.
+    pub protocol_version: u16,
     /// Message ID
     pub message_id: u64,
     /// Message type
@@ -69,10 +74,7 @@ pub enum MessagePayload {
         options: PrintOptions,
     },
     /// Print job status
-    PrintJobStatus {
-        job_id: JobId,
-        status: String,
-    },
+    PrintJobStatus { job_id: JobId, status: JobStatus },
     /// Document ready
     DocumentReady {
         document_id: String,
@@ -95,15 +97,9 @@ pub enum MessagePayload {
         active_jobs: usize,
     },
     /// Configuration update
-    ConfigUpdate {
-        key: String,
-        value: String,
-    },
+    ConfigUpdate { key: String, value: String },
     /// Custom data
-    Custom {
-        data_type: String,
-        data: Vec<u8>,
-    },
+    Custom { data_type: String, data: Vec<u8> },
 }
 
 impl Message {
@@ -116,6 +112,7 @@ impl Message {
         let message_id = Self::generate_message_id();
 
         Self {
+            protocol_version: PROTOCOL_VERSION,
             message_id,
             message_type: MessageType::Request,
             source,
@@ -129,12 +126,9 @@ impl Message {
     }
 
     /// Create a new response message
-    pub fn new_response(
-        message_id: u64,
-        source: MessageSource,
-        payload: MessagePayload,
-    ) -> Self {
+    pub fn new_response(message_id: u64, source: MessageSource, payload: MessagePayload) -> Self {
         Self {
+            protocol_version: PROTOCOL_VERSION,
             message_id,
             message_type: MessageType::Response,
             source,
@@ -156,6 +150,7 @@ impl Message {
         let message_id = Self::generate_message_id();
 
         Self {
+            protocol_version: PROTOCOL_VERSION,
             message_id,
             message_type: MessageType::Notification,
             source,

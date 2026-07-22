@@ -9,6 +9,7 @@ description = "IPC library for boomaga virtual printer"
 boomaga-core = { path = "../boomaga-core" }
 tokio = { workspace = true, features = ["full"] }
 serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 zbus = { workspace = true }
