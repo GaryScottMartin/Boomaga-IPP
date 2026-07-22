@@ -77,6 +77,15 @@ fn grid_dimensions(pages_per_sheet: u8) -> (usize, usize) {
     }
 }
 
+fn grid_slot(index: usize, pages_per_sheet: u8, vertical: bool) -> usize {
+    if vertical && matches!(pages_per_sheet, 4 | 8) {
+        let (columns, rows) = grid_dimensions(pages_per_sheet);
+        (index % rows) * columns + index / rows
+    } else {
+        index
+    }
+}
+
 fn imposed_sheet_size(source_size: Size, pages_per_sheet: u8) -> Size {
     if matches!(pages_per_sheet, 2 | 8) {
         Size::new(source_size.height, source_size.width)
@@ -89,14 +98,21 @@ fn imposed_sheet_size(source_size: Size, pages_per_sheet: u8) -> Size {
 pub struct PdfCanvasWidget {
     images: Vec<Option<CanvasImage>>,
     pages_per_sheet: u8,
+    vertical_fill: bool,
     zoom: f64,
 }
 
 impl PdfCanvasWidget {
-    fn new(images: Vec<Option<CanvasImage>>, pages_per_sheet: u8, zoom: f64) -> Self {
+    fn new(
+        images: Vec<Option<CanvasImage>>,
+        pages_per_sheet: u8,
+        vertical_fill: bool,
+        zoom: f64,
+    ) -> Self {
         Self {
             images,
             pages_per_sheet,
+            vertical_fill,
             zoom,
         }
     }
@@ -105,10 +121,12 @@ impl PdfCanvasWidget {
         this: &mut WidgetMut<'_, Self>,
         images: Vec<Option<CanvasImage>>,
         pages_per_sheet: u8,
+        vertical_fill: bool,
         zoom: f64,
     ) {
         this.widget.images = images;
         this.widget.pages_per_sheet = pages_per_sheet;
+        this.widget.vertical_fill = vertical_fill;
         this.widget.zoom = zoom;
         this.ctx.request_layout();
     }
@@ -155,8 +173,9 @@ impl Widget for PdfCanvasWidget {
         );
         for (index, image) in self.images.iter().enumerate() {
             let Some(image) = image else { continue };
-            let x = (index % columns) as f64 * cell.width;
-            let y = (index / columns) as f64 * cell.height;
+            let slot = grid_slot(index, self.pages_per_sheet, self.vertical_fill);
+            let x = (slot % columns) as f64 * cell.width;
+            let y = (slot / columns) as f64 * cell.height;
             let fit = ObjectFit::Contain.affine_to_fill(cell, image.size());
             scene.draw_image(&image.brush, Affine::translate((x, y)) * fit);
         }
@@ -189,14 +208,21 @@ impl Widget for PdfCanvasWidget {
 pub struct PdfCanvas {
     images: Vec<Option<CanvasImage>>,
     pages_per_sheet: u8,
+    vertical_fill: bool,
     zoom: f64,
 }
 
 /// Create a PDF canvas view.
-pub fn pdf_canvas(images: Vec<Option<CanvasImage>>, pages_per_sheet: u8, zoom: f64) -> PdfCanvas {
+pub fn pdf_canvas(
+    images: Vec<Option<CanvasImage>>,
+    pages_per_sheet: u8,
+    vertical_fill: bool,
+    zoom: f64,
+) -> PdfCanvas {
     PdfCanvas {
         images,
         pages_per_sheet,
+        vertical_fill,
         zoom,
     }
 }
@@ -212,6 +238,7 @@ impl<State, Action> View<State, Action, ViewCtx> for PdfCanvas {
             ctx.create_pod(PdfCanvasWidget::new(
                 self.images.clone(),
                 self.pages_per_sheet,
+                self.vertical_fill,
                 self.zoom,
             )),
             (),
@@ -228,12 +255,14 @@ impl<State, Action> View<State, Action, ViewCtx> for PdfCanvas {
     ) {
         if self.images != prev.images
             || self.pages_per_sheet != prev.pages_per_sheet
+            || self.vertical_fill != prev.vertical_fill
             || self.zoom != prev.zoom
         {
             PdfCanvasWidget::update(
                 &mut element,
                 self.images.clone(),
                 self.pages_per_sheet,
+                self.vertical_fill,
                 self.zoom,
             );
         }
@@ -304,5 +333,20 @@ mod tests {
         assert_eq!(imposed_sheet_size(portrait, 2), Size::new(842.0, 595.0));
         assert_eq!(imposed_sheet_size(portrait, 4), portrait);
         assert_eq!(imposed_sheet_size(portrait, 8), Size::new(842.0, 595.0));
+    }
+
+    #[test]
+    fn vertical_fill_matches_classic_boomaga_order() {
+        let four_up: Vec<_> = (0..4).map(|index| grid_slot(index, 4, true)).collect();
+        let eight_up: Vec<_> = (0..8).map(|index| grid_slot(index, 8, true)).collect();
+
+        assert_eq!(four_up, vec![0, 2, 1, 3]);
+        assert_eq!(eight_up, vec![0, 4, 1, 5, 2, 6, 3, 7]);
+    }
+
+    #[test]
+    fn horizontal_fill_is_row_major() {
+        let slots: Vec<_> = (0..8).map(|index| grid_slot(index, 8, false)).collect();
+        assert_eq!(slots, (0..8).collect::<Vec<_>>());
     }
 }

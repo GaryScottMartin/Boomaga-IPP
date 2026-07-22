@@ -21,6 +21,13 @@ pub enum LoadState {
     Error,
 }
 
+/// Page fill order within an imposed sheet.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FillOrder {
+    Horizontal,
+    Vertical,
+}
+
 /// Preview application state.
 pub struct AppData {
     /// Path of the document being previewed, if any.
@@ -44,6 +51,8 @@ pub struct AppData {
     render_generation: u64,
     rendering_pages: BTreeSet<usize>,
     imposition_revision: u64,
+    /// Page fill order for multi-page imposed sheets.
+    pub fill_order: FillOrder,
     /// Imposition / print options.
     pub print_options: PrintOptions,
     /// Ids of jobs submitted this session.
@@ -68,6 +77,7 @@ impl Default for AppData {
             render_generation: 0,
             rendering_pages: BTreeSet::new(),
             imposition_revision: 0,
+            fill_order: FillOrder::Horizontal,
         }
     }
 }
@@ -264,6 +274,13 @@ impl AppData {
         self.current_page = 0;
         self.imposition_revision = self.imposition_revision.wrapping_add(1);
         self.request_current_page();
+    }
+
+    pub fn set_fill_order(&mut self, fill_order: FillOrder) {
+        if self.fill_order != fill_order {
+            self.fill_order = fill_order;
+            self.imposition_revision = self.imposition_revision.wrapping_add(1);
+        }
     }
 
     /// Advance to the next page, clamped to the last page.

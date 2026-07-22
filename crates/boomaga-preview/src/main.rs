@@ -9,7 +9,7 @@ mod document_renderer;
 mod pdf_canvas;
 mod render_worker;
 
-use app::{AppData, LoadState};
+use app::{AppData, FillOrder, LoadState};
 use boomaga_core::PagesPerSheet;
 use pdf_canvas::pdf_canvas;
 use render_worker::renderer_worker;
@@ -54,12 +54,19 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
             button(label("8-up"), |d: &mut AppData| {
                 d.set_pages_per_sheet(PagesPerSheet::Eight)
             }),
+            button(label("Horizontal"), |d: &mut AppData| {
+                d.set_fill_order(FillOrder::Horizontal)
+            }),
+            button(label("Vertical"), |d: &mut AppData| {
+                d.set_fill_order(FillOrder::Vertical)
+            }),
         ),
     );
 
     let canvas = pdf_canvas(
         data.current_canvas_images(),
         data.print_options.pages_per_sheet as u8,
+        data.fill_order == FillOrder::Vertical,
         data.zoom,
     );
     let status = status_text(data);
