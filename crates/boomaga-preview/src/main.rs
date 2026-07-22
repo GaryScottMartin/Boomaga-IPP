@@ -85,7 +85,8 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
     let interface = flex(
         Axis::Vertical,
         (toolbar, imposition_toolbar, canvas.flex(1.0), footer),
-    );
+    )
+    .must_fill_major_axis(true);
 
     fork(interface, renderer_worker())
 }

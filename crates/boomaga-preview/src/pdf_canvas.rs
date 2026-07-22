@@ -150,10 +150,8 @@ impl Widget for PdfCanvasWidget {
             .next()
             .map_or(Size::new(595.0, 842.0), CanvasImage::size);
         let sheet_size = imposed_sheet_size(natural, self.pages_per_sheet);
-        bc.constrain(Size::new(
-            sheet_size.width * self.zoom,
-            sheet_size.height * self.zoom,
-        ))
+        let preferred = Size::new(sheet_size.width * self.zoom, sheet_size.height * self.zoom);
+        bc.constrain_aspect_ratio(preferred.height / preferred.width, preferred.width)
     }
 
     fn paint(&mut self, ctx: &mut PaintCtx<'_>, _props: &PropertiesRef<'_>, scene: &mut Scene) {
