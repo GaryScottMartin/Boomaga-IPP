@@ -181,7 +181,12 @@ impl<State, Action> View<State, Action, ViewCtx> for PdfCanvas {
         }
     }
 
-    fn teardown(&self, (): &mut Self::ViewState, ctx: &mut ViewCtx, element: Mut<'_, Self::Element>) {
+    fn teardown(
+        &self,
+        (): &mut Self::ViewState,
+        ctx: &mut ViewCtx,
+        element: Mut<'_, Self::Element>,
+    ) {
         ctx.teardown_leaf(element);
     }
 

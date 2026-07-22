@@ -69,11 +69,8 @@ impl DocumentRenderer {
             return Err(RenderError::EmptyDocument);
         }
 
-        let mut document = CoreDocument::new(
-            self.document_id.clone(),
-            path.to_path_buf(),
-            FileType::Pdf,
-        );
+        let mut document =
+            CoreDocument::new(self.document_id.clone(), path.to_path_buf(), FileType::Pdf);
         if let Some(title) = poppler_document.get_title() {
             document.title = title;
         }
@@ -98,7 +95,8 @@ impl DocumentRenderer {
 
         let width = u32::try_from(surface.width()).map_err(|_| RenderError::InvalidDimensions)?;
         let height = u32::try_from(surface.height()).map_err(|_| RenderError::InvalidDimensions)?;
-        let stride = usize::try_from(surface.stride()).map_err(|_| RenderError::InvalidDimensions)?;
+        let stride =
+            usize::try_from(surface.stride()).map_err(|_| RenderError::InvalidDimensions)?;
         let row_bytes = width as usize * 4;
         let pixels = {
             let data = surface

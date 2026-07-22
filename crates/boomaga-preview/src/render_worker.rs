@@ -19,14 +19,8 @@ const PREVIEW_DPI: f64 = 96.0;
 #[derive(Debug)]
 pub enum RendererCommand {
     OpenFileDialog,
-    Load {
-        generation: u64,
-        path: PathBuf,
-    },
-    RenderPage {
-        generation: u64,
-        page_index: usize,
-    },
+    Load { generation: u64, path: PathBuf },
+    RenderPage { generation: u64, page_index: usize },
 }
 
 /// Results delivered to `AppData` on Xilem's UI thread.
@@ -128,7 +122,10 @@ fn renderer_loop(
                     .set_title("Open PDF")
                     .add_filter("PDF documents", &["pdf"])
                     .pick_file();
-                selected.map_or(RendererEvent::FileDialogCancelled, RendererEvent::FileSelected)
+                selected.map_or(
+                    RendererEvent::FileDialogCancelled,
+                    RendererEvent::FileSelected,
+                )
             }
             RendererCommand::Load { generation, path } => {
                 let mut next_renderer = DocumentRenderer::new(path.to_string_lossy());
