@@ -56,7 +56,7 @@ impl UnixSocket {
             loop {
                 match listener.accept() {
                     Ok((stream, addr)) => {
-                        info!("New client connected: {}", addr);
+                        info!("New client connected: {:?}", addr);
                         // Store client
                         // In production, would maintain client connections
                     }
