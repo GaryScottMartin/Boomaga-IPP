@@ -1,11 +1,11 @@
 # Xilem Migration Plan
 
-> **Last reviewed against code:** 2026-07-20.
+> **Last reviewed against code:** 2026-07-22.
 > **Phase C status:** **DONE and host-verified on Denali (2026-07-20)** — the
 > Masonry canvas displays real Poppler/Cairo-rendered PDF pages; navigation and
 > zoom work as expected, and all seven preview tests pass.
-> **Status:** Phases A/B/C are complete on `main`; Phase D is next.
-> The verified Xilem 0.4.0 API is recorded below — use it, not pre-Phase-A guesses.
+> **Status:** Phases A/B/C are complete on `main`; Phase D is implemented on
+> `xilem-phase-d` and awaits dependency resolution plus host compile/runtime verification.
 
 ## Overview
 This document tracks replacing Druid with Xilem for the `boomaga-preview` GUI.
@@ -27,24 +27,30 @@ Target architecture: SRS/UIS **v0.2.2** Appendix C and [`docs/uml/`](./uml/)
 
 ## Current Status
 
-Phases A, B, and C are complete. The preview is now a compiling Xilem 0.4
-application with a real view tree and a custom Masonry canvas displaying
-Poppler/Cairo-rendered PDF pages. Phase D (file-open UI and async rendering) is next.
+Phases A, B, and C are complete. Phase D is implemented on the
+`xilem-phase-d` feature branch: a native PDF chooser and command-line paths feed
+one background renderer thread through Xilem 0.4's `worker`/`MessageProxy`
+mechanism. `AppData` holds loading/error/progress state and a sparse on-demand
+page cache. Host compile and Wayland runtime verification are still pending.
 
 **Dependencies:**
 - Workspace `Cargo.toml` and `crates/boomaga-preview/Cargo.toml` declare
   `xilem = "0.4"`, `kurbo = "0.11"`, `winit = "0.30"`, plus `cairo-rs = "0.20"`
   and `poppler = "0.6"` for rendering.
-- **`druid` is not a dependency in any manifest.** (Verified: no `druid` entry in
-  any `Cargo.toml`.)
+- Phase D adds `rfd = "0.17.2"` for the Linux native/portal file chooser.
+- **`druid` is not a dependency in any manifest.**
 
 **Code:**
-- `src/main.rs` contains the Phase B Xilem view tree: horizontal navigation/zoom
-  toolbar, Phase C custom canvas, and status row.
-- `src/app.rs` contains framework-independent `AppData` transitions plus three
-  host-verified unit tests for navigation and zoom behavior.
-- `src/document_renderer.rs` — **real poppler + cairo rendering** (loads a PDF via
-  `poppler::Document`, extracts metadata, renders pages to a Cairo surface). This is framework-agnostic and its Cairo
+- `src/main.rs` contains the Xilem view tree, file-open control, status display,
+  and persistent renderer worker.
+- `src/app.rs` contains navigation/zoom transitions plus generation-safe
+  loading, error, progress, worker-channel, and sparse page-cache state.
+- `src/render_worker.rs` owns the command/result protocol. It creates and keeps
+  `DocumentRenderer` on one dedicated OS thread because Poppler documents are
+  neither `Send` nor `Sync`.
+- `src/document_renderer.rs` retains the Poppler/Cairo load and rasterization
+  implementation; only core metadata and completed `CanvasImage` values cross
+  back to Xilem's UI thread.
   surface bytes now feed the Xilem/Masonry canvas through `CanvasImage`.
 - The domain types in `boomaga-core` (`Document`, `Page`, `PrintOptions`) and
   `boomaga-config` are framework-independent and stay as-is.
@@ -146,9 +152,15 @@ fn main() -> anyhow::Result<()> {
 - ✅ Host-verified on Denali: `cargo check -p boomaga-preview`, all seven tests,
   real multi-page PDF display, navigation, and zoom. Evidence: [`Bommaga-IPP-Preview-Screenshot_2026-07-19_185221.png`](screenshots/Bommaga-IPP-Preview-Screenshot_2026-07-19_185221.png).
 
-### Phase D: Document loading & async rendering
-- File-open → load via `DocumentRenderer::load` (keep existing poppler code).
-- Render pages off the UI thread; deliver results into state via the worker/proxy hook.
+### Phase D: Document loading & async rendering — 🚧 IMPLEMENTED, VERIFICATION PENDING
+- ✅ Native PDF file chooser plus asynchronous command-line path loading.
+- ✅ Dedicated renderer thread owns each non-`Send`/`Sync` Poppler document.
+- ✅ Xilem `worker` + `MessageProxy` safely deliver metadata and page images to `AppData`.
+- ✅ Idle/loading/ready/error status, generation-based stale-result rejection,
+  render progress, and an on-demand page cache.
+- ⏳ Regenerate `Cargo.lock`, run `cargo fmt`, `cargo check -p boomaga-preview`,
+  and `cargo test -p boomaga-preview` on Denali; then visually verify file-open,
+  responsiveness on a large PDF, navigation/cache behavior, and error display.
 
 ### Phase E: Imposition & IPC wiring
 - Wire `boomaga-layout-engine` (N-up / booklet / transforms) into preview state

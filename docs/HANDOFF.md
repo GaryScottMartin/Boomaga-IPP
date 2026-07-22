@@ -15,9 +15,9 @@
 
 # Boomaga-IPP — Session Handoff
 
-> **Last updated:** 2026-07-20 · **By:** Codex + Gary Scott Martin
-> **Session focus:** completed and host-verified Xilem Phase C, fast-forwarded it to `main`,
-> real PDF rendering, navigation, zoom, and all seven tests pass on Denali.
+> **Last updated:** 2026-07-22 · **By:** Codex + Gary Scott Martin
+> **Session focus:** implemented Xilem Phase D on `xilem-phase-d`; dependency,
+> compile/test, and Wayland runtime verification remain pending on Denali.
 
 ---
 
@@ -28,12 +28,12 @@ closed. This session was tooling/hygiene, not code: reconciled `PROJECT_PLAN.md`
 `XILEM_MIGRATION.md` with the real code (both were badly stale), **vendored** the `.claude/`
 handoff config so it's portable and version-controlled, and added **host-verified** OpenShell
 provisioning — `openshell/create-bipp-sandbox.sh` auto-clones the repo and launches claude
-(the `--from` image route was tried and abandoned; see §2). **GUI migration:** Phases A/B/C are complete on `main`. The Xilem 0.4
-preview loads real PDFs through Poppler/Cairo into a Masonry canvas; all seven tests pass, and
-navigation/zoom were visually verified on Denali. **Next up:** Phase D file-open UI and async
-rendering. Separately,
-`boomaga-ipp-backend` / `boomaga-ipc` still don't compile (their own stub/bug issues, independent
-of the GUI).
+(the `--from` image route was tried and abandoned; see §2). **GUI migration:** Phases A/B/C
+are complete on `main`. Phase D is implemented on `xilem-phase-d`: native PDF selection,
+thread-confined Poppler loading/rendering through Xilem's worker/message path, loading/error/
+progress state, and an on-demand page cache. It is not yet host-verified. Separately,
+`boomaga-ipp-backend` / `boomaga-ipc` still don't compile (their own stub/bug issues,
+independent of the GUI).
 
 ## 2. Active threads / in progress
 <!-- The heart of the file. Each item: what, state, concrete next action. Delete when done. -->
@@ -91,10 +91,19 @@ of the GUI).
       passed, all seven tests passed, and a real multi-page PDF rendered with working navigation
       and zoom. Evidence: `docs/screenshots/Bommaga-IPP-Preview-Screenshot_2026-07-19_185221.png`.
       Phase C was fast-forwarded to `main`; its feature branch was deleted locally and remotely.
-      **Next: Phase D** file-open UI and async rendering.
+      Phase D follows on the `xilem-phase-d` branch.
+- [ ] **XILEM Phase D — IMPLEMENTED, HOST VERIFICATION PENDING (2026-07-22).** Added native
+      PDF selection, asynchronous CLI-path loading, a dedicated renderer thread retaining the
+      non-`Send`/`Sync` Poppler document, Xilem `worker`/`MessageProxy` delivery, explicit
+      loading/error/progress state, generation-safe stale-result rejection, and on-demand caching.
+      This sandbox has no Rust toolchain. On Denali, regenerate `Cargo.lock` for `rfd`, run
+      `cargo fmt`, `cargo check -p boomaga-preview`, and `cargo test -p boomaga-preview`,
+      then visually verify file-open and responsiveness with a large PDF.
 
 ## 3. Open questions / waiting on
 <!-- Decisions or inputs owned by the human, or external events being awaited. -->
+- **Phase D needs Denali verification.** The branch adds `rfd = "0.17.2"`, but this sandbox
+  has no Cargo, so `Cargo.lock` is not regenerated and compile/tests/runtime are unverified.
 - **Workspace still not compile-verified** here (no toolchain). Phase C is green on the host;
   **`cargo check --workspace` is still red**
   because `boomaga-ipp-backend` / `boomaga-ipc` have their own errors (see §2). Re-run both on the host.
@@ -112,7 +121,8 @@ of the GUI).
 - **Imposition (N-up/booklet/scale/rotate/margins/gutter) computed in `boomaga-layout-engine`**;
   qpdf-rs assembles/applies content-preserving transforms; poppler-rs renders preview. (Issue #11.)
 - **No plugin system.** `boomaga-plugins` deleted; specs stay silent. (Issue #10.) Code fully clean.
-- **GUI = Xilem** (Druid deprecated). Phases A/B/C are complete; Phase D is next.
+- **GUI = Xilem** (Druid deprecated). Phases A/B/C are complete; Phase D is implemented on
+  `xilem-phase-d` and awaits host verification.
 - **SRS/UIS v0.2.2 Appendix C now conforms to code** (`c471a71`); `docs/uml/*.puml` is the
   maintained source. (Supersedes the earlier "Appendix C is an unreconciled Perplexity model" note.)
 - **`.claude/` handoff config is repo-shipped and vendored** (real files — no symlinks, no

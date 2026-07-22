@@ -1,8 +1,8 @@
-//! Synchronous PDF loading and page rendering with Poppler and Cairo.
+//! Thread-confined PDF loading and page rendering with Poppler and Cairo.
 //!
-//! Poppler documents are not `Send` or `Sync`; Phase D will define the worker
-//! ownership model. This module therefore keeps one document on one thread and
-//! exposes a direct Cairo-to-Masonry image handoff.
+//! Poppler documents are not `Send` or `Sync`. Phase D's renderer worker creates
+//! and retains this type on one dedicated thread; only core document metadata
+//! and completed canvas images cross back to Xilem's UI thread.
 
 use std::path::Path;
 

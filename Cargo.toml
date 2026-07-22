@@ -55,6 +55,7 @@ url = "2.5"
 
 # Temporary Files
 tempfile = "3.10"
+rfd = "0.17.2"
 
 # UUID
 uuid = "1.0"

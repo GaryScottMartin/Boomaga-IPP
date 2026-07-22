@@ -1,14 +1,24 @@
 //! Preview application state (the Xilem app model).
 //!
-//! Plain data + pure state transitions — no GUI-framework traits. Xilem drives
-//! the UI by re-running `app_logic` (see `main.rs`) against this value and
-//! diffing the resulting view tree, so `AppData` deliberately knows nothing
-//! about the framework. Matches the `AppData` in `docs/uml/C2-class.puml`.
+//! Widget-free state and transitions. Xilem drives the UI by re-running
+//! `app_logic` (see `main.rs`) and delivers renderer events through the worker
+//! channel stored here. Matches the `AppData` in `docs/uml/C2-class.puml`.
 
 use boomaga_core::{Document, JobId, PrintOptions};
+use std::collections::BTreeSet;
 use std::path::PathBuf;
 
 use crate::pdf_canvas::CanvasImage;
+use crate::render_worker::{RendererCommand, RendererEvent, RendererSender};
+
+/// Current document-loading state shown by the preview UI.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LoadState {
+    Idle,
+    Loading,
+    Ready,
+    Error,
+}
 
 /// Preview application state.
 pub struct AppData {
@@ -19,9 +29,19 @@ pub struct AppData {
     /// Zero-based index of the page currently shown.
     pub current_page: usize,
     /// Rasterized pages, ready for the Masonry canvas.
-    pub rendered_pages: Vec<CanvasImage>,
+    pub rendered_pages: Vec<Option<CanvasImage>>,
+    /// Current document loading state.
+    pub load_state: LoadState,
+    /// Most recent file-loading or page-rendering error.
+    pub error_message: Option<String>,
+    /// Whether the native file chooser is currently open.
+    pub choosing_file: bool,
     /// Zoom factor (1.0 == 100%).
     pub zoom: f64,
+    renderer_sender: Option<RendererSender>,
+    pending_document_path: Option<PathBuf>,
+    render_generation: u64,
+    rendering_pages: BTreeSet<usize>,
     /// Imposition / print options.
     pub print_options: PrintOptions,
     /// Ids of jobs submitted this session.
@@ -36,16 +56,163 @@ impl Default for AppData {
             current_page: 0,
             rendered_pages: Vec::new(),
             zoom: 1.0,
+            load_state: LoadState::Idle,
+            error_message: None,
+            choosing_file: false,
             print_options: PrintOptions::default(),
             job_history: Vec::new(),
+            renderer_sender: None,
+            pending_document_path: None,
+            render_generation: 0,
+            rendering_pages: BTreeSet::new(),
         }
     }
 }
 
 impl AppData {
+    /// Create initial state which asynchronously loads a command-line PDF.
+    pub fn with_document_path(path: PathBuf) -> Self {
+        Self {
+            pending_document_path: Some(path),
+            ..Self::default()
+        }
+    }
+
     /// Rasterized image for the page currently selected, if available.
     pub fn current_canvas_image(&self) -> Option<&CanvasImage> {
-        self.rendered_pages.get(self.current_page)
+        self.rendered_pages
+            .get(self.current_page)
+            .and_then(Option::as_ref)
+    }
+
+    /// Number of pages which have been rendered into the on-demand cache.
+    pub fn rendered_page_count(&self) -> usize {
+        self.rendered_pages
+            .iter()
+            .filter(|image| image.is_some())
+            .count()
+    }
+
+    /// Connect the Xilem worker command channel and start any pending CLI load.
+    pub fn install_renderer(&mut self, sender: RendererSender) {
+        self.renderer_sender = Some(sender);
+        if let Some(path) = self.pending_document_path.take() {
+            self.load_document(path);
+        }
+    }
+
+    /// Open the native PDF chooser without blocking the UI thread.
+    pub fn choose_document(&mut self) {
+        if self.choosing_file {
+            return;
+        }
+        self.error_message = None;
+        self.choosing_file = true;
+        if !self.send_command(RendererCommand::OpenFileDialog) {
+            self.choosing_file = false;
+        }
+    }
+
+    /// Reset document state and ask the background renderer to load `path`.
+    pub fn load_document(&mut self, path: PathBuf) {
+        self.render_generation = self.render_generation.wrapping_add(1);
+        self.document_path = Some(path.clone());
+        self.document = None;
+        self.current_page = 0;
+        self.rendered_pages.clear();
+        self.rendering_pages.clear();
+        self.error_message = None;
+        self.load_state = LoadState::Loading;
+
+        self.send_command(RendererCommand::Load {
+            generation: self.render_generation,
+            path,
+        });
+    }
+
+    /// Apply a renderer result delivered by Xilem's `MessageProxy`.
+    pub fn handle_renderer_event(&mut self, event: RendererEvent) {
+        match event {
+            RendererEvent::FileSelected(path) => {
+                self.choosing_file = false;
+                self.load_document(path);
+            }
+            RendererEvent::FileDialogCancelled => self.choosing_file = false,
+            RendererEvent::DocumentLoaded {
+                generation,
+                path,
+                document,
+            } => {
+                if generation != self.render_generation {
+                    return;
+                }
+                self.document_path = Some(path);
+                self.rendered_pages = vec![None; document.page_count()];
+                self.document = Some(document);
+                self.load_state = LoadState::Ready;
+                self.request_current_page();
+            }
+            RendererEvent::PageRendered {
+                generation,
+                page_index,
+                image,
+            } => {
+                if generation != self.render_generation {
+                    return;
+                }
+                self.rendering_pages.remove(&page_index);
+                self.error_message = None;
+                if let Some(slot) = self.rendered_pages.get_mut(page_index) {
+                    *slot = Some(image);
+                }
+            }
+            RendererEvent::Failed {
+                generation,
+                page_index,
+                message,
+            } => {
+                if generation.is_some_and(|value| value != self.render_generation) {
+                    return;
+                }
+                if let Some(page_index) = page_index {
+                    self.rendering_pages.remove(&page_index);
+                } else {
+                    self.load_state = LoadState::Error;
+                }
+                self.choosing_file = false;
+                self.error_message = Some(message);
+            }
+        }
+    }
+
+    fn send_command(&mut self, command: RendererCommand) -> bool {
+        let sent = self
+            .renderer_sender
+            .as_ref()
+            .is_some_and(|sender| sender.send(command).is_ok());
+        if !sent {
+            self.load_state = LoadState::Error;
+            self.error_message = Some("PDF renderer is unavailable".to_owned());
+        }
+        sent
+    }
+
+    fn request_current_page(&mut self) {
+        let page_index = self.current_page;
+        if self.document.is_none()
+            || self.rendered_pages.get(page_index).is_none()
+            || self.rendered_pages[page_index].is_some()
+            || !self.rendering_pages.insert(page_index)
+        {
+            return;
+        }
+
+        if !self.send_command(RendererCommand::RenderPage {
+            generation: self.render_generation,
+            page_index,
+        }) {
+            self.rendering_pages.remove(&page_index);
+        }
     }
 
     /// Number of pages in the loaded document (0 if none).
@@ -59,21 +226,25 @@ impl AppData {
         if self.current_page < last {
             self.current_page += 1;
         }
+        self.request_current_page();
     }
 
     /// Go to the previous page, clamped to the first page.
     pub fn previous_page(&mut self) {
         self.current_page = self.current_page.saturating_sub(1);
+        self.request_current_page();
     }
 
     /// Jump to the first page.
     pub fn first_page(&mut self) {
         self.current_page = 0;
+        self.request_current_page();
     }
 
     /// Jump to the last page.
     pub fn last_page(&mut self) {
         self.current_page = self.page_count().saturating_sub(1);
+        self.request_current_page();
     }
 
     /// Set the zoom factor, clamped to a sane range.
@@ -160,5 +331,57 @@ mod tests {
 
         data.reset_zoom();
         assert_eq!(data.zoom, 1.0);
+    }
+
+    #[test]
+    fn command_line_path_is_loaded_after_worker_connects() {
+        let path = PathBuf::from("large.pdf");
+        let mut data = AppData::with_document_path(path.clone());
+        let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
+
+        data.install_renderer(sender);
+
+        match receiver.try_recv().unwrap() {
+            RendererCommand::Load {
+                generation,
+                path: requested_path,
+            } => {
+                assert_eq!(generation, 1);
+                assert_eq!(requested_path, path);
+            }
+            command => panic!("unexpected renderer command: {command:?}"),
+        }
+        assert_eq!(data.load_state, LoadState::Loading);
+    }
+
+    #[test]
+    fn loaded_document_requests_only_the_current_page() {
+        let path = PathBuf::from("three-pages.pdf");
+        let mut data = AppData::default();
+        let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
+        data.install_renderer(sender);
+        data.load_document(path.clone());
+        let _load_command = receiver.try_recv().unwrap();
+
+        data.handle_renderer_event(RendererEvent::DocumentLoaded {
+            generation: 1,
+            path,
+            document: document_with_pages(3),
+        });
+
+        assert_eq!(data.load_state, LoadState::Ready);
+        assert_eq!(data.rendered_pages.len(), 3);
+        assert_eq!(data.rendered_page_count(), 0);
+        match receiver.try_recv().unwrap() {
+            RendererCommand::RenderPage {
+                generation,
+                page_index,
+            } => {
+                assert_eq!(generation, 1);
+                assert_eq!(page_index, 0);
+            }
+            command => panic!("unexpected renderer command: {command:?}"),
+        }
+        assert!(receiver.try_recv().is_err());
     }
 }

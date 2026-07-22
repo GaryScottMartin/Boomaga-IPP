@@ -1,20 +1,21 @@
 //! Preview application for the Boomaga-IPP virtual printer.
 //!
-//! Native Wayland GUI built with **Xilem** (0.4). Phase C of the Druid→Xilem
-//! migration (see `docs/XILEM_MIGRATION.md`) adds a Masonry PDF canvas to the
-//! Phase B view tree. Phase C can synchronously load a PDF supplied on the
-//! command line; background rendering follows in Phase D.
+//! Native Wayland GUI built with **Xilem** (0.4). Phase D adds native PDF
+//! selection and moves Poppler loading and on-demand page rendering off the UI
+//! thread through Xilem's worker/message mechanism.
 
 mod app;
 mod document_renderer;
 mod pdf_canvas;
+mod render_worker;
 
-use app::AppData;
-use document_renderer::DocumentRenderer;
+use app::{AppData, LoadState};
 use pdf_canvas::pdf_canvas;
+use render_worker::renderer_worker;
 use std::ffi::OsStr;
 use std::path::PathBuf;
 use tracing::{info, Level};
+use xilem::core::fork;
 use xilem::view::{button, flex, label, Axis};
 use xilem::{EventLoop, WidgetView, WindowOptions, Xilem};
 
@@ -23,6 +24,7 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
     let toolbar = flex(
         Axis::Horizontal,
         (
+            button(label("Open PDF…"), |d: &mut AppData| d.choose_document()),
             button(label("⏮ First"), |d: &mut AppData| d.first_page()),
             button(label("◀ Previous"), |d: &mut AppData| d.previous_page()),
             button(label("Next ▶"), |d: &mut AppData| d.next_page()),
@@ -34,19 +36,43 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
     );
 
     let canvas = pdf_canvas(data.current_canvas_image().cloned(), data.zoom);
+    let status = status_text(data);
+    let interface = flex(Axis::Vertical, (toolbar, canvas, label(status)));
 
-    let status = if data.page_count() == 0 {
-        format!("0 pages   ·   zoom {:.0}%", data.zoom * 100.0)
-    } else {
-        format!(
-            "Page {} of {}   ·   zoom {:.0}%",
-            data.current_page + 1,
-            data.page_count(),
-            data.zoom * 100.0
-        )
-    };
+    fork(interface, renderer_worker())
+}
 
-    flex(Axis::Vertical, (toolbar, canvas, label(status)))
+fn status_text(data: &AppData) -> String {
+    if data.choosing_file {
+        return "Selecting a PDF…".to_owned();
+    }
+
+    if let Some(error) = &data.error_message {
+        return format!("Error: {error}");
+    }
+
+    match data.load_state {
+        LoadState::Idle => "No PDF open".to_owned(),
+        LoadState::Loading => data.document_path.as_ref().map_or_else(
+            || "Loading PDF…".to_owned(),
+            |path| format!("Loading {}…", path.display()),
+        ),
+        LoadState::Error => "Unable to load PDF".to_owned(),
+        LoadState::Ready => {
+            let page_count = data.page_count();
+            let rendered = data.rendered_page_count();
+            let page_status = if data.current_canvas_image().is_some() {
+                "ready"
+            } else {
+                "rendering"
+            };
+            format!(
+                "Page {} of {page_count} ({page_status})   ·   cached {rendered}/{page_count}   ·   zoom {:.0}%",
+                data.current_page + 1,
+                data.zoom * 100.0
+            )
+        }
+    }
 }
 
 fn main() -> anyhow::Result<()> {
@@ -62,10 +88,9 @@ fn main() -> anyhow::Result<()> {
         boomaga_core::constants::APP_VERSION
     );
 
-    // Single-window convenience: wraps `AppData` in `ExitOnClose` (→ `AppState`)
-    // and the view returned by `app_logic` into one window.
+    let initial_state = document_path.map_or_else(AppData::default, AppData::with_document_path);
     let app = Xilem::new_simple(
-        load_initial_state(document_path)?,
+        initial_state,
         app_logic,
         WindowOptions::new(boomaga_core::constants::APP_NAME),
     );
@@ -88,23 +113,4 @@ fn parse_args() -> anyhow::Result<(bool, Option<PathBuf>)> {
     }
 
     Ok((debug, document_path))
-}
-
-fn load_initial_state(document_path: Option<PathBuf>) -> anyhow::Result<AppData> {
-    let Some(path) = document_path else {
-        return Ok(AppData::default());
-    };
-
-    let mut renderer = DocumentRenderer::new(path.to_string_lossy());
-    let document = renderer.load(&path)?;
-    let rendered_pages = (0..document.page_count())
-        .map(|page_index| renderer.render_page(page_index, 96.0))
-        .collect::<Result<Vec<_>, _>>()?;
-
-    Ok(AppData {
-        document_path: Some(path),
-        document: Some(document),
-        rendered_pages,
-        ..AppData::default()
-    })
 }
