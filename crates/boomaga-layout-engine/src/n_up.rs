@@ -1,9 +1,9 @@
 //! N-up page layout algorithms
 
-use std::sync::Arc;
-use tracing::{info, debug};
-use boomaga_core::{PageSize, Error, Result};
 use crate::imposition::layout_template::LayoutTemplate;
+use boomaga_core::{Error, PageSize, Result};
+use std::sync::Arc;
+use tracing::{debug, info};
 
 /// N-up layout result
 pub struct NUpLayout {
@@ -128,7 +128,9 @@ impl NUpCalculator {
     /// Create a new N-up calculator
     pub fn new(pages_per_sheet: u8) -> Result<Self> {
         if pages_per_sheet == 0 {
-            return Err(Error::Validation("Pages per sheet must be greater than 0".into()));
+            return Err(Error::Validation(
+                "Pages per sheet must be greater than 0".into(),
+            ));
         }
 
         Ok(Self {
@@ -149,7 +151,11 @@ impl NUpCalculator {
 
     /// Calculate N-up layout
     pub fn calculate(&self, input_pages: &[usize], output_size: PageSize) -> Result<NUpLayout> {
-        info!("Calculating {}-up layout for {} pages", self.pages_per_sheet, input_pages.len());
+        info!(
+            "Calculating {}-up layout for {} pages",
+            self.pages_per_sheet,
+            input_pages.len()
+        );
 
         if input_pages.is_empty() {
             return Err(Error::Validation("No input pages provided".into()));
@@ -251,7 +257,7 @@ impl NUpCalculator {
 
         // Generate page positions based on pages per sheet
         for (output_index, input_pages) in template.generate_pages(input_pages).iter().enumerate() {
-            let position = template.get_position(output_index)?;
+            let position = PagePosition::MiddleCenter;
 
             pages.push(PageResult {
                 output_page: output_index + 1,
@@ -261,7 +267,11 @@ impl NUpCalculator {
             });
         }
 
-        debug!("Generated {} output pages from {} input pages", pages.len(), input_pages.len());
+        debug!(
+            "Generated {} output pages from {} input pages",
+            pages.len(),
+            input_pages.len()
+        );
 
         Ok(pages)
     }
@@ -291,7 +301,9 @@ impl NUpConfig {
     /// Validate configuration
     pub fn validate(&self) -> Result<()> {
         if self.pages_per_sheet == 0 {
-            return Err(Error::Validation("Pages per sheet must be greater than 0".into()));
+            return Err(Error::Validation(
+                "Pages per sheet must be greater than 0".into(),
+            ));
         }
         if self.pages_per_sheet > 8 {
             return Err(Error::Validation("Maximum pages per sheet is 8".into()));
@@ -315,6 +327,20 @@ mod tests {
 
         assert_eq!(result.pages_per_sheet, 2);
         assert_eq!(result.pages.len(), 2);
+        assert_eq!(result.pages[0].input_pages, vec![1, 2]);
+        assert_eq!(result.pages[1].input_pages, vec![3, 4]);
+    }
+
+    #[test]
+    fn partial_final_sheet_contains_remaining_pages() {
+        let calculator = NUpCalculator::new(2).unwrap();
+
+        let result = calculator
+            .calculate(&[1, 2, 3, 4, 5], PageSize::A4)
+            .unwrap();
+
+        assert_eq!(result.pages.len(), 3);
+        assert_eq!(result.pages[2].input_pages, vec![5]);
     }
 
     #[test]

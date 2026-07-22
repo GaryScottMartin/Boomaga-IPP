@@ -1,10 +1,10 @@
 //! Page layout templates for N-up and booklet layouts
 
+use crate::n_up::PagePosition;
+use boomaga_core::{Error, PageSize, Result};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::info;
-use boomaga_core::{PageSize, Error, Result};
-use crate::n_up::PagePosition;
 
 /// Layout template for N-up and booklet layouts
 #[derive(Debug, Clone)]
@@ -21,12 +21,11 @@ pub struct LayoutTemplate {
 
 impl LayoutTemplate {
     /// Create a new layout template
-    pub fn new(
-        pages_per_sheet: u8,
-        output_size: PageSize,
-        scaled_size: (f64, f64),
-    ) -> Self {
-        info!("Creating layout template: {} pages per sheet", pages_per_sheet);
+    pub fn new(pages_per_sheet: u8, output_size: PageSize, scaled_size: (f64, f64)) -> Self {
+        info!(
+            "Creating layout template: {} pages per sheet",
+            pages_per_sheet
+        );
 
         Self {
             pages_per_sheet,
@@ -40,10 +39,7 @@ impl LayoutTemplate {
     pub fn generate_positions(&self) -> Vec<PagePosition> {
         match self.pages_per_sheet {
             1 => vec![PagePosition::MiddleCenter],
-            2 => vec![
-                PagePosition::TopLeft,
-                PagePosition::BottomRight,
-            ],
+            2 => vec![PagePosition::TopLeft, PagePosition::BottomRight],
             4 => vec![
                 PagePosition::TopLeft,
                 PagePosition::TopRight,
@@ -74,28 +70,10 @@ impl LayoutTemplate {
 
     /// Generate pages for the template
     pub fn generate_pages(&self, input_pages: &[usize]) -> Vec<Vec<usize>> {
-        let mut pages = Vec::new();
-        let mut input_iter = input_pages.iter().cloned();
-
-        for _ in 0..self.pages_per_sheet {
-            let mut page = Vec::new();
-
-            for _ in 0.. {
-                if let Some(page_num) = input_iter.next() {
-                    page.push(page_num);
-                    if page.len() == (input_pages.len() as f64 / self.pages_per_sheet as f64) as usize
-                        || page.len() * self.pages_per_sheet as usize >= input_pages.len() {
-                        break;
-                    }
-                } else {
-                    break;
-                }
-            }
-
-            pages.push(page);
-        }
-
-        pages
+        input_pages
+            .chunks(self.pages_per_sheet as usize)
+            .map(|pages| pages.to_vec())
+            .collect()
     }
 
     /// Get position for a specific page
