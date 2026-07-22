@@ -82,11 +82,15 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
     .expand_width()
     .height(32.px())
     .border(Color::from_rgb8(96, 96, 96), 1.0);
-    let interface = flex(
-        Axis::Vertical,
-        (toolbar, imposition_toolbar, canvas.flex(1.0), footer),
+    let content = sized_box(
+        flex(
+            Axis::Vertical,
+            (toolbar, imposition_toolbar, canvas.flex(1.0)),
+        )
+        .must_fill_major_axis(true),
     )
-    .must_fill_major_axis(true);
+    .expand_height();
+    let interface = flex(Axis::Vertical, (content.flex(1.0), footer)).must_fill_major_axis(true);
 
     fork(interface, renderer_worker())
 }
