@@ -77,6 +77,14 @@ fn grid_dimensions(pages_per_sheet: u8) -> (usize, usize) {
     }
 }
 
+fn imposed_sheet_size(source_size: Size, pages_per_sheet: u8) -> Size {
+    if pages_per_sheet == 2 {
+        Size::new(source_size.height, source_size.width)
+    } else {
+        source_size
+    }
+}
+
 /// Masonry leaf widget that paints one rendered PDF page.
 pub struct PdfCanvasWidget {
     images: Vec<Option<CanvasImage>>,
@@ -123,9 +131,10 @@ impl Widget for PdfCanvasWidget {
             .flatten()
             .next()
             .map_or(Size::new(595.0, 842.0), CanvasImage::size);
+        let sheet_size = imposed_sheet_size(natural, self.pages_per_sheet);
         bc.constrain(Size::new(
-            natural.width * self.zoom,
-            natural.height * self.zoom,
+            sheet_size.width * self.zoom,
+            sheet_size.height * self.zoom,
         ))
     }
 
@@ -285,5 +294,14 @@ mod tests {
         assert_eq!(grid_dimensions(4), (2, 2));
         assert_eq!(grid_dimensions(6), (3, 2));
         assert_eq!(grid_dimensions(8), (4, 2));
+    }
+
+    #[test]
+    fn two_up_uses_landscape_sheet_orientation() {
+        let portrait = Size::new(595.0, 842.0);
+
+        assert_eq!(imposed_sheet_size(portrait, 1), portrait);
+        assert_eq!(imposed_sheet_size(portrait, 2), Size::new(842.0, 595.0));
+        assert_eq!(imposed_sheet_size(portrait, 4), portrait);
     }
 }
