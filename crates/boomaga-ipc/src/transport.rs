@@ -1,16 +1,15 @@
 //! Unix socket transport implementation
 
+use crate::protocol::{Message, MessageType};
 use std::fs;
 use std::io;
-use std::net::{Shutdown, UnixListener, UnixStream};
-use std::os::unix::net::UnixStreamExt;
+use std::os::unix::net::UnixListener;
 use std::path::PathBuf;
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
 use tokio::net::UnixStream as TokioUnixStream;
 use tokio::sync::mpsc;
-use tracing::{info, error, debug};
-use crate::protocol::{Message, MessageType};
+use tracing::{debug, error, info};
 
 /// Unix socket transport
 pub struct UnixSocket {
@@ -39,14 +38,17 @@ impl UnixSocket {
             socket_path,
             listener: Some(listener),
             clients: Vec::new(),
-            receiver: mpsc::channel(100),
+            receiver: Some(mpsc::channel(100).1),
         })
     }
 
     /// Start listening for connections
     pub async fn listen(&mut self) -> Result<(), io::Error> {
         let listener = self.listener.take().ok_or_else(|| {
-            io::Error::new(io::ErrorKind::NotConnected, "Socket listener not initialized")
+            io::Error::new(
+                io::ErrorKind::NotConnected,
+                "Socket listener not initialized",
+            )
         })?;
 
         // Accept connections in a task
@@ -72,7 +74,10 @@ impl UnixSocket {
     pub async fn send(&self, message: Message) -> Result<(), io::Error> {
         // In production, this would serialize and send the message
         // For now, just log it
-        debug!("Sending message: {:?} to {:?}", message.message_type, message.destination);
+        debug!(
+            "Sending message: {:?} to {:?}",
+            message.message_type, message.destination
+        );
 
         Ok(())
     }
@@ -99,10 +104,7 @@ impl UnixSocket {
 
     /// Close the socket
     pub fn close(&mut self) -> Result<(), io::Error> {
-        // Close all client connections
-        for client in self.clients.drain(..) {
-            let _ = client.shutdown(Shutdown::Both);
-        }
+        self.clients.clear();
 
         // Remove socket file
         if self.socket_path.exists() {
