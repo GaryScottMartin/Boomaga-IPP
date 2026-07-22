@@ -28,10 +28,6 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
         Axis::Horizontal,
         (
             button(label("Open PDF…"), |d: &mut AppData| d.choose_document()),
-            button(label("⏮ First"), |d: &mut AppData| d.first_page()),
-            button(label("◀ Previous"), |d: &mut AppData| d.previous_page()),
-            button(label("Next ▶"), |d: &mut AppData| d.next_page()),
-            button(label("Last ⏭"), |d: &mut AppData| d.last_page()),
             button(label("−"), |d: &mut AppData| d.zoom_out()),
             button(label("100%"), |d: &mut AppData| d.reset_zoom()),
             button(label("+"), |d: &mut AppData| d.zoom_in()),
@@ -74,7 +70,14 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
     let status = status_text(data);
     let footer = sized_box(flex(
         Axis::Horizontal,
-        (FlexSpacer::Flex(1.0), label(status)),
+        (
+            button(label("⏮ First"), |d: &mut AppData| d.first_page()),
+            button(label("◀ Previous"), |d: &mut AppData| d.previous_page()),
+            button(label("Next ▶"), |d: &mut AppData| d.next_page()),
+            button(label("Last ⏭"), |d: &mut AppData| d.last_page()),
+            FlexSpacer::Flex(1.0),
+            label(status),
+        ),
     ))
     .expand_width()
     .height(32.px())
