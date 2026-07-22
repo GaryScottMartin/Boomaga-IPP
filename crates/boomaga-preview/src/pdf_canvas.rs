@@ -66,19 +66,41 @@ pub enum CanvasImageError {
     InvalidBufferLength { expected: usize, actual: usize },
 }
 
+fn grid_dimensions(pages_per_sheet: u8) -> (usize, usize) {
+    match pages_per_sheet {
+        1 => (1, 1),
+        2 => (2, 1),
+        4 => (2, 2),
+        6 => (3, 2),
+        8 => (4, 2),
+        _ => (1, 1),
+    }
+}
+
 /// Masonry leaf widget that paints one rendered PDF page.
 pub struct PdfCanvasWidget {
-    image: Option<CanvasImage>,
+    images: Vec<Option<CanvasImage>>,
+    pages_per_sheet: u8,
     zoom: f64,
 }
 
 impl PdfCanvasWidget {
-    fn new(image: Option<CanvasImage>, zoom: f64) -> Self {
-        Self { image, zoom }
+    fn new(images: Vec<Option<CanvasImage>>, pages_per_sheet: u8, zoom: f64) -> Self {
+        Self {
+            images,
+            pages_per_sheet,
+            zoom,
+        }
     }
 
-    fn update(this: &mut WidgetMut<'_, Self>, image: Option<CanvasImage>, zoom: f64) {
-        this.widget.image = image;
+    fn update(
+        this: &mut WidgetMut<'_, Self>,
+        images: Vec<Option<CanvasImage>>,
+        pages_per_sheet: u8,
+        zoom: f64,
+    ) {
+        this.widget.images = images;
+        this.widget.pages_per_sheet = pages_per_sheet;
         this.widget.zoom = zoom;
         this.ctx.request_layout();
     }
@@ -96,8 +118,10 @@ impl Widget for PdfCanvasWidget {
         bc: &BoxConstraints,
     ) -> Size {
         let natural = self
-            .image
-            .as_ref()
+            .images
+            .iter()
+            .flatten()
+            .next()
             .map_or(Size::new(595.0, 842.0), CanvasImage::size);
         bc.constrain(Size::new(
             natural.width * self.zoom,
@@ -115,9 +139,17 @@ impl Widget for PdfCanvasWidget {
             &bounds,
         );
 
-        if let Some(image) = &self.image {
-            let transform = ObjectFit::Contain.affine_to_fill(ctx.size(), image.size());
-            scene.draw_image(&image.brush, transform);
+        let (columns, rows) = grid_dimensions(self.pages_per_sheet);
+        let cell = Size::new(
+            ctx.size().width / columns as f64,
+            ctx.size().height / rows as f64,
+        );
+        for (index, image) in self.images.iter().enumerate() {
+            let Some(image) = image else { continue };
+            let x = (index % columns) as f64 * cell.width;
+            let y = (index / columns) as f64 * cell.height;
+            let fit = ObjectFit::Contain.affine_to_fill(cell, image.size());
+            scene.draw_image(&image.brush, Affine::translate((x, y)) * fit);
         }
     }
 
@@ -146,13 +178,18 @@ impl Widget for PdfCanvasWidget {
 /// Xilem view that owns the reactive inputs to [`PdfCanvasWidget`].
 #[must_use = "View values do nothing unless provided to Xilem"]
 pub struct PdfCanvas {
-    image: Option<CanvasImage>,
+    images: Vec<Option<CanvasImage>>,
+    pages_per_sheet: u8,
     zoom: f64,
 }
 
 /// Create a PDF canvas view.
-pub fn pdf_canvas(image: Option<CanvasImage>, zoom: f64) -> PdfCanvas {
-    PdfCanvas { image, zoom }
+pub fn pdf_canvas(images: Vec<Option<CanvasImage>>, pages_per_sheet: u8, zoom: f64) -> PdfCanvas {
+    PdfCanvas {
+        images,
+        pages_per_sheet,
+        zoom,
+    }
 }
 
 impl ViewMarker for PdfCanvas {}
@@ -163,7 +200,11 @@ impl<State, Action> View<State, Action, ViewCtx> for PdfCanvas {
 
     fn build(&self, ctx: &mut ViewCtx, _: &mut State) -> (Self::Element, Self::ViewState) {
         (
-            ctx.create_pod(PdfCanvasWidget::new(self.image.clone(), self.zoom)),
+            ctx.create_pod(PdfCanvasWidget::new(
+                self.images.clone(),
+                self.pages_per_sheet,
+                self.zoom,
+            )),
             (),
         )
     }
@@ -176,8 +217,16 @@ impl<State, Action> View<State, Action, ViewCtx> for PdfCanvas {
         mut element: Mut<'_, Self::Element>,
         _: &mut State,
     ) {
-        if self.image != prev.image || self.zoom != prev.zoom {
-            PdfCanvasWidget::update(&mut element, self.image.clone(), self.zoom);
+        if self.images != prev.images
+            || self.pages_per_sheet != prev.pages_per_sheet
+            || self.zoom != prev.zoom
+        {
+            PdfCanvasWidget::update(
+                &mut element,
+                self.images.clone(),
+                self.pages_per_sheet,
+                self.zoom,
+            );
         }
     }
 
@@ -227,5 +276,14 @@ mod tests {
         let image = CanvasImage::from_cairo_bgra(vec![255; 8], 2, 1).unwrap();
 
         assert_eq!(image.size(), Size::new(2.0, 1.0));
+    }
+
+    #[test]
+    fn uses_expected_n_up_grids() {
+        assert_eq!(grid_dimensions(1), (1, 1));
+        assert_eq!(grid_dimensions(2), (2, 1));
+        assert_eq!(grid_dimensions(4), (2, 2));
+        assert_eq!(grid_dimensions(6), (3, 2));
+        assert_eq!(grid_dimensions(8), (4, 2));
     }
 }

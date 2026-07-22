@@ -89,6 +89,14 @@ impl AppData {
             .and_then(Option::as_ref)
     }
 
+    /// Ordered rendered-image slots for the source pages on the current sheet.
+    pub fn current_canvas_images(&self) -> Vec<Option<CanvasImage>> {
+        self.current_sheet_pages()
+            .into_iter()
+            .map(|page_index| self.rendered_pages.get(page_index).cloned().flatten())
+            .collect()
+    }
+
     /// Number of pages which have been rendered into the on-demand cache.
     pub fn rendered_page_count(&self) -> usize {
         self.rendered_pages

@@ -57,7 +57,11 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
         ),
     );
 
-    let canvas = pdf_canvas(data.current_canvas_image().cloned(), data.zoom);
+    let canvas = pdf_canvas(
+        data.current_canvas_images(),
+        data.print_options.pages_per_sheet as u8,
+        data.zoom,
+    );
     let status = status_text(data);
     let interface = flex(
         Axis::Vertical,
