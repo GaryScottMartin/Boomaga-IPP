@@ -26,12 +26,13 @@ See @docs/HANDOFF.md for current session state and active threads
 **IPC Communication**:
 
 - Unix domain sockets (`/tmp/boomaga-ipp.sock`)
-- JSON message protocol for state synchronization
-- Message types include job status, document info, user actions
+- Protocol-v1 newline-delimited JSON framing for state synchronization
+- Backend lifecycle notifications are delivered through a Xilem IPC worker into
+  typed, deduplicated preview state
 
 **Layout Engine**:
 
-- N-up algorithms (1, 2, 4, 8 pages per sheet)
+- N-up algorithms (1, 2, 4, 6, 8 pages per sheet)
 - Booklet creation with page ordering
 - Custom page positioning with f64 coordinates
 - Transform operations for page layout
@@ -71,21 +72,29 @@ cargo build -p boomaga-ipp-backend
 ```
 ## Current State
 
-The Xilem migration’s Phases A through D are complete. On Denali,
-`boomaga-preview` builds, all ten tests pass, and native PDF selection,
-asynchronous on-demand rendering, navigation, and zoom were verified. Phase E
-(imposition and IPC wiring) is next. The workspace as a whole is still not green
-because `boomaga-ipp-backend` and `boomaga-ipc` have independent stub/compile
-gaps. See
-`docs/HANDOFF.md` for the current, verified session state rather than relying on
-old workspace-wide error counts.
+The Xilem migration’s Phases A through E are complete, host-verified, and merged
+to `main`. The preview supports native PDF selection, asynchronous on-demand
+rendering, navigation/zoom, and 1/2/4/6/8-up imposition with horizontal/vertical
+fill and the intended sheet orientations. Versioned Unix-socket IPC carries
+backend job lifecycle notifications into preview state. Phase F (print options,
+printer selection, and downstream submission) is next; booklet controls remain
+a follow-up.
 
-Preview verification commands used on Denali:
+Focused verification on Denali passed with 7 layout-engine, 3 IPC, 1 backend,
+and 19 preview tests. A fresh workspace-wide `cargo check --workspace` has not
+been recorded, so do not infer workspace-wide status from the focused results.
+See `docs/HANDOFF.md` for the current verified state.
+
+Phase E verification commands used on Denali:
 
 ```bash
 cargo check -p boomaga-preview
 cargo test -p boomaga-preview
-cargo run -p boomaga-preview
+cargo check -p boomaga-ipc
+cargo test -p boomaga-ipc
+cargo check -p boomaga-ipp-backend
+cargo test -p boomaga-ipp-backend
+cargo test -p boomaga-layout-engine
 ```
 
 ## Development Prerequisites
@@ -147,6 +156,8 @@ cargo run -p boomaga-preview
 - `crates/boomaga-preview/src/main.rs` \- Xilem application entry
 - `crates/boomaga-preview/src/app.rs` \- Main application state
 - `crates/boomaga-preview/src/document_renderer.rs` \- Active Poppler/Cairo PDF renderer
+- `crates/boomaga-preview/src/pdf_canvas.rs` \- N-up sheet composition and drawing
+- `crates/boomaga-preview/src/ipc_worker.rs` \- Backend notification worker
 
 ### Configuration
 
@@ -162,11 +173,11 @@ cargo run -p boomaga-preview
 
 ## Known Issues
 
-- `cargo check --workspace` remains red because of backend/IPC stub and compile
-  gaps; consult current compiler output before recording specific counts or causes.
-- `boomaga-preview` is green through Phase D; Phase E imposition/IPC wiring is next.
-- `FileType` in `boomaga-core` still needs to match the accepted PDF/PWG
-  Raster/JPEG formats.
+- A fresh `cargo check --workspace` baseline has not been recorded. Focused Phase E
+  checks are green; run the workspace command before making a workspace-wide claim.
+- Real IPP request parsing/response generation, captured-document handoff, and
+  downstream printer submission remain incomplete.
+- Phase F print workflow and the deferred booklet controls are next.
 
 Historical note: earlier reports of roughly 82 workspace errors and roughly 38
 `boomaga-config` errors predate the crate-by-crate repairs and must not be treated
@@ -241,10 +252,9 @@ provided by the repo — no per-machine setup is required beyond the executable 
   ```
 
 - `cargo clippy -p boomaga-preview --all-targets` also lints local path
-  dependencies. It currently stops on the independent pre-existing
-  `boomaga-config` absurd `u16 > 65535` comparison. Use `--no-deps` when the
-  intent is to lint only Phase D preview code; do not fold dependency cleanup
-  into an unrelated preview change.
+  dependencies. The earlier `boomaga-config` impossible `u16 > 65535` comparison
+  was fixed during Phase E. Use `--no-deps` only when the intent is explicitly to
+  isolate preview-code lint results from dependency warnings.
 
 ## GitHub access from OpenShell
 
@@ -297,6 +307,10 @@ provided by the repo — no per-machine setup is required beyond the executable 
 - A 403 response containing `X-Openshell-Policy`, `policy_denied`, or
   `rule_missing` is an OpenShell routing-policy failure, not proof that the PAT
   is invalid.
+- Active OpenShell policy changes must be made from the originating host, outside
+  the sandbox. Host-side changes can affect a running sandbox; recreation is not
+  inherently required. Editing the repository policy copy inside the sandbox
+  does not update the host's active policy.
 
 See `openshell/codex/README.md` for commands and diagnostics.
 
