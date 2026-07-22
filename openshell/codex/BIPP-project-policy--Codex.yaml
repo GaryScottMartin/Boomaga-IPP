@@ -69,6 +69,18 @@ network_policies:
       - { path: /usr/bin/npm }
       - { path: /usr/bin/node }
 
+  rust_toolchain:
+    name: rust-toolchain
+    endpoints:
+      # rustup installer and Rust toolchain/component downloads.
+      - { host: sh.rustup.rs, port: 443 }
+      - { host: static.rust-lang.org, port: 443 }
+    binaries:
+      # curl downloads rustup-init; rustup then installs/updates the toolchain.
+      - { path: /usr/bin/curl }
+      - { path: /usr/local/bin/curl }
+      - { path: /sandbox/.cargo/bin/rustup }
+
   cargo_registry:
     name: cargo-registry
     endpoints:
@@ -76,5 +88,5 @@ network_policies:
       - { host: static.crates.io, port: 443 }
       - { host: index.crates.io, port: 443 }
     binaries:
-      - { path: /usr/local/bin/cargo }
-      - { path: /usr/local/bin/rustc }
+      # The creation script installs rustup and its Cargo proxy here.
+      - { path: /sandbox/.cargo/bin/cargo }
