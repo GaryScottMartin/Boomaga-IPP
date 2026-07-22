@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use boomaga_core::Document;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
-use xilem::core::{MessageProxy, View};
+use xilem::core::{MessageProxy, NoElement, View};
 use xilem::view::worker;
 use xilem::ViewCtx;
 
@@ -89,7 +89,7 @@ impl fmt::Debug for RendererEvent {
 }
 
 /// A persistent Xilem worker which owns the renderer command channel.
-pub fn renderer_worker() -> impl View<AppData, (), ViewCtx> {
+pub fn renderer_worker() -> impl View<AppData, (), ViewCtx, Element = NoElement> {
     worker(
         run_renderer_thread,
         |data: &mut AppData, sender| data.install_renderer(sender),
