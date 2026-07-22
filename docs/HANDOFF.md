@@ -162,6 +162,10 @@ printer selection, and downstream submission. Booklet UI remains a deliberate fo
   `git mv` plus separate edits, `git add -A` (or `--amend` afterward) so all files land in one commit.
 - **Focused Phase E crates are green; full-workspace status is unrecorded.** Do not convert
   focused results into a workspace-wide claim without running the workspace command.
+- **Live policy updates must originate on the OpenShell host.** Editing the active policy from
+  the originating host can affect a running sandbox; recreating the sandbox is not inherently
+  required. Editing the repository's policy copy inside the sandbox does not update the host's
+  active policy.
 - **Sandbox persistence:** container is `restart=unless-stopped` (files survive reboot), BUT
   networking + gateway JWT are fragile — a live session isn't reliably restorable. Back up to git.
 - **The sandbox now has a Rust toolchain.** Native libraries, cached dependencies, or network

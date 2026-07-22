@@ -37,5 +37,8 @@ The policy pattern permits nested repository endpoints but may reject the bare
 repository-root path. GraphQL is not allowed. A response containing the
 `X-Openshell-Policy` header or JSON fields such as `"error":"policy_denied"` and
 `"rule_missing"` is a policy mismatch at the OpenShell gateway, not evidence of
-an invalid PAT. Update `BIPP-project-policy--Codex.yaml` when a required REST path
-is missing, then create a new sandbox with the updated policy.
+an invalid PAT. When a required REST path is missing, update the active policy from the
+originating OpenShell host, outside the sandbox. Host-side policy changes can
+take effect for the running sandbox; recreating it is not inherently required.
+Editing a repository copy from inside the sandbox does not update the host's
+active policy.
