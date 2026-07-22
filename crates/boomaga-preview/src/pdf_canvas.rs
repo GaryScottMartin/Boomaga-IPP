@@ -78,7 +78,7 @@ fn grid_dimensions(pages_per_sheet: u8) -> (usize, usize) {
 }
 
 fn grid_slot(index: usize, pages_per_sheet: u8, vertical: bool) -> usize {
-    if vertical && matches!(pages_per_sheet, 4 | 8) {
+    if vertical && matches!(pages_per_sheet, 4 | 6 | 8) {
         let (columns, rows) = grid_dimensions(pages_per_sheet);
         (index % rows) * columns + index / rows
     } else {
@@ -87,7 +87,7 @@ fn grid_slot(index: usize, pages_per_sheet: u8, vertical: bool) -> usize {
 }
 
 fn imposed_sheet_size(source_size: Size, pages_per_sheet: u8) -> Size {
-    if matches!(pages_per_sheet, 2 | 8) {
+    if matches!(pages_per_sheet, 2 | 6 | 8) {
         Size::new(source_size.height, source_size.width)
     } else {
         source_size
@@ -332,6 +332,7 @@ mod tests {
         assert_eq!(imposed_sheet_size(portrait, 1), portrait);
         assert_eq!(imposed_sheet_size(portrait, 2), Size::new(842.0, 595.0));
         assert_eq!(imposed_sheet_size(portrait, 4), portrait);
+        assert_eq!(imposed_sheet_size(portrait, 6), Size::new(842.0, 595.0));
         assert_eq!(imposed_sheet_size(portrait, 8), Size::new(842.0, 595.0));
     }
 
@@ -341,6 +342,8 @@ mod tests {
         let eight_up: Vec<_> = (0..8).map(|index| grid_slot(index, 8, true)).collect();
 
         assert_eq!(four_up, vec![0, 2, 1, 3]);
+        let six_up: Vec<_> = (0..6).map(|index| grid_slot(index, 6, true)).collect();
+        assert_eq!(six_up, vec![0, 3, 1, 4, 2, 5]);
         assert_eq!(eight_up, vec![0, 4, 1, 5, 2, 6, 3, 7]);
     }
 
