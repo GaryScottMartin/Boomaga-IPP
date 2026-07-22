@@ -170,11 +170,15 @@ fn main() -> anyhow::Result<()> {
 - ℹ️ Preview Clippy remains blocked by the independent pre-existing
   `boomaga-config` absurd `u16 > 65535` comparison.
 
-### Phase E: Imposition & IPC wiring
-- Wire `boomaga-layout-engine` (N-up / booklet / transforms) into preview state
-  (`docs/uml/C2-class.puml` marks `AppData → NUpCalculator` as `<<planned>>`).
-- Wire the Unix-socket IPC (`boomaga-ipc`) so backend job notifications update `AppData`
-  (`docs/uml/C3-sequence.puml`).
+### Phase E: Imposition & IPC wiring — ✅ ACCEPTED SCOPE HOST-VERIFIED (2026-07-22)
+- ✅ 1/2/4/6/8-up imposition is wired into `AppData` and the preview canvas, with
+  horizontal/vertical fill, correct sheet orientation, and sheet-aware navigation.
+- ✅ Protocol-v1 newline-delimited JSON is implemented over Unix sockets.
+- ✅ Backend job notifications flow through a Xilem worker into typed `AppData` state
+  and the preview footer.
+- ✅ Denali passed layout (7), IPC (3), backend (1), and preview (19) tests.
+- ℹ️ Booklet controls were not added to the user-accepted preview UI and remain a
+  follow-up alongside print-options work.
 
 ### Phase F: Print dialog & downstream submit
 - Print options dialog bound to `PrintOptions`.
@@ -202,7 +206,8 @@ fn main() -> anyhow::Result<()> {
 - [x] Load and display PDF documents
 - [x] Navigate pages (next, previous, first, last)
 - [x] Zoom in/out/reset
-- [ ] Apply imposition (N-up, booklet) in preview
+- [x] Apply N-up imposition in preview
+- [ ] Add booklet controls and preview mode
 - [ ] Select downstream printer and submit
 - [ ] Toolbar + menu
 - [ ] Keyboard shortcuts (Space, N, P, +/-, 0)
