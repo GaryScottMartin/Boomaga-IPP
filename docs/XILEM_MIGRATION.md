@@ -4,8 +4,8 @@
 > **Phase C status:** **DONE and host-verified on Denali (2026-07-20)** — the
 > Masonry canvas displays real Poppler/Cairo-rendered PDF pages; navigation and
 > zoom work as expected, and all seven preview tests pass.
-> **Status:** Phases A/B/C are complete on `main`; Phase D is implemented on
-> `xilem-phase-d` and awaits dependency resolution plus host compile/runtime verification.
+> **Status:** Phases A/B/C are complete on `main`; Phase D is complete and
+> host-verified on `xilem-phase-d`. Merging the feature branch is next.
 
 ## Overview
 This document tracks replacing Druid with Xilem for the `boomaga-preview` GUI.
@@ -27,11 +27,12 @@ Target architecture: SRS/UIS **v0.2.2** Appendix C and [`docs/uml/`](./uml/)
 
 ## Current Status
 
-Phases A, B, and C are complete. Phase D is implemented on the
-`xilem-phase-d` feature branch: a native PDF chooser and command-line paths feed
-one background renderer thread through Xilem 0.4's `worker`/`MessageProxy`
-mechanism. `AppData` holds loading/error/progress state and a sparse on-demand
-page cache. Host compile and Wayland runtime verification are still pending.
+Phases A, B, and C are complete on `main`. Phase D is complete and
+host-verified on the `xilem-phase-d` feature branch: a native PDF chooser and
+command-line paths feed one background renderer thread through Xilem 0.4's
+`worker`/`MessageProxy` mechanism. `AppData` holds loading/error/progress state
+and a sparse on-demand page cache. Denali regenerated `Cargo.lock`, passed
+`cargo check -p boomaga-preview` and all ten tests, and recorded runtime evidence.
 
 **Dependencies:**
 - Workspace `Cargo.toml` and `crates/boomaga-preview/Cargo.toml` declare
@@ -51,7 +52,6 @@ page cache. Host compile and Wayland runtime verification are still pending.
 - `src/document_renderer.rs` retains the Poppler/Cairo load and rasterization
   implementation; only core metadata and completed `CanvasImage` values cross
   back to Xilem's UI thread.
-  surface bytes now feed the Xilem/Masonry canvas through `CanvasImage`.
 - The domain types in `boomaga-core` (`Document`, `Page`, `PrintOptions`) and
   `boomaga-config` are framework-independent and stay as-is.
 
@@ -152,15 +152,17 @@ fn main() -> anyhow::Result<()> {
 - ✅ Host-verified on Denali: `cargo check -p boomaga-preview`, all seven tests,
   real multi-page PDF display, navigation, and zoom. Evidence: [`Bommaga-IPP-Preview-Screenshot_2026-07-19_185221.png`](screenshots/Bommaga-IPP-Preview-Screenshot_2026-07-19_185221.png).
 
-### Phase D: Document loading & async rendering — 🚧 IMPLEMENTED, VERIFICATION PENDING
+### Phase D: Document loading & async rendering — ✅ DONE, HOST-VERIFIED (2026-07-22)
 - ✅ Native PDF file chooser plus asynchronous command-line path loading.
 - ✅ Dedicated renderer thread owns each non-`Send`/`Sync` Poppler document.
 - ✅ Xilem `worker` + `MessageProxy` safely deliver metadata and page images to `AppData`.
 - ✅ Idle/loading/ready/error status, generation-based stale-result rejection,
   render progress, and an on-demand page cache.
-- ⏳ Regenerate `Cargo.lock`, run `cargo fmt`, `cargo check -p boomaga-preview`,
-  and `cargo test -p boomaga-preview` on Denali; then visually verify file-open,
-  responsiveness on a large PDF, navigation/cache behavior, and error display.
+- ✅ Denali regenerated `Cargo.lock`; `cargo check -p boomaga-preview` passed and
+  all ten preview tests passed. Runtime evidence:
+  [`Boomaga-IPP-Preview-Screenshot_2026-07-21_232928.png`](screenshots/Boomaga-IPP-Preview-Screenshot_2026-07-21_232928.png).
+- ℹ️ Preview Clippy remains blocked by the independent pre-existing
+  `boomaga-config` absurd `u16 > 65535` comparison.
 
 ### Phase E: Imposition & IPC wiring
 - Wire `boomaga-layout-engine` (N-up / booklet / transforms) into preview state
@@ -222,9 +224,8 @@ fn main() -> anyhow::Result<()> {
 - **Async rendering + IPC**: feeding worker/IPC results back into state correctly.
 
 ### Low Risk
-- **Custom PDF canvas**: the Poppler/Cairo-to-Masonry/Vello bridge is implemented
-  and host-verified through Phase C.
-- **Document loading** (`document_renderer.rs`) — reusable as-is.
+- **Custom PDF canvas and async loading**: the Poppler/Cairo-to-Masonry/Vello
+  bridge and thread-confined on-demand renderer are host-verified through Phase D.
 - **Configuration / domain types** — framework-independent.
 
 ## Next Steps
@@ -232,7 +233,7 @@ fn main() -> anyhow::Result<()> {
 2. ✅ **Phase A** — deleted Druid + pseudo-Xilem code; compiling Xilem skeleton on `main`.
 3. ✅ **Phase B** — core view tree (toolbar row, navigation, zoom, status).
 4. ✅ **Phase C** — custom canvas + Poppler/Cairo renderer handoff, host-verified.
-5. 🚧 Phase D — document loading & async rendering.
+5. ✅ **Phase D** — file-open UI, async rendering, worker delivery, and on-demand cache; host-verified.
 6. 🚧 Phase E — imposition + IPC wiring.
 7. 🚧 Phase F — print dialog & downstream submit.
 8. 🚧 Phase G — testing, polish, docs.
