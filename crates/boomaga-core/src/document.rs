@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use crate::{Error, Result};
 
-/// Represents a document (PDF or PostScript)
+/// Represents a supported PDF, PWG Raster, or JPEG document
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Document {
     pub id: String,
@@ -112,10 +112,10 @@ impl Page {
 pub enum FileType {
     /// PDF document
     Pdf,
-    /// PostScript document
-    PostScript,
-    /// PostScript (.ps) file
-    Ps,
+    /// PWG Raster document
+    PwgRaster,
+    /// JPEG image
+    Jpeg,
 }
 
 /// Pages per sheet enumeration

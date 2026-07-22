@@ -85,7 +85,7 @@ impl BackendConfig {
             return Err(anyhow::anyhow!("Job queue size must be greater than 0"));
         }
 
-        if self.ipp_port < 1024 || self.ipp_port > 65535 {
+        if self.ipp_port < 1024 {
             return Err(anyhow::anyhow!("IPP port must be between 1024 and 65535"));
         }
 
