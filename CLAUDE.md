@@ -228,6 +228,24 @@ provided by the repo — no per-machine setup is required beyond the executable 
 - After editing, run `git diff --check`, inspect `git diff`, and scan for any stale
   text the edit was meant to remove.
 
+## Host-side verification gotchas
+
+- Use `git status --short`, with the leading `--`. `git status short` treats
+  `short` as a pathspec and can misleadingly report a clean tree while other
+  files are modified.
+- `cargo fmt --all` formats every workspace crate and can create large unrelated
+  diffs. For preview-only work, use:
+
+  ```bash
+  cargo fmt -p boomaga-preview
+  ```
+
+- `cargo clippy -p boomaga-preview --all-targets` also lints local path
+  dependencies. It currently stops on the independent pre-existing
+  `boomaga-config` absurd `u16 > 65535` comparison. Use `--no-deps` when the
+  intent is to lint only Phase D preview code; do not fold dependency cleanup
+  into an unrelated preview change.
+
 ## GitHub access from OpenShell
 
 - `GITHUB_TOKEN` appears as a placeholder inside the sandbox. This is expected:

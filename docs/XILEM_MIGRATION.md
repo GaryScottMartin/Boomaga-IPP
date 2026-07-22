@@ -98,6 +98,13 @@ older Xilem and from naive expectations:
   *multi-window* API (logic must return `impl Iterator<Item = WindowView<State>>`).
 - Callbacks are `Fn(&mut State) -> Action`; returning `()` is fine.
 - `impl WidgetView<AppData> + use<>` works (Rust 1.88).
+- A helper returning an opaque worker view for `fork` must expose its phantom
+  element type. Returning only `impl View<AppData, (), ViewCtx>` hides the
+  associated type and fails the `WidgetView`/`SuperElement` bound. Use:
+
+  ```rust
+  impl View<AppData, (), ViewCtx, Element = NoElement>
+  ```
 
 ```rust
 use xilem::view::{button, flex, label, Axis};
