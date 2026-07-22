@@ -41,11 +41,15 @@ UPDATE_CODEX="mkdir -p '$CODEX_PREFIX/bin' && npm install -g --prefix '$CODEX_PR
 RUSTUP_HOME="/sandbox/.rustup"
 CARGO_HOME="/sandbox/.cargo"
 INSTALL_RUST="export RUSTUP_HOME='$RUSTUP_HOME' CARGO_HOME='$CARGO_HOME'; mkdir -p \"\$RUSTUP_HOME\" \"\$CARGO_HOME\"; if [ ! -x \"\$CARGO_HOME/bin/rustup\" ]; then curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal --default-toolchain none; fi; export PATH=\"\$CARGO_HOME/bin:$CODEX_PREFIX/bin:\$PATH\"; rustup toolchain install stable --profile minimal --component rustfmt --component clippy; rustup default stable; hash -r; rustc --version; cargo --version"
+# Native development packages required by qpdf-sys, Poppler/Cairo rendering,
+# and the CUPS-facing crates. Only this bootstrap runs as root; project setup
+# and Codex run as the unprivileged sandbox user below.
+INSTALL_NATIVE="export DEBIAN_FRONTEND=noninteractive; apt-get update; apt-get install -y --no-install-recommends pkg-config libqpdf-dev libpoppler-glib-dev libcairo2-dev libcups2-dev"
 
 if [ -n "${BIPP_VERIFY:-}" ]; then
   NAME="BIPP-codex-verify"
   EXTRA=(--no-keep)
-  ENTRY="set -e; $UPDATE_CODEX; $INSTALL_RUST; $CLONE; cd '$DIR'; echo \"PWD=\$(pwd)\"; test -d .git && echo GIT_OK; command -v codex >/dev/null && echo CODEX_OK; codex --version; command -v cargo >/dev/null && echo RUST_OK; rustc --version; cargo --version"
+  ENTRY="set -e; $UPDATE_CODEX; $INSTALL_RUST; $CLONE; cd '$DIR'; echo \"PWD=\$(pwd)\"; test -d .git && echo GIT_OK; command -v codex >/dev/null && echo CODEX_OK; codex --version; command -v cargo >/dev/null && echo RUST_OK; rustc --version; cargo --version; pkg-config --exists libqpdf poppler-glib cairo cups && echo NATIVE_DEPS_OK"
 else
   NAME="${1:-BIPP-codex}"
   EXTRA=()
@@ -54,6 +58,11 @@ else
   # works if authentication is restored by another mechanism in the future.
   ENTRY="set -e; $UPDATE_CODEX; $INSTALL_RUST; $CLONE; cd '$DIR'; if ! codex login status >/dev/null 2>&1; then echo 'Codex authentication required; complete the device-code flow in your browser.'; codex login --device-auth; fi; exec codex"
 fi
+
+# Install packages with the root bootstrap identity, then permanently drop to
+# the normal sandbox account before running user or project commands.
+printf -v ENTRY_QUOTED '%q' "$ENTRY"
+ROOT_ENTRY="set -e; $INSTALL_NATIVE; exec runuser -u sandbox -- bash -lc $ENTRY_QUOTED"
 
 # Ignore "not found" and similar deletion failures so first-time creation works.
 # A same-named sandbox that still exists will cause the create command to fail
@@ -65,4 +74,4 @@ exec openshell sandbox create \
   --policy "$POLICY" \
   --provider "$GITHUB_PROVIDER" \
   "${EXTRA[@]}" \
-  -- bash -lc "$ENTRY"
+  -- bash -lc "$ROOT_ENTRY"
