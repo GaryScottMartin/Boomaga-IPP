@@ -4,9 +4,11 @@
 //! the IPP backend service and the preview application using Unix
 //! Domain Sockets and D-Bus.
 
+pub mod notifier;
 pub mod protocol;
 pub mod transport;
 
+pub use notifier::{NotificationSender, NotificationServer};
 pub use protocol::{
     Message, MessageDestination, MessagePayload, MessageSource, MessageType, Request, Response,
     PROTOCOL_VERSION,

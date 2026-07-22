@@ -11,6 +11,7 @@ path = "src/main.rs"
 
 [dependencies]
 boomaga-core = { path = "../boomaga-core" }
+boomaga-ipc = { path = "../boomaga-ipc" }
 zbus = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 serde = { workspace = true, features = ["derive"] }

@@ -44,8 +44,22 @@ async fn main() -> boomaga_core::Result<()> {
     // Create job queue
     let job_queue = Arc::new(job_queue::JobQueue::new(config.job_queue_size)?);
 
+    // Start backend-to-preview notification socket.
+    let (notification_server, notification_sender) =
+        boomaga_ipc::NotificationServer::bind(config.ipc_socket_path.clone())?;
+    tokio::spawn(async move {
+        if let Err(error) = notification_server.run().await {
+            error!("IPC notification server error: {}", error);
+        }
+    });
+
     // Start job processor
-    let processor = Arc::new(job_processor::JobProcessor::new(Arc::clone(&job_queue), config.max_concurrent_jobs, config.worker_threads)?);
+    let processor = Arc::new(job_processor::JobProcessor::new(
+        Arc::clone(&job_queue),
+        config.max_concurrent_jobs,
+        config.worker_threads,
+        notification_sender,
+    )?);
 
     // Start IPP server
     let mut ipp_server = server::IppServer::new(

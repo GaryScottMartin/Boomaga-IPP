@@ -601,6 +601,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "boomaga-core",
+ "boomaga-ipc",
  "directories",
  "nix",
  "serde",

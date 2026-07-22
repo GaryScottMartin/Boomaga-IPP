@@ -121,12 +121,16 @@ fn status_text(data: &AppData) -> String {
             } else {
                 "rendering"
             };
+            let job_status = data.latest_job_status().map_or_else(String::new, |(job_id, status)| {
+                format!("   ·   job {job_id}: {status}")
+            });
             format!(
-                "Sheet {} of {page_count} ({page_status})   ·   {}-up   ·   cached {rendered}/{}   ·   zoom {:.0}%",
+                "Sheet {} of {page_count} ({page_status})   ·   {}-up   ·   cached {rendered}/{}   ·   zoom {:.0}%{}",
                 data.current_page + 1,
                 data.print_options.pages_per_sheet as u8,
                 data.rendered_pages.len(),
-                data.zoom * 100.0
+                data.zoom * 100.0,
+                job_status
             )
         }
     }
