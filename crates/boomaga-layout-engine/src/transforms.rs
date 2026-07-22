@@ -224,7 +224,7 @@ mod tests {
 
     #[test]
     fn test_page_rotation() {
-        let calculator = PageRotationCalculator::new(Orientation::Landscape);
+        let mut calculator = PageRotationCalculator::new(Orientation::Landscape);
         calculator.set_current(Orientation::Portrait);
 
         assert_eq!(calculator.required_rotation(), 90.0);
