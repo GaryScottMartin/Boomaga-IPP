@@ -1,17 +1,16 @@
 //! Job queue implementation
 
+use boomaga_core::{Error, PrintJobRequest};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
-use tokio::sync::mpsc;
-use tokio::sync::RwLock;
-use tracing::{info, debug};
-use boomaga_core::{PrintJobRequest, Error};
 use std::time::Instant;
+use tokio::sync::{mpsc, Mutex};
+use tracing::{debug, info};
 
 /// Job queue
 pub struct JobQueue {
     sender: mpsc::Sender<PrintJobRequest>,
-    receiver: mpsc::Receiver<PrintJobRequest>,
+    receiver: Mutex<mpsc::Receiver<PrintJobRequest>>,
     queue_size: Arc<AtomicUsize>,
     max_size: usize,
 }
@@ -20,14 +19,16 @@ impl JobQueue {
     /// Create a new job queue
     pub fn new(max_size: usize) -> Result<Self, Error> {
         if max_size == 0 {
-            return Err(Error::Validation("Queue size must be greater than 0".into()));
+            return Err(Error::Validation(
+                "Queue size must be greater than 0".into(),
+            ));
         }
 
         let (sender, receiver) = mpsc::channel(max_size);
 
         Ok(Self {
             sender,
-            receiver,
+            receiver: Mutex::new(receiver),
             queue_size: Arc::new(AtomicUsize::new(0)),
             max_size,
         })
@@ -39,33 +40,30 @@ impl JobQueue {
             return Err(Error::Validation("Queue is full".into()));
         }
 
-        self.sender.send(request).await
+        self.sender
+            .send(request)
+            .await
             .map_err(|e| Error::Job(format!("Failed to push job: {}", e)))?;
 
         self.queue_size.fetch_add(1, Ordering::Relaxed);
 
-        debug!("Job pushed to queue. Current size: {}", self.queue_size.load(Ordering::Relaxed));
+        debug!(
+            "Job pushed to queue. Current size: {}",
+            self.queue_size.load(Ordering::Relaxed)
+        );
 
         Ok(())
     }
 
     /// Pop a job from the queue
-    pub async fn pop(&mut self) -> Result<PrintJobRequest, Error> {
-        self.queue_size.fetch_sub(1, Ordering::Relaxed);
-
-        match self.receiver.recv().await {
-            Some(job) => Ok(job),
+    pub async fn pop(&self) -> Result<PrintJobRequest, Error> {
+        let job = self.receiver.lock().await.recv().await;
+        match job {
+            Some(job) => {
+                self.queue_size.fetch_sub(1, Ordering::Relaxed);
+                Ok(job)
+            }
             None => Err(Error::Job("Queue is empty".into())),
-        }
-    }
-
-    /// Pop a job from the queue (alternative version for Arc usage)
-    pub async fn pop_arc(&self) -> Result<Option<PrintJobRequest>, Error> {
-        self.queue_size.fetch_sub(1, Ordering::Relaxed);
-
-        match self.receiver.recv().await {
-            Some(job) => Ok(Some(job)),
-            None => Ok(None),
         }
     }
 
@@ -90,9 +88,10 @@ impl JobQueue {
     }
 
     /// Clear the queue
-    pub async fn clear(&mut self) {
+    pub async fn clear(&self) {
         // Drain the receiver
-        while let Ok(job) = self.receiver.try_recv() {
+        let mut receiver = self.receiver.lock().await;
+        while let Ok(_job) = receiver.try_recv() {
             self.queue_size.fetch_sub(1, Ordering::Relaxed);
         }
 

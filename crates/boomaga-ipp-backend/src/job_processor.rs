@@ -1,12 +1,12 @@
 //! Print job processor
 
+use crate::job_queue::JobQueue;
+use boomaga_core::{Error, JobStatus, PrintJobRequest};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tokio::task::JoinSet;
-use tracing::{info, error, debug};
-use boomaga_core::{PrintJobRequest, JobStatus, Error};
-use crate::job_queue::JobQueue;
+use tracing::{debug, error, info};
 
 /// Job processor
 #[derive(Clone)]
@@ -31,11 +31,15 @@ impl JobProcessor {
         worker_threads: usize,
     ) -> Result<Self, Error> {
         if max_concurrent == 0 {
-            return Err(Error::Validation("Max concurrent jobs must be greater than 0".into()));
+            return Err(Error::Validation(
+                "Max concurrent jobs must be greater than 0".into(),
+            ));
         }
 
         if worker_threads == 0 {
-            return Err(Error::Validation("Worker threads must be greater than 0".into()));
+            return Err(Error::Validation(
+                "Worker threads must be greater than 0".into(),
+            ));
         }
 
         Ok(Self {
@@ -55,7 +59,7 @@ impl JobProcessor {
         info!("Adding job {} to queue", job_id);
 
         // Add to queue
-        let mut queue_clone = Arc::clone(&self.queue);
+        let queue_clone = Arc::clone(&self.queue);
         queue_clone.push(request).await?;
 
         // Update job status
@@ -84,7 +88,7 @@ impl JobProcessor {
         while running {
             // Wait for job to be available
             let queue_clone = Arc::clone(&queue);
-            match queue_clone.pop_mut().await {
+            match queue_clone.pop().await {
                 Ok(request) => {
                     let job_id = request.job_id.to_string();
 

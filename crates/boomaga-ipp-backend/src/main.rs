@@ -34,7 +34,7 @@ async fn main() -> boomaga_core::Result<()> {
 
     // Parse configuration
     let config: AppConfig = parse_config(&args)
-        .map_err(|e| boomaga_core::Error::Configuration(e.to_string()))?;
+        .map_err(|e| boomaga_core::Error::Config(e.to_string()))?;
 
     info!("Configuration loaded:");
     info!("  - IPC socket: {:?}", config.ipc_socket_path);
