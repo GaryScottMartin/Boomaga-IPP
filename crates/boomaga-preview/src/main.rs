@@ -17,8 +17,10 @@ use std::ffi::OsStr;
 use std::path::PathBuf;
 use tracing::{info, Level};
 use xilem::core::fork;
-use xilem::view::{button, flex, label, Axis};
-use xilem::{EventLoop, WidgetView, WindowOptions, Xilem};
+use xilem::masonry::properties::types::AsUnit;
+use xilem::style::Style as _;
+use xilem::view::{button, flex, label, sized_box, Axis, FlexExt as _, FlexSpacer};
+use xilem::{Color, EventLoop, WidgetView, WindowOptions, Xilem};
 
 /// The Xilem view tree, rebuilt from `AppData` on every state change.
 fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
@@ -70,9 +72,16 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
         data.zoom,
     );
     let status = status_text(data);
+    let footer = sized_box(flex(
+        Axis::Horizontal,
+        (FlexSpacer::Flex(1.0), label(status)),
+    ))
+    .expand_width()
+    .height(32.px())
+    .border(Color::from_rgb8(96, 96, 96), 1.0);
     let interface = flex(
         Axis::Vertical,
-        (toolbar, imposition_toolbar, canvas, label(status)),
+        (toolbar, imposition_toolbar, canvas.flex(1.0), footer),
     );
 
     fork(interface, renderer_worker())
