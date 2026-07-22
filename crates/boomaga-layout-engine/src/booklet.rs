@@ -55,6 +55,10 @@ impl BookletCalculator {
             return Err(Error::Validation("Page count must be greater than 0".into()));
         }
 
+        if page_count % 2 != 0 {
+            return Err(Error::Validation("Booklet requires an even number of pages".into()));
+        }
+
         Ok(Self {
             booklet_type,
             margins: MarginConfig::default(),
