@@ -12,7 +12,7 @@
 #   * Run from the repository root so the policy path below resolves.
 #
 # USAGE:
-#   ./openshell/codex/create-bipp-sandbox.sh [sandbox-name]
+#   ./openshell/codex/create-bipp-sandbox--Codex.sh [sandbox-name]
 #   BIPP_VERIFY=1 ./openshell/codex/create-bipp-sandbox--Codex.sh
 #
 # After a gateway restart, an existing sandbox may remain stuck in provisioning.
