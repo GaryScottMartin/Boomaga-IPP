@@ -54,18 +54,20 @@ INSTALL_NATIVE="install_native_dependencies() { . /etc/os-release || return 1; c
 # the user-local toolchain and native sysroot for later login shells.
 CONFIGURE_SHELL="grep -qF '# Boomaga-IPP toolchain environment' /sandbox/.bashrc || printf '\n%s\n%s\n%s\n%s\n' '# Boomaga-IPP toolchain environment' 'export RUSTUP_HOME=/sandbox/.rustup' 'export CARGO_HOME=/sandbox/.cargo' 'export PATH=\"/sandbox/.cargo/bin:/sandbox/.local/bin:/sandbox/.venv/bin:/usr/local/bin:/usr/bin:/bin\"' >> /sandbox/.bashrc"
 CONFIGURE_NATIVE="grep -qF '# Boomaga-IPP native build environment' /sandbox/.bashrc || { libclang_file=\"\$(find '$NATIVE_ROOT/usr/lib' -name 'libclang.so*' -print -quit 2>/dev/null)\"; if [ -n \"\$libclang_file\" ]; then libclang_path=\"\${libclang_file%/*}\"; printf '\n%s\n%s\n%s\n%s\n%s\n%s\n' '# Boomaga-IPP native build environment' 'export PATH=\"/sandbox/.local/bipp-native-root/usr/bin:\$PATH\"' 'export PKG_CONFIG_SYSROOT_DIR=/sandbox/.local/bipp-native-root' 'export PKG_CONFIG_LIBDIR=/sandbox/.local/bipp-native-root/usr/lib/x86_64-linux-gnu/pkgconfig:/sandbox/.local/bipp-native-root/usr/lib/pkgconfig:/sandbox/.local/bipp-native-root/usr/share/pkgconfig' 'export LD_LIBRARY_PATH=\"/sandbox/.local/bipp-native-root/usr/lib/x86_64-linux-gnu:/sandbox/.local/bipp-native-root/usr/lib\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}\"' \"export LIBCLANG_PATH=\$libclang_path\" >> /sandbox/.bashrc; fi; }"
+CONFIGURE_BINDGEN="clang_resource_header=\"\$(find '$NATIVE_ROOT/usr/lib' -path '*/lib/clang/*/include/stddef.h' -print -quit 2>/dev/null)\"; [ -n \"\$clang_resource_header\" ] || { echo 'Clang resource headers were not found after package extraction.' >&2; false; }; clang_resource_dir=\"\${clang_resource_header%/include/stddef.h}\"; export BINDGEN_EXTRA_CLANG_ARGS=\"-resource-dir=\$clang_resource_dir --sysroot=$NATIVE_ROOT\"; grep -qF 'export BINDGEN_EXTRA_CLANG_ARGS=' /sandbox/.bashrc || printf '%s\n' \"export BINDGEN_EXTRA_CLANG_ARGS='\$BINDGEN_EXTRA_CLANG_ARGS'\" >> /sandbox/.bashrc"
+VERIFY_WORKSPACE="test -n \"\$BINDGEN_EXTRA_CLANG_ARGS\"; cargo check --workspace; echo WORKSPACE_CHECK_OK"
 
 if [ -n "${BIPP_VERIFY:-}" ]; then
   NAME="BIPP-codex-verify"
   EXTRA=(--no-keep)
-  ENTRY="set -e; trap 'status=\$?; echo \"Sandbox provisioning failed with status \$status.\" >&2; exec bash -l' ERR; $UPDATE_CODEX; $INSTALL_RUST; $INSTALL_NATIVE; $CONFIGURE_SHELL; $CONFIGURE_NATIVE; $CLONE; cd '$DIR'; echo \"PWD=\$(pwd)\"; test -d .git && echo GIT_OK; command -v codex >/dev/null && echo CODEX_OK; codex --version; command -v cargo >/dev/null && echo RUST_OK; rustc --version; cargo --version; pkg-config --modversion glib-2.0 cairo poppler-glib libqpdf; test -n \"\$LIBCLANG_PATH\" && echo NATIVE_DEPS_OK"
+  ENTRY="set -e; trap 'status=\$?; echo \"Sandbox provisioning failed with status \$status.\" >&2; exec bash -l' ERR; $UPDATE_CODEX; $INSTALL_RUST; $INSTALL_NATIVE; $CONFIGURE_SHELL; $CONFIGURE_NATIVE; $CONFIGURE_BINDGEN; $CLONE; cd '$DIR'; echo \"PWD=\$(pwd)\"; test -d .git && echo GIT_OK; command -v codex >/dev/null && echo CODEX_OK; codex --version; command -v cargo >/dev/null && echo RUST_OK; rustc --version; cargo --version; pkg-config --modversion glib-2.0 cairo poppler-glib libqpdf; test -n \"\$LIBCLANG_PATH\" && echo NATIVE_DEPS_OK; $VERIFY_WORKSPACE"
 else
   NAME="${1:-BIPP-codex}"
   EXTRA=()
 
   # Fresh sandboxes normally have no ChatGPT session. Check first so this also
   # works if authentication is restored by another mechanism in the future.
-  ENTRY="set -e; trap 'status=\$?; echo \"Sandbox provisioning failed with status \$status.\" >&2; exec bash -l' ERR; $UPDATE_CODEX; $INSTALL_RUST; $INSTALL_NATIVE; $CONFIGURE_SHELL; $CONFIGURE_NATIVE; $CLONE; cd '$DIR'; if ! codex login status >/dev/null 2>&1; then echo 'Codex authentication required; complete the device-code flow in your browser.'; codex login --device-auth; fi; exec codex --model gpt-5.6-sol"
+  ENTRY="set -e; trap 'status=\$?; echo \"Sandbox provisioning failed with status \$status.\" >&2; exec bash -l' ERR; $UPDATE_CODEX; $INSTALL_RUST; $INSTALL_NATIVE; $CONFIGURE_SHELL; $CONFIGURE_NATIVE; $CONFIGURE_BINDGEN; $CLONE; cd '$DIR'; if ! codex login status >/dev/null 2>&1; then echo 'Codex authentication required; complete the device-code flow in your browser.'; codex login --device-auth; fi; exec codex --model gpt-5.6-sol"
 fi
 
 # Ignore "not found" and similar deletion failures so first-time creation works.

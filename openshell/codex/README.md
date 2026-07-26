@@ -13,8 +13,10 @@ native dependencies required by `cargo check --workspace`.
 Native packages are downloaded without sandbox root and extracted into
 `/sandbox/.local/bipp-native-root`: pkg-config, GLib, Cairo, Poppler GLib, QPDF,
 and libclang development packages, including dependencies resolved by apt. The
-script persists the pkg-config sysroot, library path, and libclang path in
-`/sandbox/.bashrc`.
+script persists the pkg-config sysroot, library path, libclang path, and
+dynamically discovered Clang resource directory in `/sandbox/.bashrc`. The
+resource directory and sysroot are passed to bindgen so relocated standard
+headers such as `stddef.h` remain discoverable.
 
 Run the destructive, self-cleaning smoke test from the repository root on the
 OpenShell host:
@@ -23,8 +25,8 @@ OpenShell host:
 BIPP_VERIFY=1 ./openshell/codex/create-bipp-sandbox--Codex.sh
 ```
 
-A successful provisioning run prints `NATIVE_DEPS_OK`. Follow it in a retained
-sandbox with `cargo check --workspace` to establish the compiler baseline.
+A successful provisioning run executes `cargo check --workspace` and prints
+`NATIVE_DEPS_OK` followed by `WORKSPACE_CHECK_OK`.
 
 ## GitHub authentication
 
