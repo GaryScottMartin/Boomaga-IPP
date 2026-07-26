@@ -70,16 +70,43 @@ fn run_discovery() -> PrintEvent {
     }
 }
 fn run_submit(printer: &str, document: &Path, options: &PrintOptions) -> PrintEvent {
-    match Command::new("lp")
-        .args(lp_arguments(printer, document, options))
-        .output()
-    {
-        Ok(out) if out.status.success() => {
-            PrintEvent::Submitted(String::from_utf8_lossy(&out.stdout).trim().to_owned())
+    let batches = submission_batches(options);
+    let total = batches.len();
+    let mut responses = Vec::with_capacity(total);
+    for (index, batch) in batches.iter().enumerate() {
+        match Command::new("lp")
+            .args(lp_arguments(printer, document, batch))
+            .output()
+        {
+            Ok(out) if out.status.success() => {
+                responses.push(String::from_utf8_lossy(&out.stdout).trim().to_owned());
+            }
+            Ok(out) => {
+                return PrintEvent::Failed(format!(
+                    "submitted {index} of {total} copies; {}",
+                    command_error("lp", &out.stderr)
+                ));
+            }
+            Err(error) => {
+                return PrintEvent::Failed(format!(
+                    "submitted {index} of {total} copies; unable to run lp: {error}"
+                ));
+            }
         }
-        Ok(out) => PrintEvent::Failed(command_error("lp", &out.stderr)),
-        Err(error) => PrintEvent::Failed(format!("unable to run lp: {error}")),
     }
+    PrintEvent::Submitted(responses.join(" · "))
+}
+fn submission_batches(options: &PrintOptions) -> Vec<PrintOptions> {
+    if !options.collate || options.copies <= 1 {
+        return vec![options.clone()];
+    }
+    (0..options.copies)
+        .map(|_| PrintOptions {
+            copies: 1,
+            collate: false,
+            ..options.clone()
+        })
+        .collect()
 }
 fn command_error(command: &str, stderr: &[u8]) -> String {
     let detail = String::from_utf8_lossy(stderr);
@@ -160,5 +187,32 @@ mod tests {
         ] {
             assert!(args.contains(&expected.to_owned()));
         }
+    }
+    #[test]
+    fn collated_copies_are_separate_one_copy_jobs() {
+        let options = PrintOptions {
+            copies: 3,
+            collate: true,
+            ..PrintOptions::default()
+        };
+        let batches = submission_batches(&options);
+
+        assert_eq!(batches.len(), 3);
+        assert!(batches
+            .iter()
+            .all(|batch| batch.copies == 1 && !batch.collate));
+    }
+
+    #[test]
+    fn uncollated_copies_remain_one_multi_copy_job() {
+        let options = PrintOptions {
+            copies: 3,
+            collate: false,
+            ..PrintOptions::default()
+        };
+        let batches = submission_batches(&options);
+
+        assert_eq!(batches.len(), 1);
+        assert_eq!(batches[0].copies, 3);
     }
 }
