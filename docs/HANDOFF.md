@@ -15,9 +15,9 @@
 
 # Boomaga-IPP — Session Handoff
 
-> **Last updated:** 2026-07-22 · **By:** Codex + Gary Scott Martin
-> **Session focus:** completed, host-verified, and merged Xilem Phase E to `main`;
-> N-up imposition and backend-to-preview job-status IPC are green. Phase F is next.
+> **Last updated:** 2026-07-26 · **By:** Codex + Gary Scott Martin
+> **Session focus:** prepared fresh Codex sandboxes to establish the missing
+> workspace-wide compiler baseline; Denali verification is next.
 
 ---
 
@@ -28,8 +28,11 @@ The preview supports native PDF loading, asynchronous sparse rendering, navigati
 and 1/2/4/6/8-up imposition with horizontal/vertical fill and the intended sheet
 orientations. Versioned Unix-socket JSON IPC now carries backend job lifecycle messages into
 typed, deduplicated preview state. Focused Denali checks pass; tests are 7 layout-engine,
-3 IPC, 1 backend, and 19 preview. The next implementation thread is Phase F: print options,
-printer selection, and downstream submission. Booklet UI remains a deliberate follow-up.
+3 IPC, 1 backend, and 19 preview. A 2026-07-26 Codex-sandbox workspace check
+stopped at missing GLib development metadata before workspace diagnostics.
+Codex provisioning now installs pkg-config plus the GLib, Cairo, Poppler GLib,
+QPDF, and libclang development stacks; Gary pulled the change to Denali and will
+verify it in a fresh sandbox. Phase F remains next; booklet UI is still deferred.
 
 ## 2. Active threads / in progress
 <!-- The heart of the file. Each item: what, state, concrete next action. Delete when done. -->
@@ -103,11 +106,18 @@ printer selection, and downstream submission. Booklet UI remains a deliberate fo
       `AppData` job status. Denali passed 7 layout, 3 IPC, 1 backend, and 19 preview tests.
       The feature branch was deleted after the fast-forward merge. Booklet controls were
       deferred; Phase F print options and downstream submission are next.
+- [x] **Codex startup context and native provisioning (`60b0900`, `1a9e04e`).**
+      Replaced the `AGENTS.md` symlink with a real Codex instruction file that
+      requires the seven context documents. Expanded the tracked Codex sandbox
+      creator from pkg-config-only provisioning to a rootless native sysroot for
+      GLib, Cairo, Poppler GLib, QPDF, and libclang. `BIPP-codex-start.sh` is the
+      tracked host entry point and is symlinked from Gary's `~/bin`.
 
 ## 3. Open questions / waiting on
 <!-- Decisions or inputs owned by the human, or external events being awaited. -->
-- A fresh workspace-wide `cargo check --workspace` has not been recorded. The focused Phase E
-  crates are green on Denali; establish the full-workspace baseline before broader claims.
+- The 2026-07-26 Codex-sandbox `cargo check --workspace` attempt reached
+  `glib-sys` and stopped because `glib-2.0.pc` was absent. The provisioning fix
+  is on Denali; create a fresh sandbox and rerun the workspace check.
 - Real IPP request parsing/response generation, captured-document handoff, and downstream
   printer submission remain incomplete.
 - Booklet controls were outside the accepted Phase E N-up scope and remain open.
@@ -160,8 +170,9 @@ printer selection, and downstream submission. Booklet UI remains a deliberate fo
   `git config user.email "gmartin@martin-fam.net"` (matches prior commit authorship; Claude stays
   a co-author via the trailer). Also note `git commit` only stages what's already staged — after a
   `git mv` plus separate edits, `git add -A` (or `--amend` afterward) so all files land in one commit.
-- **Focused Phase E crates are green; full-workspace status is unrecorded.** Do not convert
-  focused results into a workspace-wide claim without running the workspace command.
+- **Focused Phase E crates are green; full-workspace status is still unrecorded.**
+  The first Codex-sandbox attempt stopped at missing GLib metadata. Verify the
+  new native sysroot in a fresh sandbox before making a workspace-wide claim.
 - **Live policy updates must originate on the OpenShell host.** Editing the active policy from
   the originating host can affect a running sandbox; recreating the sandbox is not inherently
   required. Editing the repository's policy copy inside the sandbox does not update the host's

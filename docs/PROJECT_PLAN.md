@@ -1,6 +1,6 @@
 # Modern Boomaga Virtual Printer - Implementation Plan
 
-> **Last reviewed against code:** 2026-07-22 (6-crate workspace; 2 binaries).
+> **Last reviewed against code:** 2026-07-26 (6-crate workspace; 2 binaries).
 > **Authoritative architecture:** SRS & UIS **v0.2.2**, Appendix C, and the
 > code-conformant PlantUML in [`docs/uml/`](./uml/) (conforms to code @ `34652fa`).
 > Where this plan and the specs/UML disagree, the specs/UML win — this document
@@ -177,10 +177,12 @@ crates/
 - **config** / **toml** / **directories**: configuration (`boomaga-config`)
 
 ### System Libraries
-- libpoppler-dev / libpoppler-glib-dev (PDF rendering)
-- libcairo2-dev (rendering surface)
-- Wayland client/compositor libraries
-- CUPS (host side, for driverless job ingress)
+- `pkg-config` plus a C/C++ compiler
+- `libglib2.0-dev`, `libcairo2-dev`, and `libpoppler-glib-dev` (PDF rendering)
+- `libqpdf-dev` and `libclang-dev` (QPDF plus bindgen)
+- Wayland client/compositor libraries for running the GUI
+- CUPS on the host for driverless job ingress
+- Codex sandbox provisioning installs the compile-time set into a rootless sysroot.
 
 *(No Ghostscript / libghostscript-dev — decision #4.)*
 
@@ -319,10 +321,13 @@ crates/
 
 ## Implementation Status
 
-> **Reality check (2026-07-22):** focused checks and tests for the four Phase E
-> crates pass on Denali. A fresh workspace-wide `cargo check --workspace` has not
-> yet been recorded, so this plan does not claim a completely green workspace.
-> Percentages below remain estimates of *design + partial implementation*.
+> **Reality check (2026-07-26):** focused checks and tests for the four Phase E
+> crates pass on Denali. A Codex-sandbox `cargo check --workspace` reached native
+> dependency discovery but stopped at missing GLib development metadata before
+> workspace diagnostics. Rootless native dependency provisioning is now merged
+> and awaiting a fresh Denali sandbox check, so this plan does not claim a
+> completely green workspace. Percentages below remain estimates of *design +
+> partial implementation*.
 
 ### Per-crate state
 
@@ -346,7 +351,8 @@ crates/
 - IPP service scaffolding (`IppServer`, `JobQueue`, `JobProcessor`)
 
 #### Remaining Phase 1 Tasks
-- Record a fresh workspace-wide compiler/test baseline
+- Verify the native dependency sysroot in a fresh Codex sandbox and record a
+  workspace-wide compiler/test baseline
 - Complete IPP request parsing / response generation
 - systemd socket activation (zbus_systemd) — not yet wired
 - Expand core, IPC, and backend coverage beyond the focused Phase E tests

@@ -30,9 +30,11 @@ boomaga-ipp/
 ### Prerequisites
 
 - Rust 1.88 or later
-- CUPS development libraries
-- Poppler development libraries
-- Wayland development libraries
+- A C/C++ compiler and `pkg-config`
+- `libglib2.0-dev`, `libcairo2-dev`, and `libpoppler-glib-dev`
+- `libqpdf-dev` and `libclang-dev`
+- Wayland client libraries for running the preview
+- CUPS on the host for driverless print ingress
 
 ### Building from source
 
@@ -88,11 +90,12 @@ boomaga-preview [--debug] [/path/to/document.pdf]
 
 ## Project Status
 
-The six-crate workspace remains under active development and does not yet build
-as a whole because the backend and IPC crates retain stub/compile gaps. The
-Xilem preview migration Phases A through D are complete and host-verified on
-Denali. Native file selection, asynchronous on-demand PDF rendering, navigation,
-zoom, and all ten tests pass; Phase E (imposition and IPC wiring) is next. See
+The six-crate workspace remains under active development. Xilem preview migration
+Phases A through E are complete and host-verified on Denali, including native file
+selection, asynchronous on-demand PDF rendering, navigation/zoom, 1/2/4/6/8-up
+imposition, and backend job-status IPC. Focused Phase E checks pass; a fresh
+workspace-wide check is pending verification in the newly provisioned Codex
+sandbox. Phase F (print options and downstream submission) is next. See
 [`docs/HANDOFF.md`](docs/HANDOFF.md) for current session state and
 [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) for detailed status.
 
@@ -138,20 +141,21 @@ Contributions are welcome! Please see CONTRIBUTING.md for guidelines.
 - [x] Project foundation
 - [x] Core infrastructure
 - [ ] Complete IPP server implementation
-- [x] Xilem preview Phases A/B/C/D
+- [x] Xilem preview Phases A/B/C/D/E
 - [x] Layout engine
 - [x] Configuration management system
 - [x] PDF rendering foundation (Poppler)
 - [ ] Comprehensive error handling
-- [ ] Wire Unix-socket JSON IPC transport
+- [x] Wire Unix-socket JSON IPC transport
 - [ ] Systemd lifecycle integration
 - [ ] Unit tests
 
 ### Phase 2: Core Functionality (Weeks 5-8) - 🚧 In progress
 - [ ] Complete document rendering pipeline
-- [ ] Complete Unix-socket JSON IPC integration
+- [x] Complete backend-to-preview job-status IPC integration
 - [x] Phase C Masonry PDF canvas
 - [x] Phase D file-open UI and asynchronous rendering
+- [x] Phase E N-up imposition and job-status IPC
 - [ ] Complete document viewer implementation
 - [x] Navigation and zoom controls
 - [ ] Print dialog UI

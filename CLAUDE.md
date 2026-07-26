@@ -81,9 +81,12 @@ printer selection, and downstream submission) is next; booklet controls remain
 a follow-up.
 
 Focused verification on Denali passed with 7 layout-engine, 3 IPC, 1 backend,
-and 19 preview tests. A fresh workspace-wide `cargo check --workspace` has not
-been recorded, so do not infer workspace-wide status from the focused results.
-See `docs/HANDOFF.md` for the current verified state.
+and 19 preview tests. On 2026-07-26, a Codex-sandbox
+`cargo check --workspace` reached native dependency discovery and stopped because
+GLib development metadata was absent; it did not reach a workspace compiler
+baseline. Codex sandbox provisioning now installs the full native build
+dependency set, with fresh Denali sandbox verification pending. Do not infer
+workspace-wide status from the focused results.
 
 Phase E verification commands used on Denali:
 
@@ -106,10 +109,12 @@ cargo test -p boomaga-layout-engine
 
 ### System Dependencies
 
-- libpoppler-dev (PDF rendering)
-- libpoppler-cpp-dev (PDF API)
-- CUPS development libraries
-- Wayland development libraries (for GUI)
+- A C/C++ compiler and `pkg-config`
+- `libglib2.0-dev`, `libcairo2-dev`, and `libpoppler-glib-dev`
+- `libqpdf-dev` and `libclang-dev` (`qpdf-sys` runs bindgen)
+- Wayland client libraries for running the preview
+- CUPS on the host for driverless print ingress
+- The Codex sandbox creator provisions the compile-time packages rootlessly.
 
 ## Common Development Tasks
 
@@ -173,8 +178,9 @@ cargo test -p boomaga-layout-engine
 
 ## Known Issues
 
-- A fresh `cargo check --workspace` baseline has not been recorded. Focused Phase E
-  checks are green; run the workspace command before making a workspace-wide claim.
+- The 2026-07-26 Codex-sandbox `cargo check --workspace` attempt stopped at missing
+  GLib development metadata before reaching workspace diagnostics. The provisioning
+  fix is merged; rerun in a fresh sandbox before making a workspace-wide claim.
 - Real IPP request parsing/response generation, captured-document handoff, and
   downstream printer submission remain incomplete.
 - Phase F print workflow and the deferred booklet controls are next.

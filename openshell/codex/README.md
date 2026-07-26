@@ -3,6 +3,29 @@
 This directory contains the tracked policy and bootstrap scripts used to create a
 fresh Codex sandbox for Boomaga-IPP.
 
+## Sandbox creation and native build dependencies
+
+`BIPP-codex-start.sh` is the tracked host entry point (and may be symlinked from
+`~/bin`). It invokes `create-bipp-sandbox--Codex.sh`, which recreates the selected
+sandbox, installs Codex and Rust, clones the repository, and provisions the
+native dependencies required by `cargo check --workspace`.
+
+Native packages are downloaded without sandbox root and extracted into
+`/sandbox/.local/bipp-native-root`: pkg-config, GLib, Cairo, Poppler GLib, QPDF,
+and libclang development packages, including dependencies resolved by apt. The
+script persists the pkg-config sysroot, library path, and libclang path in
+`/sandbox/.bashrc`.
+
+Run the destructive, self-cleaning smoke test from the repository root on the
+OpenShell host:
+
+```bash
+BIPP_VERIFY=1 ./openshell/codex/create-bipp-sandbox--Codex.sh
+```
+
+A successful provisioning run prints `NATIVE_DEPS_OK`. Follow it in a retained
+sandbox with `cargo check --workspace` to establish the compiler baseline.
+
 ## GitHub authentication
 
 `GITHUB_TOKEN` appears as a placeholder inside the sandbox. This is intentional:
