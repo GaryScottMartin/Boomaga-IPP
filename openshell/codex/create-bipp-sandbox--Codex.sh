@@ -41,6 +41,13 @@ UPDATE_CODEX="mkdir -p '$CODEX_PREFIX/bin' && npm install -g --prefix '$CODEX_PR
 RUSTUP_HOME="/sandbox/.rustup"
 CARGO_HOME="/sandbox/.cargo"
 INSTALL_RUST="export RUSTUP_HOME='$RUSTUP_HOME' CARGO_HOME='$CARGO_HOME'; mkdir -p \"\$RUSTUP_HOME\" \"\$CARGO_HOME\"; if [ ! -x \"\$CARGO_HOME/bin/rustup\" ]; then curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal --default-toolchain none; fi; export PATH=\"\$CARGO_HOME/bin:$CODEX_PREFIX/bin:\$PATH\"; rustup toolchain install stable --profile minimal --component rustfmt --component clippy; rustup default stable; hash -r; rustc --version; cargo --version"
+# Download and extract Ubuntu's pkgconf packages without requiring sandbox root.
+PKGCONF_ROOT="/sandbox/.local/pkgconf-root"
+APT_STATE="/sandbox/.cache/bipp-apt"
+INSTALL_PKGCONF="if [ ! -x '$PKGCONF_ROOT/usr/bin/pkgconf' ]; then mkdir -p '$APT_STATE/lists/partial' '$APT_STATE/cache/archives/partial' /tmp/bipp-pkgconf '$PKGCONF_ROOT'; apt-get -o Dir::State::lists='$APT_STATE/lists' -o Dir::Cache='$APT_STATE/cache' update; cd /tmp/bipp-pkgconf; apt-get -o Dir::State::lists='$APT_STATE/lists' -o Dir::Cache='$APT_STATE/cache' download pkgconf-bin libpkgconf3; for package in ./*.deb; do dpkg-deb --extract \"\$package\" '$PKGCONF_ROOT'; done; fi; export PATH='$PKGCONF_ROOT/usr/bin':\"\$PATH\"; export LD_LIBRARY_PATH='$PKGCONF_ROOT/usr/lib/x86_64-linux-gnu'\${LD_LIBRARY_PATH:+:\"\$LD_LIBRARY_PATH\"}; hash -r; command -v pkg-config; pkg-config --version"
+CONFIGURE_PKGCONF="grep -qF '# Boomaga-IPP pkgconf environment' /sandbox/.bashrc || printf '\n%s\n%s\n%s\n' '# Boomaga-IPP pkgconf environment' 'export PATH=\"/sandbox/.local/pkgconf-root/usr/bin:\$PATH\"' 'export LD_LIBRARY_PATH=\"/sandbox/.local/pkgconf-root/usr/lib/x86_64-linux-gnu\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}\"' >> /sandbox/.bashrc"
+INSTALL_RUST="$INSTALL_RUST; $INSTALL_PKGCONF; $CONFIGURE_PKGCONF"
+
 # The sandbox's default .bashrc replaces PATH rather than extending it. Persist
 # the user-local Codex and Rust paths so later login shells can find both tools.
 CONFIGURE_SHELL="grep -qF '# Boomaga-IPP toolchain environment' /sandbox/.bashrc || printf '\n%s\n%s\n%s\n%s\n' '# Boomaga-IPP toolchain environment' 'export RUSTUP_HOME=/sandbox/.rustup' 'export CARGO_HOME=/sandbox/.cargo' 'export PATH=\"/sandbox/.cargo/bin:/sandbox/.local/bin:/sandbox/.venv/bin:/usr/local/bin:/usr/bin:/bin\"' >> /sandbox/.bashrc"

@@ -93,3 +93,12 @@ network_policies:
       - { path: /sandbox/.cargo/bin/cargo }
       - { path: /sandbox/.cargo/bin/rustup }
       - { path: /sandbox/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo }
+
+  ubuntu_packages:
+    name: ubuntu-packages
+    endpoints:
+      - { host: archive.ubuntu.com, port: 80 }
+      - { host: security.ubuntu.com, port: 80 }
+    binaries:
+      - { path: /usr/bin/apt-get }
+      - { path: /usr/lib/apt/methods/http }
