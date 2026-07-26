@@ -112,7 +112,7 @@ fn lp_arguments(printer: &str, document: &Path, options: &PrintOptions) -> Vec<S
         "-n".into(),
         options.copies.to_string(),
         "-o".into(),
-        format!("Collate={}", if options.collate { "True" } else { "False" }),
+        format!("collate={}", if options.collate { "true" } else { "false" }),
         "-o".into(),
         format!("sides={sides}"),
         "-o".into(),
@@ -152,7 +152,7 @@ mod tests {
         for expected in [
             "Office",
             "3",
-            "Collate=True",
+            "collate=true",
             "sides=two-sided-long-edge",
             "number-up=4",
             "2-7",

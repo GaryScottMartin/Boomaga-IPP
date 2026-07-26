@@ -151,6 +151,9 @@ fn status_text(data: &AppData) -> String {
             return format!("Print error: {message}");
         }
     }
+    if let Some(message) = &data.print_message {
+        return message.clone();
+    }
 
     if data.choosing_file {
         return "Selecting a PDF…".to_owned();
