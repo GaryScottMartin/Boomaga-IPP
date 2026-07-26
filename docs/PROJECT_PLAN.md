@@ -322,12 +322,11 @@ crates/
 ## Implementation Status
 
 > **Reality check (2026-07-26):** focused checks and tests for the four Phase E
-> crates pass on Denali. A Codex-sandbox `cargo check --workspace` reached native
-> dependency discovery but stopped at missing GLib development metadata before
-> workspace diagnostics. Rootless native dependency provisioning is now merged
-> and awaiting a fresh Denali sandbox check, so this plan does not claim a
-> completely green workspace. Percentages below remain estimates of *design +
-> partial implementation*.
+> crates pass on Denali. A fresh Codex sandbox completed
+> `cargo check --workspace` with warnings and no errors, establishing the
+> workspace compiler baseline and verifying the rootless native dependency
+> provisioning. Workspace-wide tests have not yet been run. Percentages below
+> remain estimates of *design + partial implementation*.
 
 ### Per-crate state
 
@@ -351,8 +350,7 @@ crates/
 - IPP service scaffolding (`IppServer`, `JobQueue`, `JobProcessor`)
 
 #### Remaining Phase 1 Tasks
-- Verify the native dependency sysroot in a fresh Codex sandbox and record a
-  workspace-wide compiler/test baseline
+- Run `cargo test --workspace` and record a workspace-wide test baseline
 - Complete IPP request parsing / response generation
 - systemd socket activation (zbus_systemd) — not yet wired
 - Expand core, IPC, and backend coverage beyond the focused Phase E tests

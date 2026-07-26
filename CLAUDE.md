@@ -81,12 +81,12 @@ printer selection, and downstream submission) is next; booklet controls remain
 a follow-up.
 
 Focused verification on Denali passed with 7 layout-engine, 3 IPC, 1 backend,
-and 19 preview tests. On 2026-07-26, a Codex-sandbox
-`cargo check --workspace` reached native dependency discovery and stopped because
-GLib development metadata was absent; it did not reach a workspace compiler
-baseline. Codex sandbox provisioning now installs the full native build
-dependency set, with fresh Denali sandbox verification pending. Do not infer
-workspace-wide status from the focused results.
+and 19 preview tests. On 2026-07-26, a fresh Codex sandbox completed
+`cargo check --workspace` with warnings and no errors, establishing the
+workspace-wide compiler baseline and verifying the provisioned GLib, Cairo,
+Poppler GLib, QPDF, and libclang dependency stack. Workspace-wide tests have not
+yet been run; do not infer a workspace-wide test baseline from the focused
+results.
 
 Phase E verification commands used on Denali:
 
@@ -178,9 +178,8 @@ cargo test -p boomaga-layout-engine
 
 ## Known Issues
 
-- The 2026-07-26 Codex-sandbox `cargo check --workspace` attempt stopped at missing
-  GLib development metadata before reaching workspace diagnostics. The provisioning
-  fix is merged; rerun in a fresh sandbox before making a workspace-wide claim.
+- A fresh 2026-07-26 Codex sandbox completed `cargo check --workspace` with
+  warnings and no errors. Workspace-wide tests have not yet been run.
 - Real IPP request parsing/response generation, captured-document handoff, and
   downstream printer submission remain incomplete.
 - Phase F print workflow and the deferred booklet controls are next.

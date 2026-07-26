@@ -93,9 +93,10 @@ boomaga-preview [--debug] [/path/to/document.pdf]
 The six-crate workspace remains under active development. Xilem preview migration
 Phases A through E are complete and host-verified on Denali, including native file
 selection, asynchronous on-demand PDF rendering, navigation/zoom, 1/2/4/6/8-up
-imposition, and backend job-status IPC. Focused Phase E checks pass; a fresh
-workspace-wide check is pending verification in the newly provisioned Codex
-sandbox. Phase F (print options and downstream submission) is next. See
+imposition, and backend job-status IPC. Focused Phase E checks pass, and a fresh
+2026-07-26 Codex sandbox completed `cargo check --workspace` with warnings and
+no errors. Workspace-wide tests have not yet been run. Phase F (print options
+and downstream submission) is next. See
 [`docs/HANDOFF.md`](docs/HANDOFF.md) for current session state and
 [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) for detailed status.
 

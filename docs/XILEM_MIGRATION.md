@@ -1,9 +1,11 @@
 # Xilem Migration Plan
 
-> **Last reviewed against code:** 2026-07-22.
+> **Last reviewed against code:** 2026-07-26.
 > **Status:** Phases A through E are complete, host-verified on Denali, and
 > merged to `main`. Phase E added N-up imposition and Unix-socket job-status
-> delivery. Phase F (print options and downstream submission) is next.
+> delivery. A fresh Codex sandbox completed `cargo check --workspace` with
+> warnings and no errors; workspace-wide tests have not yet been run. Phase F
+> (print options and downstream submission) is next.
 
 ## Overview
 This document tracks replacing Druid with Xilem for the `boomaga-preview` GUI.

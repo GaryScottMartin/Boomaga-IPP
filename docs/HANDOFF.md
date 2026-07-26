@@ -16,8 +16,8 @@
 # Boomaga-IPP — Session Handoff
 
 > **Last updated:** 2026-07-26 · **By:** Codex + Gary Scott Martin
-> **Session focus:** prepared fresh Codex sandboxes to establish the missing
-> workspace-wide compiler baseline; Denali verification is next.
+> **Session focus:** established the fresh Codex-sandbox workspace compiler
+> baseline; Phase F print options and downstream submission are next.
 
 ---
 
@@ -28,11 +28,11 @@ The preview supports native PDF loading, asynchronous sparse rendering, navigati
 and 1/2/4/6/8-up imposition with horizontal/vertical fill and the intended sheet
 orientations. Versioned Unix-socket JSON IPC now carries backend job lifecycle messages into
 typed, deduplicated preview state. Focused Denali checks pass; tests are 7 layout-engine,
-3 IPC, 1 backend, and 19 preview. A 2026-07-26 Codex-sandbox workspace check
-stopped at missing GLib development metadata before workspace diagnostics.
-Codex provisioning now installs pkg-config plus the GLib, Cairo, Poppler GLib,
-QPDF, and libclang development stacks; Gary pulled the change to Denali and will
-verify it in a fresh sandbox. Phase F remains next; booklet UI is still deferred.
+3 IPC, 1 backend, and 19 preview. On 2026-07-26, a fresh Codex sandbox completed
+`cargo check --workspace` with warnings and no errors, establishing the compiler
+baseline and verifying the provisioned pkg-config, GLib, Cairo, Poppler GLib,
+QPDF, and libclang stacks. Workspace-wide tests have not yet been run. Phase F
+is next; booklet UI is still deferred.
 
 ## 2. Active threads / in progress
 <!-- The heart of the file. Each item: what, state, concrete next action. Delete when done. -->
@@ -115,9 +115,6 @@ verify it in a fresh sandbox. Phase F remains next; booklet UI is still deferred
 
 ## 3. Open questions / waiting on
 <!-- Decisions or inputs owned by the human, or external events being awaited. -->
-- The 2026-07-26 Codex-sandbox `cargo check --workspace` attempt reached
-  `glib-sys` and stopped because `glib-2.0.pc` was absent. The provisioning fix
-  is on Denali; create a fresh sandbox and rerun the workspace check.
 - Real IPP request parsing/response generation, captured-document handoff, and downstream
   printer submission remain incomplete.
 - Booklet controls were outside the accepted Phase E N-up scope and remain open.
@@ -170,9 +167,10 @@ verify it in a fresh sandbox. Phase F remains next; booklet UI is still deferred
   `git config user.email "gmartin@martin-fam.net"` (matches prior commit authorship; Claude stays
   a co-author via the trailer). Also note `git commit` only stages what's already staged — after a
   `git mv` plus separate edits, `git add -A` (or `--amend` afterward) so all files land in one commit.
-- **Focused Phase E crates are green; full-workspace status is still unrecorded.**
-  The first Codex-sandbox attempt stopped at missing GLib metadata. Verify the
-  new native sysroot in a fresh sandbox before making a workspace-wide claim.
+- **Workspace compiler baseline is recorded; workspace test baseline is not.**
+  A fresh 2026-07-26 Codex sandbox completed `cargo check --workspace` with
+  warnings and no errors. The focused Phase E tests remain the current test
+  evidence until `cargo test --workspace` is run.
 - **Live policy updates must originate on the OpenShell host.** Editing the active policy from
   the originating host can affect a running sandbox; recreating the sandbox is not inherently
   required. Editing the repository's policy copy inside the sandbox does not update the host's
