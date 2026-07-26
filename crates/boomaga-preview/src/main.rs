@@ -8,12 +8,14 @@ mod app;
 mod document_renderer;
 mod ipc_worker;
 mod pdf_canvas;
+mod print_worker;
 mod render_worker;
 
-use app::{AppData, FillOrder, LoadState};
-use boomaga_core::PagesPerSheet;
+use app::{AppData, FillOrder, LoadState, PrintState};
+use boomaga_core::{DuplexMode, PagesPerSheet};
 use ipc_worker::ipc_worker;
 use pdf_canvas::pdf_canvas;
+use print_worker::print_worker;
 use render_worker::renderer_worker;
 use std::ffi::OsStr;
 use std::path::PathBuf;
@@ -63,6 +65,43 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
         ),
     );
 
+    let printer = data
+        .selected_printer_name()
+        .unwrap_or("No printer")
+        .to_owned();
+    let copies = format!("Copies: {}", data.print_options.copies);
+    let collate = format!(
+        "Collate: {}",
+        if data.print_options.collate {
+            "On"
+        } else {
+            "Off"
+        }
+    );
+    let duplex = format!(
+        "Duplex: {}",
+        match data.print_options.duplex {
+            DuplexMode::None => "Off",
+            DuplexMode::LongEdge => "Long edge",
+            DuplexMode::ShortEdge => "Short edge",
+        }
+    );
+    let print_toolbar = flex(
+        Axis::Horizontal,
+        (
+            button(label(format!("Printer: {printer}")), |d: &mut AppData| {
+                d.select_next_printer()
+            }),
+            button(label("Refresh"), |d: &mut AppData| d.refresh_printers()),
+            button(label("− copy"), |d: &mut AppData| d.decrement_copies()),
+            button(label(copies), |_: &mut AppData| {}),
+            button(label("+ copy"), |d: &mut AppData| d.increment_copies()),
+            button(label(collate), |d: &mut AppData| d.toggle_collate()),
+            button(label(duplex), |d: &mut AppData| d.cycle_duplex()),
+            button(label("Print"), |d: &mut AppData| d.submit_print_job()),
+        ),
+    );
+
     let canvas = pdf_canvas(
         data.current_canvas_images(),
         data.print_options.pages_per_sheet as u8,
@@ -87,17 +126,32 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
     let content = sized_box(
         flex(
             Axis::Vertical,
-            (toolbar, imposition_toolbar, canvas.flex(1.0)),
+            (toolbar, imposition_toolbar, print_toolbar, canvas.flex(1.0)),
         )
         .must_fill_major_axis(true),
     )
     .expand_height();
     let interface = flex(Axis::Vertical, (content.flex(1.0), footer)).must_fill_major_axis(true);
 
-    fork(fork(interface, renderer_worker()), ipc_worker())
+    fork(
+        fork(fork(interface, renderer_worker()), ipc_worker()),
+        print_worker(),
+    )
 }
 
 fn status_text(data: &AppData) -> String {
+    if data.print_state == PrintState::Submitting {
+        return data
+            .print_message
+            .clone()
+            .unwrap_or_else(|| "Submitting print job…".to_owned());
+    }
+    if data.print_state == PrintState::Error {
+        if let Some(message) = &data.print_message {
+            return format!("Print error: {message}");
+        }
+    }
+
     if data.choosing_file {
         return "Selecting a PDF…".to_owned();
     }
@@ -121,9 +175,11 @@ fn status_text(data: &AppData) -> String {
             } else {
                 "rendering"
             };
-            let job_status = data.latest_job_status().map_or_else(String::new, |(job_id, status)| {
-                format!("   ·   job {job_id}: {status}")
-            });
+            let job_status = data
+                .latest_job_status()
+                .map_or_else(String::new, |(job_id, status)| {
+                    format!("   ·   job {job_id}: {status}")
+                });
             format!(
                 "Sheet {} of {page_count} ({page_status})   ·   {}-up   ·   cached {rendered}/{}   ·   zoom {:.0}%{}",
                 data.current_page + 1,

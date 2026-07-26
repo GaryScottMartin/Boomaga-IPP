@@ -4,7 +4,7 @@
 //! `app_logic` (see `main.rs`) and delivers renderer events through the worker
 //! channel stored here. Matches the `AppData` in `docs/uml/C2-class.puml`.
 
-use boomaga_core::{Document, JobId, JobStatus, PageSize, PagesPerSheet, PrintOptions};
+use boomaga_core::{Document, DuplexMode, JobId, JobStatus, PageSize, PagesPerSheet, PrintOptions};
 use boomaga_ipc::MessagePayload;
 use boomaga_layout_engine::NUpCalculator;
 use std::collections::{BTreeSet, HashMap};
@@ -12,6 +12,7 @@ use std::path::PathBuf;
 
 use crate::ipc_worker::{IpcCommand, IpcEvent, IpcSender};
 use crate::pdf_canvas::CanvasImage;
+use crate::print_worker::{PrintCommand, PrintEvent, PrintSender};
 use crate::render_worker::{RendererCommand, RendererEvent, RendererSender};
 
 /// Current document-loading state shown by the preview UI.
@@ -36,6 +37,15 @@ pub enum IpcState {
     Connecting,
     Connected,
     Disconnected,
+}
+
+/// State of downstream printer discovery/submission.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PrintState {
+    Discovering,
+    Ready,
+    Submitting,
+    Error,
 }
 
 /// Preview application state.
@@ -65,6 +75,11 @@ pub struct AppData {
     pub fill_order: FillOrder,
     /// Imposition / print options.
     pub print_options: PrintOptions,
+    /// Downstream CUPS destinations and selected destination.
+    pub printers: Vec<String>,
+    pub selected_printer: usize,
+    pub print_state: PrintState,
+    pub print_message: Option<String>,
     /// Ids of jobs submitted this session.
     pub job_history: Vec<JobId>,
     /// Latest status received for each backend job.
@@ -73,6 +88,7 @@ pub struct AppData {
     pub ipc_state: IpcState,
     /// Most recent IPC connection error.
     pub ipc_error: Option<String>,
+    print_sender: Option<PrintSender>,
 }
 
 impl Default for AppData {
@@ -87,10 +103,15 @@ impl Default for AppData {
             error_message: None,
             choosing_file: false,
             print_options: PrintOptions::default(),
+            printers: Vec::new(),
+            selected_printer: 0,
+            print_state: PrintState::Discovering,
+            print_message: None,
             job_history: Vec::new(),
             job_statuses: HashMap::new(),
             ipc_state: IpcState::Disconnected,
             ipc_error: None,
+            print_sender: None,
             renderer_sender: None,
             pending_document_path: None,
             render_generation: 0,
@@ -102,6 +123,116 @@ impl Default for AppData {
 }
 
 impl AppData {
+    pub fn install_print_worker(&mut self, sender: PrintSender) {
+        self.print_sender = Some(sender);
+        self.refresh_printers();
+    }
+
+    pub fn refresh_printers(&mut self) {
+        self.print_state = PrintState::Discovering;
+        self.print_message = None;
+        if !self.send_print_command(PrintCommand::Discover) {
+            self.print_state = PrintState::Error;
+        }
+    }
+
+    pub fn handle_print_event(&mut self, event: PrintEvent) {
+        match event {
+            PrintEvent::Printers(printers) => {
+                self.printers = printers;
+                self.selected_printer = self
+                    .selected_printer
+                    .min(self.printers.len().saturating_sub(1));
+                self.print_state = PrintState::Ready;
+                self.print_message = self
+                    .printers
+                    .is_empty()
+                    .then(|| "No CUPS printers found".to_owned());
+            }
+            PrintEvent::Submitted(message) => {
+                self.print_state = PrintState::Ready;
+                self.print_message = Some(if message.is_empty() {
+                    "Print job submitted".to_owned()
+                } else {
+                    message
+                });
+            }
+            PrintEvent::Failed(message) => {
+                self.print_state = PrintState::Error;
+                self.print_message = Some(message);
+            }
+        }
+    }
+
+    pub fn selected_printer_name(&self) -> Option<&str> {
+        self.printers.get(self.selected_printer).map(String::as_str)
+    }
+
+    pub fn select_next_printer(&mut self) {
+        if !self.printers.is_empty() {
+            self.selected_printer = (self.selected_printer + 1) % self.printers.len();
+        }
+    }
+
+    pub fn decrement_copies(&mut self) {
+        self.print_options.copies = self.print_options.copies.saturating_sub(1).max(1);
+    }
+
+    pub fn increment_copies(&mut self) {
+        self.print_options.copies = self.print_options.copies.saturating_add(1);
+    }
+
+    pub fn toggle_collate(&mut self) {
+        self.print_options.collate = !self.print_options.collate;
+    }
+
+    pub fn cycle_duplex(&mut self) {
+        self.print_options.duplex = match self.print_options.duplex {
+            DuplexMode::None => DuplexMode::LongEdge,
+            DuplexMode::LongEdge => DuplexMode::ShortEdge,
+            DuplexMode::ShortEdge => DuplexMode::None,
+        };
+    }
+
+    pub fn submit_print_job(&mut self) {
+        let Some(printer) = self.selected_printer_name().map(str::to_owned) else {
+            self.print_state = PrintState::Error;
+            self.print_message = Some("Select a downstream printer first".to_owned());
+            return;
+        };
+        let Some(document) = self.document_path.clone() else {
+            self.print_state = PrintState::Error;
+            self.print_message = Some("Open a PDF before printing".to_owned());
+            return;
+        };
+        if let Err(error) = self.print_options.validate() {
+            self.print_state = PrintState::Error;
+            self.print_message = Some(error.to_string());
+            return;
+        }
+        self.print_state = PrintState::Submitting;
+        self.print_message = Some(format!("Submitting to {printer}…"));
+        let options = self.print_options.clone();
+        if !self.send_print_command(PrintCommand::Submit {
+            printer,
+            document,
+            options,
+        }) {
+            self.print_state = PrintState::Error;
+        }
+    }
+
+    fn send_print_command(&mut self, command: PrintCommand) -> bool {
+        let sent = self
+            .print_sender
+            .as_ref()
+            .is_some_and(|sender| sender.send(command).is_ok());
+        if !sent {
+            self.print_message = Some("Print worker is unavailable".to_owned());
+        }
+        sent
+    }
+
     /// Create initial state which asynchronously loads a command-line PDF.
     pub fn with_document_path(path: PathBuf) -> Self {
         Self {
