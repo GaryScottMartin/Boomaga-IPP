@@ -88,11 +88,14 @@ network_policies:
       - { host: static.crates.io, port: 443 }
       - { host: index.crates.io, port: 443 }
     binaries:
-      # The creation script installs rustup and its Cargo proxy here. Include
-      # the proxy target and the toolchain Cargo binary used for registry I/O.
-      - { path: /sandbox/.cargo/bin/cargo }
-      - { path: /sandbox/.cargo/bin/rustup }
-      - { path: /sandbox/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo }
+      # OpenShell-visible wrapper.
+      - { path: /usr/local/bin/cargo }
+
+      # Rustup command proxy installed in the image.
+      - { path: /usr/local/lib/rust-cargo/bin/cargo }
+
+      # Actual Cargo executable selected by rustup.
+      - { path: /usr/local/lib/rustup/toolchains/*/bin/cargo }
 
   ubuntu_packages:
     name: ubuntu-packages
