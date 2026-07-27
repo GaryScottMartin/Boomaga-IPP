@@ -1,11 +1,11 @@
 # Xilem Migration Plan
 
-> **Last reviewed against code:** 2026-07-26.
-> **Status:** Phases A through E are complete, host-verified on Denali, and
-> merged to `main`. Phase E added N-up imposition and Unix-socket job-status
-> delivery. A fresh Codex sandbox completed `cargo check --workspace` with
-> warnings and no errors; workspace-wide tests have not yet been run. Phase F
-> (print options and downstream submission) is next.
+> **Last reviewed against code:** 2026-07-27.
+> **Status:** Phases A through E are complete and Phase F is in progress on
+> `main`. Its first slice adds asynchronous CUPS discovery, `PrintOptions`
+> controls, and downstream `lp` submission, verified on Denali with an ET-3750.
+> The preview suite passes 23 tests. Workspace-wide tests have not yet been run.
+> Deterministic duplex submission planning and the full print dialog are next.
 
 ## Overview
 This document tracks replacing Druid with Xilem for the `boomaga-preview` GUI.
@@ -32,8 +32,12 @@ and command-line paths feed one background renderer thread through Xilem 0.4's
 `worker`/`MessageProxy` mechanism. `AppData` holds loading/error/progress state
 and a sparse on-demand page cache. The preview now composes 1/2/4/6/8-up sheets,
 supports horizontal and vertical fill, preserves the required sheet orientation,
-and receives versioned JSON job notifications over a Unix socket. Denali passed
-the focused checks and all 19 preview tests.
+and receives versioned JSON job notifications over a Unix socket. Phase F adds a
+second persistent worker for `lpstat` discovery and `lp` submission; its toolbar
+binds printer, copies, collate, and duplex to `PrintOptions`, and submission results
+persist in the footer. Denali verified physical ET-3750 output: simplex collate-on
+`123 123 123`, collate-off `111 222 333`, plus duplex set preservation. All 23
+preview tests pass.
 
 **Dependencies:**
 - Workspace `Cargo.toml` and `crates/boomaga-preview/Cargo.toml` declare
@@ -184,9 +188,19 @@ fn main() -> anyhow::Result<()> {
 - ℹ️ Booklet controls were not added to the user-accepted preview UI and remain a
   follow-up alongside print-options work.
 
-### Phase F: Print dialog & downstream submit
-- Print options dialog bound to `PrintOptions`.
-- Downstream printer selection + submit (CUPS/IPP client — no `cups` dep yet).
+### Phase F: Print dialog & downstream submit — 🚧 IN PROGRESS
+- ✅ Asynchronous downstream destination discovery through `lpstat`.
+- ✅ Printer/copies/collate/duplex controls bound to `PrintOptions`.
+- ✅ Non-blocking PDF submission through `lp`, with persistent success/error status.
+- ✅ Denali/KDE/Wayland physical-printer verification on an ET-3750.
+- ✅ Simplex collation: collated copies are sequential one-copy jobs; uncollated
+  copies remain one multi-copy job.
+- 🚧 Add a pure `SubmissionPlan` that maps document page count and `PrintOptions`
+  to explicit jobs/sheet ranges for simplex, duplex, odd pages, page ranges, and N-up.
+- [ ] Wire the plan into the worker and add deterministic uncollated duplex output.
+- [ ] Replace the first-slice toolbar with the full print dialog and capability-aware controls.
+- ℹ️ Sending sequential collated jobs to legacy Boomaga can crash that legacy
+  application; validate physical output against the real downstream printer.
 
 ### Phase G: Testing, polish, docs
 - Unit tests for navigation/zoom/state; keyboard shortcuts; accessibility.
@@ -212,7 +226,7 @@ fn main() -> anyhow::Result<()> {
 - [x] Zoom in/out/reset
 - [x] Apply N-up imposition in preview
 - [ ] Add booklet controls and preview mode
-- [ ] Select downstream printer and submit
+- [x] Select downstream printer and submit
 - [ ] Toolbar + menu
 - [ ] Keyboard shortcuts (Space, N, P, +/-, 0)
 
@@ -236,8 +250,8 @@ fn main() -> anyhow::Result<()> {
 ### Medium Risk
 - **State/reactivity model**: declarative rebuild-and-diff is a different mental model
   from Druid's retained widgets.
-- **Print workflow integration**: print options and downstream submission still
-  need to be connected without blocking the UI.
+- **Print workflow completion**: the non-blocking worker is connected, but deterministic
+  duplex batching, output assembly, and capability-aware dialog controls remain.
 
 ### Low Risk
 - **Custom PDF canvas, async loading, imposition, and IPC**: the Poppler/Cairo-to-
@@ -252,5 +266,6 @@ fn main() -> anyhow::Result<()> {
 4. ✅ **Phase C** — custom canvas + Poppler/Cairo renderer handoff, host-verified.
 5. ✅ **Phase D** — file-open UI, async rendering, worker delivery, and on-demand cache; host-verified on `main`.
 6. ✅ **Phase E** — N-up imposition + versioned Unix-socket IPC wiring; host-verified and merged to `main`.
-7. 🚧 Phase F — print dialog & downstream submit.
+7. 🚧 **Phase F** — first slice verified; implement `SubmissionPlan`, deterministic
+   duplex batching, then the full capability-aware dialog.
 8. 🚧 Phase G — testing, polish, docs.

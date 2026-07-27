@@ -35,6 +35,7 @@ boomaga-ipp/
 - `libqpdf-dev` and `libclang-dev`
 - Wayland client libraries for running the preview
 - CUPS on the host for driverless print ingress
+- CUPS client utilities (`lpstat` and `lp`) for downstream discovery/submission
 
 ### Building from source
 
@@ -93,10 +94,15 @@ boomaga-preview [--debug] [/path/to/document.pdf]
 The six-crate workspace remains under active development. Xilem preview migration
 Phases A through E are complete and host-verified on Denali, including native file
 selection, asynchronous on-demand PDF rendering, navigation/zoom, 1/2/4/6/8-up
-imposition, and backend job-status IPC. Focused Phase E checks pass, and a fresh
-2026-07-26 Codex sandbox completed `cargo check --workspace` with warnings and
-no errors. Workspace-wide tests have not yet been run. Phase F (print options
-and downstream submission) is next. See
+imposition, and backend job-status IPC. Phase F is in progress: the preview now
+discovers CUPS destinations asynchronously, exposes copies/collate/duplex controls
+bound to `PrintOptions`, and submits PDFs through `lp` without blocking the UI.
+Denali verified real ET-3750 output, persistent submission status, simplex
+collation (`123 123 123` versus `111 222 333`), and duplex set preservation.
+The focused preview suite now passes 23 tests. A fresh 2026-07-26 Codex sandbox
+completed `cargo check --workspace` with warnings and no errors; workspace-wide
+tests have not yet been run. The next Phase F step is a pure `SubmissionPlan`
+for deterministic duplex sheet-range batching before the full print dialog. See
 [`docs/HANDOFF.md`](docs/HANDOFF.md) for current session state and
 [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) for detailed status.
 

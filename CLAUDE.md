@@ -76,17 +76,22 @@ The Xilem migration’s Phases A through E are complete, host-verified, and merg
 to `main`. The preview supports native PDF selection, asynchronous on-demand
 rendering, navigation/zoom, and 1/2/4/6/8-up imposition with horizontal/vertical
 fill and the intended sheet orientations. Versioned Unix-socket IPC carries
-backend job lifecycle notifications into preview state. Phase F (print options,
-printer selection, and downstream submission) is next; booklet controls remain
-a follow-up.
+backend job lifecycle notifications into preview state. Phase F is in progress:
+an asynchronous print worker discovers CUPS destinations with `lpstat`, submits
+PDFs with `lp`, and reports persistent results in the footer. The current toolbar
+binds destination, copies, collate, and duplex controls to `PrintOptions`.
 
 Focused verification on Denali passed with 7 layout-engine, 3 IPC, 1 backend,
-and 19 preview tests. On 2026-07-26, a fresh Codex sandbox completed
+and 23 preview tests. Denali also verified real ET-3750 output: simplex collate-on
+prints `123 123 123`, collate-off prints `111 222 333`, and duplex preserves each
+document set in both modes. On 2026-07-26, a fresh Codex sandbox completed
 `cargo check --workspace` with warnings and no errors, establishing the
 workspace-wide compiler baseline and verifying the provisioned GLib, Cairo,
 Poppler GLib, QPDF, and libclang dependency stack. Workspace-wide tests have not
 yet been run; do not infer a workspace-wide test baseline from the focused
-results.
+results. Phase F remains incomplete: implement a pure `SubmissionPlan` for
+deterministic duplex sheet-range batching, then finish the print dialog and
+capability-aware options. Booklet controls remain a follow-up.
 
 Phase E verification commands used on Denali:
 
@@ -114,6 +119,7 @@ cargo test -p boomaga-layout-engine
 - `libqpdf-dev` and `libclang-dev` (`qpdf-sys` runs bindgen)
 - Wayland client libraries for running the preview
 - CUPS on the host for driverless print ingress
+- CUPS client utilities (`lpstat` and `lp`) for Phase F downstream printing
 - The Codex sandbox creator provisions the compile-time packages rootlessly.
 
 ## Common Development Tasks
@@ -180,9 +186,13 @@ cargo test -p boomaga-layout-engine
 
 - A fresh 2026-07-26 Codex sandbox completed `cargo check --workspace` with
   warnings and no errors. Workspace-wide tests have not yet been run.
-- Real IPP request parsing/response generation, captured-document handoff, and
-  downstream printer submission remain incomplete.
-- Phase F print workflow and the deferred booklet controls are next.
+- Real IPP request parsing/response generation and captured-document handoff
+  remain incomplete.
+- Phase F's first downstream workflow slice is real and Denali-verified, but it
+  currently forwards the source PDF plus CUPS options. Deterministic uncollated
+  duplex sheet ordering requires an explicit output `SubmissionPlan` and
+  sheet-range/PDF assembly path.
+- The full print dialog, printer-capability handling, and deferred booklet controls remain open.
 
 Historical note: earlier reports of roughly 82 workspace errors and roughly 38
 `boomaga-config` errors predate the crate-by-crate repairs and must not be treated

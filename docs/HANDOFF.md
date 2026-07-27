@@ -15,24 +15,25 @@
 
 # Boomaga-IPP — Session Handoff
 
-> **Last updated:** 2026-07-26 · **By:** Codex + Gary Scott Martin
-> **Session focus:** established the fresh Codex-sandbox workspace compiler
-> baseline; Phase F print options and downstream submission are next.
+> **Last updated:** 2026-07-27 · **By:** Codex + Gary Scott Martin
+> **Session focus:** Phase F first-slice downstream printing is Denali-verified;
+> deterministic duplex submission planning is the next implementation step.
 
 ---
 
 ## 1. TL;DR — where things stand
 <!-- One short paragraph. What just happened, what's the single most important next step. -->
-Xilem migration Phases A through E are complete, host-verified, and merged to `main`.
-The preview supports native PDF loading, asynchronous sparse rendering, navigation/zoom,
-and 1/2/4/6/8-up imposition with horizontal/vertical fill and the intended sheet
-orientations. Versioned Unix-socket JSON IPC now carries backend job lifecycle messages into
-typed, deduplicated preview state. Focused Denali checks pass; tests are 7 layout-engine,
-3 IPC, 1 backend, and 19 preview. On 2026-07-26, a fresh Codex sandbox completed
-`cargo check --workspace` with warnings and no errors, establishing the compiler
-baseline and verifying the provisioned pkg-config, GLib, Cairo, Poppler GLib,
-QPDF, and libclang stacks. Workspace-wide tests have not yet been run. Phase F
-is next; booklet UI is still deferred.
+Xilem migration Phases A through E are complete and Phase F is in progress on `main`.
+The preview now discovers downstream CUPS printers asynchronously, binds destination,
+copies, collate, and duplex controls to `PrintOptions`, submits PDFs through `lp`, and
+keeps submission results visible. Denali verified real ET-3750 output: simplex
+collate-on is `123 123 123`, collate-off is `111 222 333`, and duplex preserves
+complete document sets in both modes. The focused preview suite passes 23 tests;
+the prior 7 layout-engine, 3 IPC, and 1 backend focused baselines still stand. A
+2026-07-26 Codex sandbox completed `cargo check --workspace` with warnings and no
+errors; workspace-wide tests have not yet been run. Next, introduce a pure,
+unit-tested `SubmissionPlan` for deterministic duplex sheet-range batching, then
+finish the full print dialog and capability-aware options. Booklet UI remains deferred.
 
 ## 2. Active threads / in progress
 <!-- The heart of the file. Each item: what, state, concrete next action. Delete when done. -->
@@ -104,8 +105,19 @@ is next; booklet UI is still deferred.
       sheet navigation, and the finalized toolbar/footer layout. Added protocol-v1 framed JSON
       IPC, backend lifecycle notifications, and a Xilem IPC worker that updates deduplicated
       `AppData` job status. Denali passed 7 layout, 3 IPC, 1 backend, and 19 preview tests.
-      The feature branch was deleted after the fast-forward merge. Booklet controls were
-      deferred; Phase F print options and downstream submission are next.
+      The feature branch was deleted after the fast-forward merge. At that milestone,
+      booklet controls were deferred and Phase F had not yet started.
+- [~] **XILEM Phase F — FIRST SLICE IMPLEMENTED AND DENALI-VERIFIED (2026-07-27,
+      `8a2258c`..`d242e80`).** Added a persistent Xilem print worker, asynchronous
+      `lpstat` destination discovery, `PrintOptions` controls for copies/collate/duplex,
+      and non-blocking PDF submission through `lp`. Submission results persist in the
+      footer. Denali/KDE/Wayland verified ET-3750 physical output: simplex collate-on
+      `123 123 123`, collate-off `111 222 333`; duplex preserves `(1|2) (3|blank)`
+      document sets. Collated copies are sequential one-copy jobs; uncollated simplex
+      is one multi-copy job. Sequential jobs can crash legacy Boomaga when it is used
+      as the downstream destination; that is not a valid physical-printer test.
+      **Next:** a pure `SubmissionPlan` mapping page count + `PrintOptions` to jobs and
+      sheet ranges, including duplex, odd pages, page ranges, and N-up.
 - [x] **Codex startup context and native provisioning (`60b0900`, `1a9e04e`).**
       Replaced the `AGENTS.md` symlink with a real Codex instruction file that
       requires the seven context documents. Expanded the tracked Codex sandbox
@@ -115,8 +127,10 @@ is next; booklet UI is still deferred.
 
 ## 3. Open questions / waiting on
 <!-- Decisions or inputs owned by the human, or external events being awaited. -->
-- Real IPP request parsing/response generation, captured-document handoff, and downstream
-  printer submission remain incomplete.
+- Real IPP request parsing/response generation and captured-document handoff remain incomplete.
+- Phase F submission works, but deterministic uncollated duplex sheet ordering still needs
+  `SubmissionPlan` plus sheet-range/PDF assembly. The full dialog and capability-aware
+  controls also remain open.
 - Booklet controls were outside the accepted Phase E N-up scope and remain open.
 
 ## 4. Key decisions & rationale (durable — don't re-litigate)
@@ -130,8 +144,8 @@ is next; booklet UI is still deferred.
 - **Imposition (N-up/booklet/scale/rotate/margins/gutter) computed in `boomaga-layout-engine`**;
   qpdf-rs assembles/applies content-preserving transforms; poppler-rs renders preview. (Issue #11.)
 - **No plugin system.** `boomaga-plugins` deleted; specs stay silent. (Issue #10.) Code fully clean.
-- **GUI = Xilem** (Druid deprecated). Phases A/B/C/D/E are complete and host-verified on
-  `main`; Phase F is next.
+- **GUI = Xilem** (Druid deprecated). Phases A/B/C/D/E are complete; Phase F's first
+  downstream-printing slice is Denali-verified on `main` and Phase F remains in progress.
 - **SRS/UIS v0.2.2 Appendix C now conforms to code** (`c471a71`); `docs/uml/*.puml` is the
   maintained source. (Supersedes the earlier "Appendix C is an unreconciled Perplexity model" note.)
 - **`.claude/` handoff config is repo-shipped and vendored** (real files — no symlinks, no
@@ -193,7 +207,7 @@ is next; booklet UI is still deferred.
 <!-- Where the real detail lives. Keep this file thin; link out. -->
 - `README.md`, `CLAUDE.md` — project overview, build, inter-crate patterns, Claude Code setup.
 - `docs/PROJECT_PLAN.md` — architecture, phases, honest per-crate status.
-- `docs/XILEM_MIGRATION.md` — GUI migration plan (Phase F is next).
+- `docs/XILEM_MIGRATION.md` — GUI migration plan (Phase F is in progress).
 - `docs/SW-Reqrmnts-Spec--latest.pdf`, `docs/User-Interface-Spec--latest.pdf` — current specs (v0.2.2).
 - `docs/uml/*.puml` — code-conformant PlantUML (now also embedded in spec Appendix C).
 - `openshell/create-bipp-sandbox.sh` + `openshell/README.md` — host-side sandbox
