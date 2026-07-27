@@ -4,7 +4,7 @@
 
   readonly GATEWAY_STARTER="/home/gary/bin/openshell-gateway-up.sh"
   readonly PROJECT_DIR="/home/gary/Projects/Boomaga-IPP/repository/boomaga-ipp"
-  readonly SANDBOX_STARTER="$PROJECT_DIR/openshell/codex/create-bipp-sandbox--Codex.sh"
+  readonly SANDBOX_STARTER="$PROJECT_DIR/openshell/codex/create-bipp-sandbox.sh"
 
   readonly STARTUP_TIMEOUT=120
   readonly POLL_INTERVAL=2

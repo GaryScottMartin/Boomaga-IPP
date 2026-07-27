@@ -23,7 +23,7 @@ set -euo pipefail
 
 DIR="/sandbox/BIPP"
 REPO_URL="https://github.com/GaryScottMartin/Boomaga-IPP.git"
-POLICY="./openshell/codex/BIPP-project-policy--Codex.yaml"
+POLICY="./openshell/codex/BIPP-project-policy.yaml"
 GITHUB_PROVIDER="github-BIPP"
 
 # Keep the .git suffix: the project policy may allow this exact URL only.
