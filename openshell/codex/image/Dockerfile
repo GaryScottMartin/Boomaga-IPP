@@ -86,6 +86,7 @@ RUN set -eu; \
     for command in \
         rustup \
         rustc \
+        rustdoc \
         cargo \
         rustfmt \
         cargo-fmt \
