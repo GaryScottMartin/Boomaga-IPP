@@ -4,9 +4,9 @@
 > **Status:** Phases A through E are complete and Phase F is in progress on
 > `main`. Its first slice adds asynchronous CUPS discovery, `PrintOptions`
 > controls, and downstream `lp` submission, verified on Denali with an ET-3750.
-> The preview suite passes 23 tests. On 2026-07-27,
-> `cargo test --workspace` passed all 37 workspace tests with no failures.
-> Deterministic duplex submission planning and the full print dialog are next.
+> The preview suite passes 27 tests. On 2026-07-27,
+> `cargo test --workspace` passed all 43 workspace tests with no failures.
+> Deterministic duplex planning and arbitrary page selection are Denali-verified; capability discovery awaits host UI verification and the full dialog remains.
 
 ## Overview
 This document tracks replacing Druid with Xilem for the `boomaga-preview` GUI.
@@ -196,10 +196,9 @@ fn main() -> anyhow::Result<()> {
 - ✅ Denali/KDE/Wayland physical-printer verification on an ET-3750.
 - ✅ Simplex collation: collated copies are sequential one-copy jobs; uncollated
   copies remain one multi-copy job.
-- 🚧 Add a pure `SubmissionPlan` that maps document page count and `PrintOptions`
-  to explicit jobs/sheet ranges for simplex, duplex, odd pages, page ranges, and N-up.
-- [ ] Wire the plan into the worker and add deterministic uncollated duplex output.
-- [ ] Replace the first-slice toolbar with the full print dialog and capability-aware controls.
+- ✅ A pure `SubmissionPlan` maps document page count and `PrintOptions` to explicit jobs and selected-page batches for simplex, duplex, odd pages, arbitrary ranges, and N-up.
+- ✅ The worker uses the plan; Denali verified odd-page duplex, duplex N-up, and non-contiguous `1,3` output ordering.
+- 🚧 Selected-printer duplex/collation discovery via `lpoptions` is implemented; Denali UI verification and the full dialog layout remain.
 - ℹ️ Sending sequential collated jobs to legacy Boomaga can crash that legacy
   application; validate physical output against the real downstream printer.
 
@@ -251,8 +250,7 @@ fn main() -> anyhow::Result<()> {
 ### Medium Risk
 - **State/reactivity model**: declarative rebuild-and-diff is a different mental model
   from Druid's retained widgets.
-- **Print workflow completion**: the non-blocking worker is connected, but deterministic
-  duplex batching, output assembly, and capability-aware dialog controls remain.
+- **Print workflow completion**: the non-blocking worker is connected, but host verification of capability discovery and the full capability-aware dialog layout remain.
 
 ### Low Risk
 - **Custom PDF canvas, async loading, imposition, and IPC**: the Poppler/Cairo-to-
@@ -267,6 +265,5 @@ fn main() -> anyhow::Result<()> {
 4. ✅ **Phase C** — custom canvas + Poppler/Cairo renderer handoff, host-verified.
 5. ✅ **Phase D** — file-open UI, async rendering, worker delivery, and on-demand cache; host-verified on `main`.
 6. ✅ **Phase E** — N-up imposition + versioned Unix-socket IPC wiring; host-verified and merged to `main`.
-7. 🚧 **Phase F** — first slice verified; implement `SubmissionPlan`, deterministic
-   duplex batching, then the full capability-aware dialog.
+7. 🚧 **Phase F** — planning and arbitrary ranges verified; capability discovery implemented; host-verify it, then finish the full dialog.
 8. 🚧 Phase G — testing, polish, docs.

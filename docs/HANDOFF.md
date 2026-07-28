@@ -16,8 +16,7 @@
 # Boomaga-IPP — Session Handoff
 
 > **Last updated:** 2026-07-27 · **By:** Codex + Gary Scott Martin
-> **Session focus:** Phase F first-slice downstream printing is Denali-verified;
-> deterministic duplex planning and arbitrary page selection are Denali-verified; capability-aware controls are next.
+> **Session focus:** Phase F deterministic duplex planning and arbitrary page selection are Denali-verified; selected-printer capability discovery is implemented and awaits Denali UI verification.
 
 ---
 
@@ -115,7 +114,7 @@ failures. Deterministic duplex planning and arbitrary page selection are Denali-
       document sets. Collated copies are sequential one-copy jobs; uncollated simplex
       is one multi-copy job. Sequential jobs can crash legacy Boomaga when it is used
       as the downstream destination; that is not a valid physical-printer test.
-      **Update:** `SubmissionPlan` and the `1-3,7,9` page-selection field are implemented and Denali-verified. Next: capability-aware dialog controls.
+      **Update:** `SubmissionPlan` and the `1-3,7,9` page-selection field are Denali-verified. Selected-printer duplex/collation discovery via `lpoptions` is implemented (`3f79bed`); Denali UI verification and the full dialog layout are next.
 - [x] **Codex startup context and native provisioning (`60b0900`, `1a9e04e`).**
       Replaced the `AGENTS.md` symlink with a real Codex instruction file that
       requires the seven context documents. Expanded the tracked Codex sandbox
@@ -126,7 +125,7 @@ failures. Deterministic duplex planning and arbitrary page selection are Denali-
 ## 3. Open questions / waiting on
 <!-- Decisions or inputs owned by the human, or external events being awaited. -->
 - Real IPP request parsing/response generation and captured-document handoff remain incomplete.
-- Phase F deterministic duplex ordering and arbitrary page selection are physically verified. The full capability-aware dialog remains open.
+- Phase F deterministic duplex ordering and arbitrary page selection are physically verified. Selected-printer duplex/collation discovery is implemented but awaits Denali UI verification; the full dialog remains open.
 - Booklet controls were outside the accepted Phase E N-up scope and remain open.
 
 ## 4. Key decisions & rationale (durable — don't re-litigate)

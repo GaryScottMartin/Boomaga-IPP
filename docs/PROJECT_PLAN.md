@@ -69,12 +69,10 @@ component diagram (solid = present in code; dashed = decided-but-not-yet-wired).
 - Druid (the original choice) is unmaintained — see [`docs/XILEM_MIGRATION.md`](./XILEM_MIGRATION.md)
 
 **Status:** migration Phases A through E are complete and Phase F is in progress.
-The Xilem 0.4 preview builds, all 23 tests pass, and Denali verified native PDF
+The Xilem 0.4 preview builds, all 27 tests pass, and Denali verified native PDF
 selection, asynchronous rendering, navigation, N-up, IPC status, CUPS destination
 discovery, and real ET-3750 submission. Simplex collate-on produces `123 123 123`;
-collate-off produces `111 222 333`; duplex preserves document sets. The next Phase F
-step is a pure `SubmissionPlan` for deterministic duplex sheet-range batching,
-followed by the full capability-aware print dialog.
+collate-off produces `111 222 333`; duplex preserves document sets. Deterministic duplex planning and arbitrary page selection are Denali-verified. Selected-printer capability discovery is implemented; host UI verification and the full dialog are next.
 
 ### Display: Native Wayland
 - Direct Wayland compositor access (via winit)
@@ -325,11 +323,11 @@ crates/
 ## Implementation Status
 
 > **Reality check (2026-07-27):** focused Phase E checks still pass, and the
-> 23-test preview suite plus Phase F physical-printer checks pass on Denali.
+> 27-test preview suite plus Phase F physical-printer checks pass on Denali.
 > A fresh Codex sandbox completed
 > `cargo check --workspace` with warnings and no errors, establishing the
 > workspace compiler baseline and verifying the rootless native dependency
-> provisioning. On 2026-07-27, `cargo test --workspace` passed all 37 tests with
+> provisioning. On 2026-07-27, `cargo test --workspace` passed all 43 tests with
 > no failures; doc-tests also passed. Percentages below remain estimates of
 > *design + partial implementation*.
 
@@ -337,10 +335,10 @@ crates/
 
 | Crate | Kind | State | Tests | Notes |
 |-------|------|-------|-------|-------|
-| `boomaga-core` | lib | Types complete; compiles | 0 | Plugin residue removed. `FileType` matches PDF/PWG Raster/JPEG. `parse_metadata()` is a TODO no-op. |
+| `boomaga-core` | lib | Types complete; compiles | 2 | Plugin residue removed. `FileType` matches PDF/PWG Raster/JPEG. `parse_metadata()` is a TODO no-op. |
 | `boomaga-config` | lib | Complete | 3 | `ConfigManager` wired; plugin settings removed. |
 | `boomaga-layout-engine` | lib | Real & usable | 7 | N-up, booklet, transforms implemented; N-up partial-sheet behavior is tested. |
-| `boomaga-preview` | bin | Phases A/B/C/D/E complete; F in progress | 23 | Adds Denali-verified CUPS discovery, print controls, persistent status, and real ET-3750 submission; deterministic duplex planning/full dialog remain. |
+| `boomaga-preview` | bin | Phases A/B/C/D/E complete; F in progress | 27 | Deterministic duplex planning and arbitrary ranges are Denali-verified; capability discovery is implemented and the full dialog remains. |
 | `boomaga-ipc` | lib | Transport wired | 3 | Versioned newline-delimited JSON framing is used by backend and preview; focused tests pass. |
 | `boomaga-ipp-backend` | bin | Scaffolded, partial | 1 | Queue/processor compile and emit ordered lifecycle notifications; real IPP parsing remains incomplete. |
 
@@ -371,8 +369,7 @@ crates/
   non-blocking downstream submission, and persistent result status
 
 #### Remaining Phase 2 Tasks
-- Add pure `SubmissionPlan` for simplex/duplex, collation, odd pages, ranges, and N-up
-- Wire deterministic duplex sheet-range/PDF assembly into the print worker
+- Host-verify selected-printer duplex/collation capability discovery
 - Complete the capability-aware Phase F print dialog
 - Add booklet controls (deferred from the accepted Phase E N-up scope)
 - Complete document-ready IPC and captured-document handoff
@@ -389,7 +386,7 @@ cargo test -p boomaga-ipp-backend
 cargo test -p boomaga-layout-engine
 ```
 
-All focused checks passed. The current preview suite reports 23 tests; the prior
+All focused checks passed. The current preview suite reports 27 tests; the prior
 focused baselines remain 3 IPC, 1 backend, and 7 layout-engine tests. Denali/KDE/
 Wayland interactively verified CUPS discovery and physical ET-3750 submission.
 Simplex output was `123 123 123` with collate on and `111 222 333` with collate
