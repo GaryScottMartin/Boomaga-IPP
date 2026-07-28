@@ -87,9 +87,9 @@ prints `123 123 123`, collate-off prints `111 222 333`, and duplex preserves eac
 document set in both modes. On 2026-07-26, a fresh Codex sandbox completed
 `cargo check --workspace` with warnings and no errors, establishing the
 workspace-wide compiler baseline and verifying the provisioned GLib, Cairo,
-Poppler GLib, QPDF, and libclang dependency stack. Workspace-wide tests have not
-yet been run; do not infer a workspace-wide test baseline from the focused
-results. Phase F remains incomplete: implement a pure `SubmissionPlan` for
+Poppler GLib, QPDF, and libclang dependency stack. On 2026-07-27,
+`cargo test --workspace` also passed all 37 tests with no failures. Phase F
+remains incomplete: implement a pure `SubmissionPlan` for
 deterministic duplex sheet-range batching, then finish the print dialog and
 capability-aware options. Booklet controls remain a follow-up.
 
@@ -184,8 +184,9 @@ cargo test -p boomaga-layout-engine
 
 ## Known Issues
 
-- A fresh 2026-07-26 Codex sandbox completed `cargo check --workspace` with
-  warnings and no errors. Workspace-wide tests have not yet been run.
+- A fresh Codex sandbox completed `cargo check --workspace` with warnings and
+  no errors on 2026-07-26. On 2026-07-27, `cargo test --workspace` passed all
+  37 tests with no failures.
 - Real IPP request parsing/response generation and captured-document handoff
   remain incomplete.
 - Phase F's first downstream workflow slice is real and Denali-verified, but it

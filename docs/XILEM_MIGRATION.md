@@ -4,7 +4,8 @@
 > **Status:** Phases A through E are complete and Phase F is in progress on
 > `main`. Its first slice adds asynchronous CUPS discovery, `PrintOptions`
 > controls, and downstream `lp` submission, verified on Denali with an ET-3750.
-> The preview suite passes 23 tests. Workspace-wide tests have not yet been run.
+> The preview suite passes 23 tests. On 2026-07-27,
+> `cargo test --workspace` passed all 37 workspace tests with no failures.
 > Deterministic duplex submission planning and the full print dialog are next.
 
 ## Overview

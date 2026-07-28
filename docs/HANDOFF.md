@@ -31,9 +31,10 @@ collate-on is `123 123 123`, collate-off is `111 222 333`, and duplex preserves
 complete document sets in both modes. The focused preview suite passes 23 tests;
 the prior 7 layout-engine, 3 IPC, and 1 backend focused baselines still stand. A
 2026-07-26 Codex sandbox completed `cargo check --workspace` with warnings and no
-errors; workspace-wide tests have not yet been run. Next, introduce a pure,
-unit-tested `SubmissionPlan` for deterministic duplex sheet-range batching, then
-finish the full print dialog and capability-aware options. Booklet UI remains deferred.
+errors; on 2026-07-27, `cargo test --workspace` passed all 37 tests with no
+failures. Next, introduce a pure, unit-tested `SubmissionPlan` for deterministic
+duplex sheet-range batching, then finish the full print dialog and capability-aware
+options. Booklet UI remains deferred.
 
 ## 2. Active threads / in progress
 <!-- The heart of the file. Each item: what, state, concrete next action. Delete when done. -->
@@ -181,10 +182,10 @@ finish the full print dialog and capability-aware options. Booklet UI remains de
   `git config user.email "gmartin@martin-fam.net"` (matches prior commit authorship; Claude stays
   a co-author via the trailer). Also note `git commit` only stages what's already staged — after a
   `git mv` plus separate edits, `git add -A` (or `--amend` afterward) so all files land in one commit.
-- **Workspace compiler baseline is recorded; workspace test baseline is not.**
-  A fresh 2026-07-26 Codex sandbox completed `cargo check --workspace` with
-  warnings and no errors. The focused Phase E tests remain the current test
-  evidence until `cargo test --workspace` is run.
+- **Workspace compiler and test baselines are recorded.** A fresh Codex sandbox
+  completed `cargo check --workspace` with warnings and no errors on 2026-07-26.
+  On 2026-07-27, `cargo test --workspace` passed all 37 tests with no failures;
+  doc-tests also passed.
 - **Live policy updates must originate on the OpenShell host.** Editing the active policy from
   the originating host can affect a running sandbox; recreating the sandbox is not inherently
   required. Editing the repository's policy copy inside the sandbox does not update the host's

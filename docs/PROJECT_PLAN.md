@@ -329,8 +329,9 @@ crates/
 > A fresh Codex sandbox completed
 > `cargo check --workspace` with warnings and no errors, establishing the
 > workspace compiler baseline and verifying the rootless native dependency
-> provisioning. Workspace-wide tests have not yet been run. Percentages below
-> remain estimates of *design + partial implementation*.
+> provisioning. On 2026-07-27, `cargo test --workspace` passed all 37 tests with
+> no failures; doc-tests also passed. Percentages below remain estimates of
+> *design + partial implementation*.
 
 ### Per-crate state
 
@@ -354,7 +355,6 @@ crates/
 - IPP service scaffolding (`IppServer`, `JobQueue`, `JobProcessor`)
 
 #### Remaining Phase 1 Tasks
-- Run `cargo test --workspace` and record a workspace-wide test baseline
 - Complete IPP request parsing / response generation
 - systemd socket activation (zbus_systemd) — not yet wired
 - Expand core, IPC, and backend coverage beyond the focused Phase E tests
