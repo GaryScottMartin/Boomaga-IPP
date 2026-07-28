@@ -205,6 +205,7 @@ impl AppData {
             self.print_message = Some("Open a PDF before printing".to_owned());
             return;
         };
+        let page_count = self.document.as_ref().map_or(0, Document::page_count);
         if let Err(error) = self.print_options.validate() {
             self.print_state = PrintState::Error;
             self.print_message = Some(error.to_string());
@@ -216,6 +217,7 @@ impl AppData {
         if !self.send_print_command(PrintCommand::Submit {
             printer,
             document,
+            page_count,
             options,
         }) {
             self.print_state = PrintState::Error;

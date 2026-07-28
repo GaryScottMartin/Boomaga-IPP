@@ -1,5 +1,6 @@
 //! Background CUPS command bridge for printer discovery and submission.
 use crate::app::AppData;
+use crate::submission_plan::SubmissionPlan;
 use boomaga_core::{DuplexMode, PrintOptions};
 use std::{
     path::{Path, PathBuf},
@@ -18,6 +19,7 @@ pub enum PrintCommand {
     Submit {
         printer: String,
         document: PathBuf,
+        page_count: usize,
         options: PrintOptions,
     },
 }
@@ -54,8 +56,9 @@ fn run_loop(proxy: MessageProxy<PrintEvent>, mut receiver: UnboundedReceiver<Pri
             PrintCommand::Submit {
                 printer,
                 document,
+                page_count,
                 options,
-            } => run_submit(&printer, &document, &options),
+            } => run_submit(&printer, &document, page_count, &options),
         };
         if proxy.message(event).is_err() {
             break;
@@ -69,13 +72,27 @@ fn run_discovery() -> PrintEvent {
         Err(error) => PrintEvent::Failed(format!("unable to run lpstat: {error}")),
     }
 }
-fn run_submit(printer: &str, document: &Path, options: &PrintOptions) -> PrintEvent {
-    let batches = submission_batches(options);
-    let total = batches.len();
+fn run_submit(
+    printer: &str,
+    document: &Path,
+    page_count: usize,
+    options: &PrintOptions,
+) -> PrintEvent {
+    let plan = match SubmissionPlan::new(page_count, options) {
+        Ok(plan) => plan,
+        Err(error) => return PrintEvent::Failed(error.to_string()),
+    };
+    let total = plan.jobs.len();
     let mut responses = Vec::with_capacity(total);
-    for (index, batch) in batches.iter().enumerate() {
+    for (index, job) in plan.jobs.iter().enumerate() {
+        let batch = PrintOptions {
+            copies: job.copies,
+            collate: false,
+            page_range: Some((*job.page_range.start(), *job.page_range.end())),
+            ..options.clone()
+        };
         match Command::new("lp")
-            .args(lp_arguments(printer, document, batch))
+            .args(lp_arguments(printer, document, &batch))
             .output()
         {
             Ok(out) if out.status.success() => {
@@ -95,18 +112,6 @@ fn run_submit(printer: &str, document: &Path, options: &PrintOptions) -> PrintEv
         }
     }
     PrintEvent::Submitted(responses.join(" · "))
-}
-fn submission_batches(options: &PrintOptions) -> Vec<PrintOptions> {
-    if !options.collate || options.copies <= 1 {
-        return vec![options.clone()];
-    }
-    (0..options.copies)
-        .map(|_| PrintOptions {
-            copies: 1,
-            collate: false,
-            ..options.clone()
-        })
-        .collect()
 }
 fn command_error(command: &str, stderr: &[u8]) -> String {
     let detail = String::from_utf8_lossy(stderr);
@@ -187,32 +192,5 @@ mod tests {
         ] {
             assert!(args.contains(&expected.to_owned()));
         }
-    }
-    #[test]
-    fn collated_copies_are_separate_one_copy_jobs() {
-        let options = PrintOptions {
-            copies: 3,
-            collate: true,
-            ..PrintOptions::default()
-        };
-        let batches = submission_batches(&options);
-
-        assert_eq!(batches.len(), 3);
-        assert!(batches
-            .iter()
-            .all(|batch| batch.copies == 1 && !batch.collate));
-    }
-
-    #[test]
-    fn uncollated_copies_remain_one_multi_copy_job() {
-        let options = PrintOptions {
-            copies: 3,
-            collate: false,
-            ..PrintOptions::default()
-        };
-        let batches = submission_batches(&options);
-
-        assert_eq!(batches.len(), 1);
-        assert_eq!(batches[0].copies, 3);
     }
 }

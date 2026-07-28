@@ -10,6 +10,7 @@ mod ipc_worker;
 mod pdf_canvas;
 mod print_worker;
 mod render_worker;
+mod submission_plan;
 
 use app::{AppData, FillOrder, LoadState, PrintState};
 use boomaga_core::{DuplexMode, PagesPerSheet};
