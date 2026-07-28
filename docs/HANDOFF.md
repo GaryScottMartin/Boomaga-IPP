@@ -17,7 +17,7 @@
 
 > **Last updated:** 2026-07-27 · **By:** Codex + Gary Scott Martin
 > **Session focus:** Phase F first-slice downstream printing is Denali-verified;
-> deterministic duplex submission planning is the next implementation step.
+> deterministic duplex planning and arbitrary page selection are Denali-verified; capability-aware controls are next.
 
 ---
 
@@ -28,13 +28,11 @@ The preview now discovers downstream CUPS printers asynchronously, binds destina
 copies, collate, and duplex controls to `PrintOptions`, submits PDFs through `lp`, and
 keeps submission results visible. Denali verified real ET-3750 output: simplex
 collate-on is `123 123 123`, collate-off is `111 222 333`, and duplex preserves
-complete document sets in both modes. The focused preview suite passes 23 tests;
+complete document sets in both modes. The focused preview suite passes 27 tests;
 the prior 7 layout-engine, 3 IPC, and 1 backend focused baselines still stand. A
 2026-07-26 Codex sandbox completed `cargo check --workspace` with warnings and no
-errors; on 2026-07-27, `cargo test --workspace` passed all 37 tests with no
-failures. Next, introduce a pure, unit-tested `SubmissionPlan` for deterministic
-duplex sheet-range batching, then finish the full print dialog and capability-aware
-options. Booklet UI remains deferred.
+errors; on 2026-07-27, `cargo test --workspace` passed all 43 tests with no
+failures. Deterministic duplex planning and arbitrary page selection are Denali-verified. The preview now discovers selected-printer duplex and collation capabilities asynchronously; host verification and the full dialog layout are next. Booklet UI remains deferred.
 
 ## 2. Active threads / in progress
 <!-- The heart of the file. Each item: what, state, concrete next action. Delete when done. -->
@@ -117,8 +115,7 @@ options. Booklet UI remains deferred.
       document sets. Collated copies are sequential one-copy jobs; uncollated simplex
       is one multi-copy job. Sequential jobs can crash legacy Boomaga when it is used
       as the downstream destination; that is not a valid physical-printer test.
-      **Next:** a pure `SubmissionPlan` mapping page count + `PrintOptions` to jobs and
-      sheet ranges, including duplex, odd pages, page ranges, and N-up.
+      **Update:** `SubmissionPlan` and the `1-3,7,9` page-selection field are implemented and Denali-verified. Next: capability-aware dialog controls.
 - [x] **Codex startup context and native provisioning (`60b0900`, `1a9e04e`).**
       Replaced the `AGENTS.md` symlink with a real Codex instruction file that
       requires the seven context documents. Expanded the tracked Codex sandbox
@@ -129,9 +126,7 @@ options. Booklet UI remains deferred.
 ## 3. Open questions / waiting on
 <!-- Decisions or inputs owned by the human, or external events being awaited. -->
 - Real IPP request parsing/response generation and captured-document handoff remain incomplete.
-- Phase F submission works, but deterministic uncollated duplex sheet ordering still needs
-  `SubmissionPlan` plus sheet-range/PDF assembly. The full dialog and capability-aware
-  controls also remain open.
+- Phase F deterministic duplex ordering and arbitrary page selection are physically verified. The full capability-aware dialog remains open.
 - Booklet controls were outside the accepted Phase E N-up scope and remain open.
 
 ## 4. Key decisions & rationale (durable — don't re-litigate)
@@ -184,7 +179,7 @@ options. Booklet UI remains deferred.
   `git mv` plus separate edits, `git add -A` (or `--amend` afterward) so all files land in one commit.
 - **Workspace compiler and test baselines are recorded.** A fresh Codex sandbox
   completed `cargo check --workspace` with warnings and no errors on 2026-07-26.
-  On 2026-07-27, `cargo test --workspace` passed all 37 tests with no failures;
+  On 2026-07-27, `cargo test --workspace` passed all 43 tests with no failures;
   doc-tests also passed.
 - **Live policy updates must originate on the OpenShell host.** Editing the active policy from
   the originating host can affect a running sandbox; recreating the sandbox is not inherently

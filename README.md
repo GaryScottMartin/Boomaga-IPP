@@ -99,11 +99,10 @@ discovers CUPS destinations asynchronously, exposes copies/collate/duplex contro
 bound to `PrintOptions`, and submits PDFs through `lp` without blocking the UI.
 Denali verified real ET-3750 output, persistent submission status, simplex
 collation (`123 123 123` versus `111 222 333`), and duplex set preservation.
-The focused preview suite now passes 23 tests. A fresh Codex sandbox completed
+The focused preview suite now passes 27 tests. A fresh Codex sandbox completed
 `cargo check --workspace` with warnings and no errors on 2026-07-26, then
-`cargo test --workspace` on 2026-07-27 with 37 tests passed and no failures.
-The next Phase F step is a pure `SubmissionPlan`
-for deterministic duplex sheet-range batching before the full print dialog. See
+`cargo test --workspace` on 2026-07-27 with 43 tests passed and no failures.
+Deterministic duplex planning and arbitrary page selection are Denali-verified. The next Phase F step is capability-aware print controls. See
 [`docs/HANDOFF.md`](docs/HANDOFF.md) for current session state and
 [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) for detailed status.
 

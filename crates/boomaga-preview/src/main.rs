@@ -71,9 +71,12 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
         .unwrap_or("No printer")
         .to_owned();
     let copies = format!("Copies: {}", data.print_options.copies);
+    let capabilities = data.selected_printer_capabilities();
     let collate = format!(
         "Collate: {}",
-        if data.print_options.collate {
+        if capabilities.is_some_and(|caps| !caps.supports_collate) {
+            "Unavailable"
+        } else if data.print_options.collate {
             "On"
         } else {
             "Off"
@@ -81,10 +84,14 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
     );
     let duplex = format!(
         "Duplex: {}",
-        match data.print_options.duplex {
-            DuplexMode::None => "Off",
-            DuplexMode::LongEdge => "Long edge",
-            DuplexMode::ShortEdge => "Short edge",
+        if capabilities.is_some_and(|caps| !caps.supports_duplex) {
+            "Unavailable"
+        } else {
+            match data.print_options.duplex {
+                DuplexMode::None => "Off",
+                DuplexMode::LongEdge => "Long edge",
+                DuplexMode::ShortEdge => "Short edge",
+            }
         }
     );
     let print_toolbar = flex(

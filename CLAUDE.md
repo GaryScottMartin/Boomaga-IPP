@@ -82,16 +82,13 @@ PDFs with `lp`, and reports persistent results in the footer. The current toolba
 binds destination, copies, collate, and duplex controls to `PrintOptions`.
 
 Focused verification on Denali passed with 7 layout-engine, 3 IPC, 1 backend,
-and 23 preview tests. Denali also verified real ET-3750 output: simplex collate-on
+and 27 preview tests. Denali also verified real ET-3750 output: simplex collate-on
 prints `123 123 123`, collate-off prints `111 222 333`, and duplex preserves each
 document set in both modes. On 2026-07-26, a fresh Codex sandbox completed
 `cargo check --workspace` with warnings and no errors, establishing the
 workspace-wide compiler baseline and verifying the provisioned GLib, Cairo,
 Poppler GLib, QPDF, and libclang dependency stack. On 2026-07-27,
-`cargo test --workspace` also passed all 37 tests with no failures. Phase F
-remains incomplete: implement a pure `SubmissionPlan` for
-deterministic duplex sheet-range batching, then finish the print dialog and
-capability-aware options. Booklet controls remain a follow-up.
+`cargo test --workspace` also passed all 43 tests with no failures. Phase F deterministic duplex planning and arbitrary page selection are Denali-verified. The capability-aware print dialog remains incomplete. Booklet controls remain a follow-up.
 
 Phase E verification commands used on Denali:
 
@@ -186,7 +183,7 @@ cargo test -p boomaga-layout-engine
 
 - A fresh Codex sandbox completed `cargo check --workspace` with warnings and
   no errors on 2026-07-26. On 2026-07-27, `cargo test --workspace` passed all
-  37 tests with no failures.
+  43 tests with no failures.
 - Real IPP request parsing/response generation and captured-document handoff
   remain incomplete.
 - Phase F's first downstream workflow slice is real and Denali-verified, but it

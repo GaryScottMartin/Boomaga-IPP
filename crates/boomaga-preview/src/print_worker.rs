@@ -13,9 +13,18 @@ use xilem::{
     ViewCtx,
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct PrinterCapabilities {
+    pub supports_duplex: bool,
+    pub supports_collate: bool,
+}
+
 #[derive(Debug)]
 pub enum PrintCommand {
     Discover,
+    DiscoverCapabilities {
+        printer: String,
+    },
     Submit {
         printer: String,
         document: PathBuf,
@@ -26,6 +35,14 @@ pub enum PrintCommand {
 #[derive(Debug, PartialEq, Eq)]
 pub enum PrintEvent {
     Printers(Vec<String>),
+    Capabilities {
+        printer: String,
+        capabilities: PrinterCapabilities,
+    },
+    CapabilitiesFailed {
+        printer: String,
+        message: String,
+    },
     Submitted(String),
     Failed(String),
 }
@@ -53,6 +70,7 @@ fn run_loop(proxy: MessageProxy<PrintEvent>, mut receiver: UnboundedReceiver<Pri
     while let Some(command) = receiver.blocking_recv() {
         let event = match command {
             PrintCommand::Discover => run_discovery(),
+            PrintCommand::DiscoverCapabilities { printer } => run_capability_discovery(&printer),
             PrintCommand::Submit {
                 printer,
                 document,
@@ -72,6 +90,44 @@ fn run_discovery() -> PrintEvent {
         Err(error) => PrintEvent::Failed(format!("unable to run lpstat: {error}")),
     }
 }
+fn run_capability_discovery(printer: &str) -> PrintEvent {
+    match Command::new("lpoptions")
+        .args(["-p", printer, "-l"])
+        .output()
+    {
+        Ok(out) if out.status.success() => PrintEvent::Capabilities {
+            printer: printer.to_owned(),
+            capabilities: parse_capabilities(&out.stdout),
+        },
+        Ok(out) => PrintEvent::CapabilitiesFailed {
+            printer: printer.to_owned(),
+            message: command_error("lpoptions", &out.stderr),
+        },
+        Err(error) => PrintEvent::CapabilitiesFailed {
+            printer: printer.to_owned(),
+            message: format!("unable to run lpoptions: {error}"),
+        },
+    }
+}
+
+fn parse_capabilities(output: &[u8]) -> PrinterCapabilities {
+    let lines = String::from_utf8_lossy(output).to_lowercase();
+    PrinterCapabilities {
+        supports_duplex: lines.lines().any(|line| {
+            (line.starts_with("duplex/") || line.starts_with("sides/"))
+                && (line.contains("two-sided")
+                    || line.contains("duplexnotumble")
+                    || line.contains("duplextumble"))
+        }),
+        supports_collate: lines.lines().any(|line| {
+            line.starts_with("collate/")
+                && line
+                    .split_once(":")
+                    .is_some_and(|(_, choices)| choices.contains("true"))
+        }),
+    }
+}
+
 fn run_submit(
     printer: &str,
     document: &Path,
@@ -171,6 +227,17 @@ mod tests {
             ["Office", "PDF"]
         );
     }
+    #[test]
+    fn parses_standard_cups_capabilities() {
+        let capabilities = parse_capabilities(b"sides/2-Sided Printing: *one-sided two-sided-long-edge two-sided-short-edge\nCollate/Collate: *False True\n");
+        assert!(capabilities.supports_duplex);
+        assert!(capabilities.supports_collate);
+        assert_eq!(
+            parse_capabilities(b"ColorModel/Color: *RGB Gray\n"),
+            PrinterCapabilities::default()
+        );
+    }
+
     #[test]
     fn maps_options_to_lp_arguments() {
         let options = PrintOptions {

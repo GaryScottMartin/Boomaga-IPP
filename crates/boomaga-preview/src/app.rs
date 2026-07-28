@@ -14,7 +14,7 @@ use std::path::PathBuf;
 
 use crate::ipc_worker::{IpcCommand, IpcEvent, IpcSender};
 use crate::pdf_canvas::CanvasImage;
-use crate::print_worker::{PrintCommand, PrintEvent, PrintSender};
+use crate::print_worker::{PrintCommand, PrintEvent, PrintSender, PrinterCapabilities};
 use crate::render_worker::{RendererCommand, RendererEvent, RendererSender};
 
 /// Current document-loading state shown by the preview UI.
@@ -83,6 +83,7 @@ pub struct AppData {
     pub selected_printer: usize,
     pub print_state: PrintState,
     pub print_message: Option<String>,
+    pub printer_capabilities: Option<(String, PrinterCapabilities)>,
     /// Ids of jobs submitted this session.
     pub job_history: Vec<JobId>,
     /// Latest status received for each backend job.
@@ -111,6 +112,7 @@ impl Default for AppData {
             selected_printer: 0,
             print_state: PrintState::Discovering,
             print_message: None,
+            printer_capabilities: None,
             job_history: Vec::new(),
             job_statuses: HashMap::new(),
             ipc_state: IpcState::Disconnected,
@@ -152,6 +154,28 @@ impl AppData {
                     .printers
                     .is_empty()
                     .then(|| "No CUPS printers found".to_owned());
+                self.refresh_selected_printer_capabilities();
+            }
+            PrintEvent::Capabilities {
+                printer,
+                capabilities,
+            } => {
+                if self.selected_printer_name() == Some(printer.as_str()) {
+                    if !capabilities.supports_duplex {
+                        self.print_options.duplex = DuplexMode::None;
+                    }
+                    if !capabilities.supports_collate {
+                        self.print_options.collate = false;
+                    }
+                    self.printer_capabilities = Some((printer, capabilities));
+                }
+            }
+            PrintEvent::CapabilitiesFailed { printer, message } => {
+                if self.selected_printer_name() == Some(printer.as_str()) {
+                    self.printer_capabilities = None;
+                    self.print_message =
+                        Some(format!("Could not read {printer} capabilities: {message}"));
+                }
             }
             PrintEvent::Submitted(message) => {
                 self.print_state = PrintState::Ready;
@@ -175,7 +199,22 @@ impl AppData {
     pub fn select_next_printer(&mut self) {
         if !self.printers.is_empty() {
             self.selected_printer = (self.selected_printer + 1) % self.printers.len();
+            self.refresh_selected_printer_capabilities();
         }
+    }
+
+    fn refresh_selected_printer_capabilities(&mut self) {
+        self.printer_capabilities = None;
+        if let Some(printer) = self.selected_printer_name().map(str::to_owned) {
+            self.send_print_command(PrintCommand::DiscoverCapabilities { printer });
+        }
+    }
+
+    pub fn selected_printer_capabilities(&self) -> Option<PrinterCapabilities> {
+        let printer = self.selected_printer_name()?;
+        self.printer_capabilities
+            .as_ref()
+            .and_then(|(name, capabilities)| (name == printer).then_some(*capabilities))
     }
 
     pub fn decrement_copies(&mut self) {
@@ -187,7 +226,12 @@ impl AppData {
     }
 
     pub fn toggle_collate(&mut self) {
-        self.print_options.collate = !self.print_options.collate;
+        if self
+            .selected_printer_capabilities()
+            .is_none_or(|caps| caps.supports_collate)
+        {
+            self.print_options.collate = !self.print_options.collate;
+        }
     }
 
     pub fn set_page_range_input(&mut self, input: String) {
@@ -195,6 +239,12 @@ impl AppData {
     }
 
     pub fn cycle_duplex(&mut self) {
+        if self
+            .selected_printer_capabilities()
+            .is_some_and(|caps| !caps.supports_duplex)
+        {
+            return;
+        }
         self.print_options.duplex = match self.print_options.duplex {
             DuplexMode::None => DuplexMode::LongEdge,
             DuplexMode::LongEdge => DuplexMode::ShortEdge,
