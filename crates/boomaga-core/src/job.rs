@@ -1,9 +1,10 @@
 //! Print job types and handling
 
+use crate::document::{DuplexMode, MarginMode, Orientation, PagesPerSheet};
+use crate::{Error, FileType, Result};
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 use uuid::Uuid;
-use crate::{Error, Result, FileType};
-use crate::document::{Orientation, DuplexMode, PagesPerSheet, MarginMode};
 
 /// Unique identifier for a print job
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -126,13 +127,105 @@ pub struct PrintJobRequest {
     pub options: PrintOptions,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PageRange {
+    ranges: Vec<(usize, usize)>,
+}
+
+impl PageRange {
+    pub fn pages(&self, page_count: usize) -> Result<Vec<usize>> {
+        let mut pages = Vec::new();
+        for &(first, last) in &self.ranges {
+            if last > page_count {
+                return Err(Error::Validation(format!(
+                    "page range {first}-{last} exceeds document page count {page_count}"
+                )));
+            }
+            pages.extend(first..=last);
+        }
+        Ok(pages)
+    }
+
+    pub fn from_pages(pages: &[usize]) -> Self {
+        let mut ranges = Vec::new();
+        for &page in pages {
+            match ranges.last_mut() {
+                Some((_, last)) if page == *last + 1 => *last = page,
+                _ => ranges.push((page, page)),
+            }
+        }
+        Self { ranges }
+    }
+}
+
+impl FromStr for PageRange {
+    type Err = Error;
+
+    fn from_str(input: &str) -> Result<Self> {
+        let mut ranges = Vec::new();
+        for item in input.split(',') {
+            let item = item.trim();
+            if item.is_empty() {
+                return Err(Error::Validation(
+                    "page selection contains an empty item".into(),
+                ));
+            }
+            let mut bounds = item.split('-').map(str::trim);
+            let first =
+                bounds.next().unwrap().parse::<usize>().map_err(|_| {
+                    Error::Validation(format!("invalid page selection item: {item}"))
+                })?;
+            let last = match bounds.next() {
+                Some(value) => value.parse::<usize>().map_err(|_| {
+                    Error::Validation(format!("invalid page selection item: {item}"))
+                })?,
+                None => first,
+            };
+            if bounds.next().is_some() || first == 0 || first > last {
+                return Err(Error::Validation(format!(
+                    "invalid page selection item: {item}"
+                )));
+            }
+            if ranges
+                .last()
+                .is_some_and(|&(_, previous_last)| first <= previous_last)
+            {
+                return Err(Error::Validation(
+                    "page selection must be ordered without overlaps".into(),
+                ));
+            }
+            ranges.push((first, last));
+        }
+        if ranges.is_empty() {
+            return Err(Error::Validation("page selection is empty".into()));
+        }
+        Ok(Self { ranges })
+    }
+}
+
+impl std::fmt::Display for PageRange {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for (index, (first, last)) in self.ranges.iter().enumerate() {
+            if index > 0 {
+                f.write_str(",")?;
+            }
+            if first == last {
+                write!(f, "{first}")?;
+            } else {
+                write!(f, "{first}-{last}")?;
+            }
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrintOptions {
     pub copies: u32,
     pub collate: bool,
     pub duplex: DuplexMode,
     pub orientation: Orientation,
-    pub page_range: Option<(usize, usize)>,
+    pub page_range: Option<PageRange>,
     pub pages_per_sheet: PagesPerSheet,
     pub scale: f64,
     pub margins: MarginMode,
@@ -160,16 +253,33 @@ impl PrintOptions {
             return Err(Error::Validation("Copies must be greater than 0".into()));
         }
 
-        if !matches!(self.page_range, None | Some((_, _))) {
-            // Range will be validated when pages are loaded
-        }
-
         Ok(())
     }
 
     /// Check if this is a booklet job
     pub fn is_booklet(&self) -> bool {
         matches!(self.pages_per_sheet, PagesPerSheet::Two)
+    }
+}
+
+#[cfg(test)]
+mod page_range_tests {
+    use super::PageRange;
+    use std::str::FromStr;
+
+    #[test]
+    fn parses_and_formats_individual_pages_and_ranges() {
+        let selection = PageRange::from_str("1-3, 7,9, 12-13").unwrap();
+        assert_eq!(selection.to_string(), "1-3,7,9,12-13");
+        assert_eq!(selection.pages(13).unwrap(), vec![1, 2, 3, 7, 9, 12, 13]);
+    }
+
+    #[test]
+    fn rejects_malformed_unordered_overlapping_and_out_of_bounds_selections() {
+        for input in ["", "0", "3-1", "1,,3", "1-2-3", "3,2", "1-3,3-4"] {
+            assert!(PageRange::from_str(input).is_err(), "accepted {input:?}");
+        }
+        assert!(PageRange::from_str("1-3,7").unwrap().pages(6).is_err());
     }
 }
 

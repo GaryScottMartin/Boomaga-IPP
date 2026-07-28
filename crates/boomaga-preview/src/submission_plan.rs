@@ -1,11 +1,11 @@
 //! Pure planning for deterministic downstream CUPS submissions.
-use boomaga_core::{DuplexMode, PrintOptions};
-use std::{fmt, ops::RangeInclusive};
+use boomaga_core::{DuplexMode, PageRange, PrintOptions};
+use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubmissionJob {
     pub copies: u32,
-    pub page_range: RangeInclusive<usize>,
+    pub pages: PageRange,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubmissionPlan {
@@ -15,11 +15,7 @@ pub struct SubmissionPlan {
 pub enum SubmissionPlanError {
     EmptyDocument,
     ZeroCopies,
-    InvalidPageRange {
-        first: usize,
-        last: usize,
-        page_count: usize,
-    },
+    InvalidPageSelection,
 }
 
 impl fmt::Display for SubmissionPlanError {
@@ -27,14 +23,9 @@ impl fmt::Display for SubmissionPlanError {
         match self {
             Self::EmptyDocument => f.write_str("cannot print an empty document"),
             Self::ZeroCopies => f.write_str("copies must be greater than zero"),
-            Self::InvalidPageRange {
-                first,
-                last,
-                page_count,
-            } => write!(
-                f,
-                "page range {first}-{last} is invalid for a {page_count}-page document"
-            ),
+            Self::InvalidPageSelection => {
+                f.write_str("page selection exceeds the document page count")
+            }
         }
     }
 }
@@ -48,34 +39,32 @@ impl SubmissionPlan {
         if options.copies == 0 {
             return Err(SubmissionPlanError::ZeroCopies);
         }
-        let (first, last) = options.page_range.unwrap_or((1, page_count));
-        if first == 0 || first > last || last > page_count {
-            return Err(SubmissionPlanError::InvalidPageRange {
-                first,
-                last,
-                page_count,
-            });
-        }
-        let range = first..=last;
+        let selected = match &options.page_range {
+            Some(selection) => selection
+                .pages(page_count)
+                .map_err(|_| SubmissionPlanError::InvalidPageSelection)?,
+            None => (1..=page_count).collect(),
+        };
+        let complete = PageRange::from_pages(&selected);
         let jobs = if options.collate {
             (0..options.copies)
                 .map(|_| SubmissionJob {
                     copies: 1,
-                    page_range: range.clone(),
+                    pages: complete.clone(),
                 })
                 .collect()
         } else if options.duplex == DuplexMode::None {
             vec![SubmissionJob {
                 copies: options.copies,
-                page_range: range,
+                pages: complete,
             }]
         } else {
-            let pages_per_physical_sheet = usize::from(options.pages_per_sheet as u8) * 2;
-            (first..=last)
-                .step_by(pages_per_physical_sheet)
-                .map(|start| SubmissionJob {
+            let capacity = usize::from(options.pages_per_sheet as u8) * 2;
+            selected
+                .chunks(capacity)
+                .map(|pages| SubmissionJob {
                     copies: options.copies,
-                    page_range: start..=last.min(start + pages_per_physical_sheet - 1),
+                    pages: PageRange::from_pages(pages),
                 })
                 .collect()
         };
@@ -87,23 +76,25 @@ impl SubmissionPlan {
 mod tests {
     use super::*;
     use boomaga_core::PagesPerSheet;
-    fn job(copies: u32, first: usize, last: usize) -> SubmissionJob {
+    use std::str::FromStr;
+
+    fn job(copies: u32, pages: &str) -> SubmissionJob {
         SubmissionJob {
             copies,
-            page_range: first..=last,
+            pages: PageRange::from_str(pages).unwrap(),
         }
     }
     #[test]
-    fn collated_copies_repeat_the_complete_range() {
+    fn collated_copies_repeat_the_complete_selection() {
         let o = PrintOptions {
             copies: 3,
             collate: true,
-            page_range: Some((2, 7)),
+            page_range: Some(PageRange::from_str("1-3,7,9").unwrap()),
             ..PrintOptions::default()
         };
         assert_eq!(
             SubmissionPlan::new(10, &o).unwrap().jobs,
-            vec![job(1, 2, 7), job(1, 2, 7), job(1, 2, 7)]
+            vec![job(1, "1-3,7,9"), job(1, "1-3,7,9"), job(1, "1-3,7,9")]
         );
     }
     #[test]
@@ -112,32 +103,36 @@ mod tests {
             copies: 3,
             ..PrintOptions::default()
         };
-        assert_eq!(SubmissionPlan::new(5, &o).unwrap().jobs, vec![job(3, 1, 5)]);
-    }
-    #[test]
-    fn uncollated_duplex_batches_physical_sheets_and_odd_tail() {
-        let o = PrintOptions {
-            copies: 3,
-            duplex: DuplexMode::LongEdge,
-            ..PrintOptions::default()
-        };
         assert_eq!(
             SubmissionPlan::new(5, &o).unwrap().jobs,
-            vec![job(3, 1, 2), job(3, 3, 4), job(3, 5, 5)]
+            vec![job(3, "1-5")]
         );
     }
     #[test]
-    fn duplex_n_up_and_range_set_sheet_width() {
+    fn uncollated_duplex_packs_selected_pages_into_physical_sheets() {
+        let o = PrintOptions {
+            copies: 3,
+            duplex: DuplexMode::LongEdge,
+            page_range: Some(PageRange::from_str("1-3,7,9").unwrap()),
+            ..PrintOptions::default()
+        };
+        assert_eq!(
+            SubmissionPlan::new(10, &o).unwrap().jobs,
+            vec![job(3, "1-2"), job(3, "3,7"), job(3, "9")]
+        );
+    }
+    #[test]
+    fn duplex_n_up_uses_selected_page_count_for_sheet_capacity() {
         let o = PrintOptions {
             copies: 2,
             duplex: DuplexMode::ShortEdge,
             pages_per_sheet: PagesPerSheet::Four,
-            page_range: Some((3, 18)),
+            page_range: Some(PageRange::from_str("1-3,7,9,12-13").unwrap()),
             ..PrintOptions::default()
         };
         assert_eq!(
-            SubmissionPlan::new(20, &o).unwrap().jobs,
-            vec![job(2, 3, 10), job(2, 11, 18)]
+            SubmissionPlan::new(13, &o).unwrap().jobs,
+            vec![job(2, "1-3,7,9,12-13")]
         );
     }
     #[test]
@@ -154,19 +149,13 @@ mod tests {
             SubmissionPlan::new(1, &zero),
             Err(SubmissionPlanError::ZeroCopies)
         );
-        for range in [(0, 1), (3, 2), (1, 6)] {
-            let o = PrintOptions {
-                page_range: Some(range),
-                ..PrintOptions::default()
-            };
-            assert_eq!(
-                SubmissionPlan::new(5, &o),
-                Err(SubmissionPlanError::InvalidPageRange {
-                    first: range.0,
-                    last: range.1,
-                    page_count: 5
-                })
-            );
-        }
+        let o = PrintOptions {
+            page_range: Some(PageRange::from_str("1,6").unwrap()),
+            ..PrintOptions::default()
+        };
+        assert_eq!(
+            SubmissionPlan::new(5, &o),
+            Err(SubmissionPlanError::InvalidPageSelection)
+        );
     }
 }

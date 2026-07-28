@@ -88,7 +88,7 @@ fn run_submit(
         let batch = PrintOptions {
             copies: job.copies,
             collate: false,
-            page_range: Some((*job.page_range.start(), *job.page_range.end())),
+            page_range: Some(job.pages.clone()),
             ..options.clone()
         };
         match Command::new("lp")
@@ -152,8 +152,8 @@ fn lp_arguments(printer: &str, document: &Path, options: &PrintOptions) -> Vec<S
         "-o".into(),
         format!("scaling={:.0}", options.scale * 100.0),
     ];
-    if let Some((first, last)) = options.page_range {
-        args.extend(["-P".into(), format!("{first}-{last}")]);
+    if let Some(selection) = &options.page_range {
+        args.extend(["-P".into(), selection.to_string()]);
     }
     args.push(document.to_string_lossy().into_owned());
     args
@@ -162,7 +162,8 @@ fn lp_arguments(printer: &str, document: &Path, options: &PrintOptions) -> Vec<S
 #[cfg(test)]
 mod tests {
     use super::*;
-    use boomaga_core::PagesPerSheet;
+    use boomaga_core::{PageRange, PagesPerSheet};
+    use std::str::FromStr;
     #[test]
     fn parses_lpstat_output() {
         assert_eq!(
@@ -177,7 +178,7 @@ mod tests {
             collate: true,
             duplex: DuplexMode::LongEdge,
             pages_per_sheet: PagesPerSheet::Four,
-            page_range: Some((2, 7)),
+            page_range: Some(PageRange::from_str("2-3,7").unwrap()),
             ..PrintOptions::default()
         };
         let args = lp_arguments("Office", Path::new("doc.pdf"), &options);
@@ -187,7 +188,7 @@ mod tests {
             "collate=true",
             "sides=two-sided-long-edge",
             "number-up=4",
-            "2-7",
+            "2-3,7",
             "doc.pdf",
         ] {
             assert!(args.contains(&expected.to_owned()));

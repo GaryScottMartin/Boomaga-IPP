@@ -4,7 +4,9 @@
 //! `app_logic` (see `main.rs`) and delivers renderer events through the worker
 //! channel stored here. Matches the `AppData` in `docs/uml/C2-class.puml`.
 
-use boomaga_core::{Document, DuplexMode, JobId, JobStatus, PageSize, PagesPerSheet, PrintOptions};
+use boomaga_core::{
+    Document, DuplexMode, JobId, JobStatus, PageRange, PageSize, PagesPerSheet, PrintOptions,
+};
 use boomaga_ipc::MessagePayload;
 use boomaga_layout_engine::NUpCalculator;
 use std::collections::{BTreeSet, HashMap};
@@ -75,6 +77,7 @@ pub struct AppData {
     pub fill_order: FillOrder,
     /// Imposition / print options.
     pub print_options: PrintOptions,
+    pub page_range_input: String,
     /// Downstream CUPS destinations and selected destination.
     pub printers: Vec<String>,
     pub selected_printer: usize,
@@ -103,6 +106,7 @@ impl Default for AppData {
             error_message: None,
             choosing_file: false,
             print_options: PrintOptions::default(),
+            page_range_input: String::new(),
             printers: Vec::new(),
             selected_printer: 0,
             print_state: PrintState::Discovering,
@@ -186,6 +190,10 @@ impl AppData {
         self.print_options.collate = !self.print_options.collate;
     }
 
+    pub fn set_page_range_input(&mut self, input: String) {
+        self.page_range_input = input;
+    }
+
     pub fn cycle_duplex(&mut self) {
         self.print_options.duplex = match self.print_options.duplex {
             DuplexMode::None => DuplexMode::LongEdge,
@@ -206,6 +214,25 @@ impl AppData {
             return;
         };
         let page_count = self.document.as_ref().map_or(0, Document::page_count);
+        self.print_options.page_range = if self.page_range_input.trim().is_empty() {
+            None
+        } else {
+            match self.page_range_input.parse::<PageRange>() {
+                Ok(selection) => Some(selection),
+                Err(error) => {
+                    self.print_state = PrintState::Error;
+                    self.print_message = Some(error.to_string());
+                    return;
+                }
+            }
+        };
+        if let Some(selection) = &self.print_options.page_range {
+            if let Err(error) = selection.pages(page_count) {
+                self.print_state = PrintState::Error;
+                self.print_message = Some(error.to_string());
+                return;
+            }
+        }
         if let Err(error) = self.print_options.validate() {
             self.print_state = PrintState::Error;
             self.print_message = Some(error.to_string());

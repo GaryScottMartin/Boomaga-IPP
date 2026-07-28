@@ -24,7 +24,7 @@ use tracing::{info, Level};
 use xilem::core::fork;
 use xilem::masonry::properties::types::AsUnit;
 use xilem::style::Style as _;
-use xilem::view::{button, flex, label, sized_box, Axis, FlexExt as _, FlexSpacer};
+use xilem::view::{button, flex, label, sized_box, text_input, Axis, FlexExt as _, FlexSpacer};
 use xilem::{Color, EventLoop, WidgetView, WindowOptions, Xilem};
 
 /// The Xilem view tree, rebuilt from `AppData` on every state change.
@@ -99,6 +99,14 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
             button(label("+ copy"), |d: &mut AppData| d.increment_copies()),
             button(label(collate), |d: &mut AppData| d.toggle_collate()),
             button(label(duplex), |d: &mut AppData| d.cycle_duplex()),
+            label("Pages:"),
+            sized_box(
+                text_input(data.page_range_input.clone(), |d: &mut AppData, input| {
+                    d.set_page_range_input(input)
+                })
+                .placeholder("All or 1-3,7,9"),
+            )
+            .width(150.px()),
             button(label("Print"), |d: &mut AppData| d.submit_print_job()),
         ),
     );
