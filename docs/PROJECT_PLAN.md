@@ -1,6 +1,6 @@
 # Modern Boomaga Virtual Printer - Implementation Plan
 
-> **Last reviewed against code:** 2026-07-27 (6-crate workspace; 2 binaries).
+> **Last reviewed against code:** 2026-07-29 (6-crate workspace; 2 binaries).
 > **Authoritative architecture:** SRS & UIS **v0.2.2**, Appendix C, and the
 > code-conformant PlantUML in [`docs/uml/`](./uml/) (conforms to code @ `34652fa`).
 > Where this plan and the specs/UML disagree, the specs/UML win — this document
@@ -251,7 +251,7 @@ crates/
 - Cancellation support
 
 ### Week 6: GUI Foundation
-- Xilem migration Phases A/B/C/D/E complete; Phase F print workflow in progress
+- Xilem migration Phases A/B/C/D/E/F complete and Denali-verified
   (see `XILEM_MIGRATION.md`)
 - Main window (winit)
 - Preview rendering
@@ -322,13 +322,13 @@ crates/
 
 ## Implementation Status
 
-> **Reality check (2026-07-27):** focused Phase E checks still pass, and the
+> **Reality check (2026-07-29):** focused Phase E checks still pass, and the
 > 30-test preview suite plus Phase F physical-printer and UI checks pass on Denali.
 > A fresh Codex sandbox completed
 > `cargo check --workspace` with warnings and no errors, establishing the
 > workspace compiler baseline and verifying the rootless native dependency
-> provisioning. On 2026-07-27, `cargo test --workspace` passed all 43 tests with
-> no failures; doc-tests also passed. Percentages below remain estimates of
+> provisioning. On 2026-07-29, `cargo test --workspace` passed all 46 tests with
+> no failures; all doc-tests passed. Percentages below remain estimates of
 > *design + partial implementation*.
 
 ### Per-crate state
@@ -365,8 +365,8 @@ crates/
 - Layout/imposition algorithms (in `boomaga-layout-engine`)
 - PDF rendering pipeline foundation (poppler)
 - IPC protocol message types defined
-- Phase F first slice: asynchronous CUPS discovery, print-option controls,
-  non-blocking downstream submission, and persistent result status
+- Phase F: asynchronous CUPS/capability discovery, capability-aware controls,
+  deterministic planning, non-blocking submission, and persistent result status
 
 #### Remaining Phase 2 Tasks
 - Add booklet controls (deferred from the accepted Phase E/F scope)

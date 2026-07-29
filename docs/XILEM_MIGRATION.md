@@ -1,11 +1,11 @@
 # Xilem Migration Plan
 
-> **Last reviewed against code:** 2026-07-27.
+> **Last reviewed against code:** 2026-07-29.
 > **Status:** Phases A through F are complete on `main`. Phase F adds
 > asynchronous CUPS discovery, `PrintOptions`
 > controls, and downstream `lp` submission, verified on Denali with an ET-3750.
-> The preview suite passes 30 tests. On 2026-07-27,
-> `cargo test --workspace` passed all 43 workspace tests with no failures.
+> The preview suite passes 30 tests. On 2026-07-29,
+> `cargo test --workspace` passed all 46 workspace tests with no failures; all doc-tests passed.
 > Deterministic duplex planning, arbitrary page selection, and capability-aware controls are Denali-verified.
 
 ## Overview
@@ -28,17 +28,17 @@ Target architecture: SRS/UIS **v0.2.2** Appendix C and [`docs/uml/`](./uml/)
 
 ## Current Status
 
-Phases A through E are complete and host-verified on `main`: a native PDF chooser
+Phases A through F are complete and host-verified on `main`: a native PDF chooser
 and command-line paths feed one background renderer thread through Xilem 0.4's
 `worker`/`MessageProxy` mechanism. `AppData` holds loading/error/progress state
 and a sparse on-demand page cache. The preview now composes 1/2/4/6/8-up sheets,
 supports horizontal and vertical fill, preserves the required sheet orientation,
-and receives versioned JSON job notifications over a Unix socket. Phase F adds a
-second persistent worker for `lpstat` discovery and `lp` submission; its toolbar
-binds printer, copies, collate, and duplex to `PrintOptions`, and submission results
-persist in the footer. Denali verified physical ET-3750 output: simplex collate-on
-`123 123 123`, collate-off `111 222 333`, plus duplex set preservation. All 23
-preview tests pass.
+and receives versioned JSON job notifications over a Unix socket. Phase F added a
+second persistent worker for `lpstat` discovery and `lp` submission; its bordered
+settings panel binds printer, copies, collate, and duplex to `PrintOptions`, and
+submission results persist in the footer. Denali verified physical ET-3750 output: simplex collate-on
+`123 123 123`, collate-off `111 222 333`, plus duplex set preservation. All 30
+preview tests pass; capability-aware UI behavior is Denali/KDE/Wayland verified.
 
 **Dependencies:**
 - Workspace `Cargo.toml` and `crates/boomaga-preview/Cargo.toml` declare
@@ -250,7 +250,8 @@ fn main() -> anyhow::Result<()> {
 ### Medium Risk
 - **State/reactivity model**: declarative rebuild-and-diff is a different mental model
   from Druid's retained widgets.
-- **Print workflow completion**: the non-blocking worker is connected, but host verification of capability discovery and the full capability-aware dialog layout remain.
+- **Downstream compatibility**: `lp`/`lpoptions` capabilities vary by CUPS queue;
+  the ET-3750 path is verified, while other printer models may expose different options.
 
 ### Low Risk
 - **Custom PDF canvas, async loading, imposition, and IPC**: the Poppler/Cairo-to-

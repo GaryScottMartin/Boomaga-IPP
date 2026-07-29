@@ -100,8 +100,8 @@ bound to `PrintOptions`, and submits PDFs through `lp` without blocking the UI.
 Denali verified real ET-3750 output, persistent submission status, simplex
 collation (`123 123 123` versus `111 222 333`), and duplex set preservation.
 The focused preview suite now passes 30 tests. A fresh Codex sandbox completed
-`cargo check --workspace` with warnings and no errors on 2026-07-26, then
-`cargo test --workspace` on 2026-07-27 with 43 tests passed and no failures.
+`cargo check --workspace` with warnings and no errors on 2026-07-26. On
+2026-07-29, `cargo test --workspace` passed all 46 tests and all doc-tests.
 Deterministic duplex planning, arbitrary page selection, and the bordered capability-aware print-settings panel are Denali-verified. See
 [`docs/HANDOFF.md`](docs/HANDOFF.md) for current session state and
 [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) for detailed status.

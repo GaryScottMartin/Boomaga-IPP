@@ -87,8 +87,8 @@ prints `123 123 123`, collate-off prints `111 222 333`, and duplex preserves eac
 document set in both modes. On 2026-07-26, a fresh Codex sandbox completed
 `cargo check --workspace` with warnings and no errors, establishing the
 workspace-wide compiler baseline and verifying the provisioned GLib, Cairo,
-Poppler GLib, QPDF, and libclang dependency stack. On 2026-07-27,
-`cargo test --workspace` also passed all 43 tests with no failures. Phase F deterministic duplex planning, arbitrary page selection, and capability-aware print settings are Denali-verified. Booklet controls remain a follow-up.
+Poppler GLib, QPDF, and libclang dependency stack. On 2026-07-29,
+`cargo test --workspace` passed all 46 tests with no failures; all doc-tests passed. Phase F deterministic duplex planning, arbitrary page selection, and capability-aware print settings are Denali-verified. Booklet controls remain a follow-up.
 
 Phase E verification commands used on Denali:
 
@@ -182,15 +182,14 @@ cargo test -p boomaga-layout-engine
 ## Known Issues
 
 - A fresh Codex sandbox completed `cargo check --workspace` with warnings and
-  no errors on 2026-07-26. On 2026-07-27, `cargo test --workspace` passed all
-  43 tests with no failures.
+  no errors on 2026-07-26. On 2026-07-29, `cargo test --workspace` passed all
+  46 tests with no failures; all doc-tests passed.
 - Real IPP request parsing/response generation and captured-document handoff
   remain incomplete.
-- Phase F's first downstream workflow slice is real and Denali-verified, but it
-  currently forwards the source PDF plus CUPS options. Deterministic uncollated
-  duplex sheet ordering requires an explicit output `SubmissionPlan` and
-  sheet-range/PDF assembly path.
-- The full print dialog, printer-capability handling, and deferred booklet controls remain open.
+- Phase F is complete and Denali-verified. Downstream submission forwards the
+  source PDF plus explicit CUPS options and a deterministic `SubmissionPlan`;
+  local content-preserving imposed-PDF assembly remains separate future work.
+- Deferred booklet controls remain open.
 
 Historical note: earlier reports of roughly 82 workspace errors and roughly 38
 `boomaga-config` errors predate the crate-by-crate repairs and must not be treated

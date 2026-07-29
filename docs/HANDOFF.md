@@ -15,7 +15,7 @@
 
 # Boomaga-IPP — Session Handoff
 
-> **Last updated:** 2026-07-27 · **By:** Codex + Gary Scott Martin
+> **Last updated:** 2026-07-29 · **By:** Codex + Gary Scott Martin
 > **Session focus:** Phase F capability-aware controls and the bordered print-settings panel are Denali-verified; Phase F is complete.
 
 ---
@@ -30,8 +30,8 @@ collate-on is `123 123 123`, collate-off is `111 222 333`, and duplex preserves
 complete document sets in both modes. The focused preview suite passes 30 tests;
 the prior 7 layout-engine, 3 IPC, and 1 backend focused baselines still stand. A
 2026-07-26 Codex sandbox completed `cargo check --workspace` with warnings and no
-errors; on 2026-07-27, `cargo test --workspace` passed all 43 tests with no
-failures. Deterministic duplex planning and arbitrary page selection are Denali-verified. Capability-aware print settings are implemented; Denali UI verification is next. Booklet UI remains deferred.
+errors; on 2026-07-29, `cargo test --workspace` passed all 46 tests with no
+failures and all doc-tests passed. Deterministic planning, arbitrary page selection, and capability-aware print settings are Denali-verified. Booklet UI remains deferred.
 
 ## 2. Active threads / in progress
 <!-- The heart of the file. Each item: what, state, concrete next action. Delete when done. -->
@@ -138,8 +138,8 @@ failures. Deterministic duplex planning and arbitrary page selection are Denali-
 - **Imposition (N-up/booklet/scale/rotate/margins/gutter) computed in `boomaga-layout-engine`**;
   qpdf-rs assembles/applies content-preserving transforms; poppler-rs renders preview. (Issue #11.)
 - **No plugin system.** `boomaga-plugins` deleted; specs stay silent. (Issue #10.) Code fully clean.
-- **GUI = Xilem** (Druid deprecated). Phases A/B/C/D/E are complete; Phase F's first
-  downstream-printing slice is Denali-verified on `main` and Phase F remains in progress.
+- **GUI = Xilem** (Druid deprecated). Phases A/B/C/D/E/F are complete and
+  Denali-verified on `main`; booklet controls remain a follow-up.
 - **SRS/UIS v0.2.2 Appendix C now conforms to code** (`c471a71`); `docs/uml/*.puml` is the
   maintained source. (Supersedes the earlier "Appendix C is an unreconciled Perplexity model" note.)
 - **`.claude/` handoff config is repo-shipped and vendored** (real files — no symlinks, no
@@ -177,8 +177,8 @@ failures. Deterministic duplex planning and arbitrary page selection are Denali-
   `git mv` plus separate edits, `git add -A` (or `--amend` afterward) so all files land in one commit.
 - **Workspace compiler and test baselines are recorded.** A fresh Codex sandbox
   completed `cargo check --workspace` with warnings and no errors on 2026-07-26.
-  On 2026-07-27, `cargo test --workspace` passed all 43 tests with no failures;
-  doc-tests also passed.
+  On 2026-07-29, `cargo test --workspace` passed all 46 tests with no failures;
+  all doc-tests also passed.
 - **Live policy updates must originate on the OpenShell host.** Editing the active policy from
   the originating host can affect a running sandbox; recreating the sandbox is not inherently
   required. Editing the repository's policy copy inside the sandbox does not update the host's
