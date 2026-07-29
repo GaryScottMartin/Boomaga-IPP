@@ -1,0 +1,35 @@
+printer Boomaga is idle.  enabled since Mon Jul 27 23:18:18 2026
+printer ET-3750_All_in_One is idle.  enabled since Mon Jul 27 23:18:44 2026
+Duplex/Duplex Tumble: *None DuplexNoTumble DuplexTumble
+
+running 27 tests
+test app::tests::command_line_path_is_loaded_after_worker_connects ... ok
+test app::tests::changing_n_up_invalidates_imposition_without_discarding_rasters ... ok
+test app::tests::job_notifications_update_existing_status_without_duplicates ... ok
+test app::tests::navigation_without_a_document_stays_on_first_page ... ok
+test app::tests::loaded_document_requests_only_the_current_page ... ok
+test app::tests::navigation_stays_within_document_bounds ... ok
+test app::tests::two_up_navigation_uses_sheet_count ... ok
+test app::tests::zoom_is_clamped_and_can_be_reset ... ok
+test app::tests::two_up_requests_every_page_on_current_sheet ... ok
+test document_renderer::tests::detects_page_orientation_from_dimensions ... ok
+test document_renderer::tests::validates_pixel_dimensions ... ok
+test ipc_worker::tests::ipc_commands_and_events_are_send ... ok
+test pdf_canvas::tests::accepts_exact_pixel_buffer_length ... ok
+test pdf_canvas::tests::horizontal_fill_is_row_major ... ok
+test pdf_canvas::tests::rejects_incorrect_pixel_buffer_length ... ok
+test pdf_canvas::tests::two_up_uses_landscape_sheet_orientation ... ok
+test pdf_canvas::tests::uses_expected_n_up_grids ... ok
+test pdf_canvas::tests::vertical_fill_matches_classic_boomaga_order ... ok
+test print_worker::tests::maps_options_to_lp_arguments ... ok
+test print_worker::tests::parses_lpstat_output ... ok
+test print_worker::tests::parses_standard_cups_capabilities ... ok
+test render_worker::tests::worker_commands_and_events_are_send ... ok
+test submission_plan::tests::collated_copies_repeat_the_complete_selection ... ok
+test submission_plan::tests::duplex_n_up_uses_selected_page_count_for_sheet_capacity ... ok
+test submission_plan::tests::invalid_inputs_are_rejected ... ok
+test submission_plan::tests::uncollated_duplex_packs_selected_pages_into_physical_sheets ... ok
+test submission_plan::tests::uncollated_simplex_is_one_multi_copy_job ... ok
+
+test result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
