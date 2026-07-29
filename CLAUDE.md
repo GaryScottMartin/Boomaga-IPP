@@ -76,7 +76,7 @@ The Xilem migration’s Phases A through E are complete, host-verified, and merg
 to `main`. The preview supports native PDF selection, asynchronous on-demand
 rendering, navigation/zoom, and 1/2/4/6/8-up imposition with horizontal/vertical
 fill and the intended sheet orientations. Versioned Unix-socket IPC carries
-backend job lifecycle notifications into preview state. Phase F is in progress:
+backend job lifecycle notifications into preview state. Phase F is complete:
 an asynchronous print worker discovers CUPS destinations with `lpstat`, submits
 PDFs with `lp`, and reports persistent results in the footer. The current toolbar
 binds destination, copies, collate, and duplex controls to `PrintOptions`.
@@ -88,7 +88,7 @@ document set in both modes. On 2026-07-26, a fresh Codex sandbox completed
 `cargo check --workspace` with warnings and no errors, establishing the
 workspace-wide compiler baseline and verifying the provisioned GLib, Cairo,
 Poppler GLib, QPDF, and libclang dependency stack. On 2026-07-27,
-`cargo test --workspace` also passed all 43 tests with no failures. Phase F deterministic duplex planning and arbitrary page selection are Denali-verified. Capability-aware print settings are implemented and await Denali UI verification. Booklet controls remain a follow-up.
+`cargo test --workspace` also passed all 43 tests with no failures. Phase F deterministic duplex planning, arbitrary page selection, and capability-aware print settings are Denali-verified. Booklet controls remain a follow-up.
 
 Phase E verification commands used on Denali:
 

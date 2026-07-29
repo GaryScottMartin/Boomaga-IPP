@@ -68,11 +68,11 @@ component diagram (solid = present in code; dashed = decided-but-not-yet-wired).
 - Active development by the Linebender community
 - Druid (the original choice) is unmaintained — see [`docs/XILEM_MIGRATION.md`](./XILEM_MIGRATION.md)
 
-**Status:** migration Phases A through E are complete and Phase F is in progress.
+**Status:** migration Phases A through F are complete and Denali-verified.
 The Xilem 0.4 preview builds, all 30 tests pass, and Denali verified native PDF
 selection, asynchronous rendering, navigation, N-up, IPC status, CUPS destination
 discovery, and real ET-3750 submission. Simplex collate-on produces `123 123 123`;
-collate-off produces `111 222 333`; duplex preserves document sets. Deterministic duplex planning and arbitrary page selection are Denali-verified. Selected-printer capability discovery is implemented; host UI verification and the full dialog are next.
+collate-off produces `111 222 333`; duplex preserves document sets. Deterministic duplex planning, arbitrary page selection, and capability-aware print settings are Denali-verified.
 
 ### Display: Native Wayland
 - Direct Wayland compositor access (via winit)
@@ -305,7 +305,7 @@ crates/
 - [ ] Multiple document merging
 - [ ] Print settings dialog
 - [ ] Systemd service lifecycle
-- [x] Downstream printer selection & basic submit (full dialog/planning remains)
+- [x] Downstream printer selection, capability-aware settings, and submission
 
 ### Environment Requirements
 - Debian/Ubuntu with systemd
@@ -323,7 +323,7 @@ crates/
 ## Implementation Status
 
 > **Reality check (2026-07-27):** focused Phase E checks still pass, and the
-> 27-test preview suite plus Phase F physical-printer checks pass on Denali.
+> 30-test preview suite plus Phase F physical-printer and UI checks pass on Denali.
 > A fresh Codex sandbox completed
 > `cargo check --workspace` with warnings and no errors, establishing the
 > workspace compiler baseline and verifying the rootless native dependency
@@ -338,7 +338,7 @@ crates/
 | `boomaga-core` | lib | Types complete; compiles | 2 | Plugin residue removed. `FileType` matches PDF/PWG Raster/JPEG. `parse_metadata()` is a TODO no-op. |
 | `boomaga-config` | lib | Complete | 3 | `ConfigManager` wired; plugin settings removed. |
 | `boomaga-layout-engine` | lib | Real & usable | 7 | N-up, booklet, transforms implemented; N-up partial-sheet behavior is tested. |
-| `boomaga-preview` | bin | Phases A/B/C/D/E complete; F in progress | 30 | Capability-aware settings await host UI verification. |
+| `boomaga-preview` | bin | Phases A/B/C/D/E/F complete | 30 | Capability-aware settings and downstream submission are Denali-verified. |
 | `boomaga-ipc` | lib | Transport wired | 3 | Versioned newline-delimited JSON framing is used by backend and preview; focused tests pass. |
 | `boomaga-ipp-backend` | bin | Scaffolded, partial | 1 | Queue/processor compile and emit ordered lifecycle notifications; real IPP parsing remains incomplete. |
 
@@ -369,11 +369,10 @@ crates/
   non-blocking downstream submission, and persistent result status
 
 #### Remaining Phase 2 Tasks
-- Host-verify the capability-aware Phase F print-settings panel
-- Add booklet controls (deferred from the accepted Phase E N-up scope)
+- Add booklet controls (deferred from the accepted Phase E/F scope)
 - Complete document-ready IPC and captured-document handoff
 
-### Preview host verification (Denali, updated 2026-07-27)
+### Preview host verification (Denali, updated 2026-07-29)
 
 ```bash
 cargo check -p boomaga-preview

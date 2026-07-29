@@ -1,12 +1,12 @@
 # Xilem Migration Plan
 
 > **Last reviewed against code:** 2026-07-27.
-> **Status:** Phases A through E are complete and Phase F is in progress on
-> `main`. Its first slice adds asynchronous CUPS discovery, `PrintOptions`
+> **Status:** Phases A through F are complete on `main`. Phase F adds
+> asynchronous CUPS discovery, `PrintOptions`
 > controls, and downstream `lp` submission, verified on Denali with an ET-3750.
 > The preview suite passes 30 tests. On 2026-07-27,
 > `cargo test --workspace` passed all 43 workspace tests with no failures.
-> Deterministic duplex planning and arbitrary page selection are Denali-verified; capability discovery awaits host UI verification and the full dialog remains.
+> Deterministic duplex planning, arbitrary page selection, and capability-aware controls are Denali-verified.
 
 ## Overview
 This document tracks replacing Druid with Xilem for the `boomaga-preview` GUI.
@@ -189,7 +189,7 @@ fn main() -> anyhow::Result<()> {
 - ℹ️ Booklet controls were not added to the user-accepted preview UI and remain a
   follow-up alongside print-options work.
 
-### Phase F: Print dialog & downstream submit — 🚧 IN PROGRESS
+### Phase F: Print dialog & downstream submit — ✅ DONE, HOST-VERIFIED (2026-07-29)
 - ✅ Asynchronous downstream destination discovery through `lpstat`.
 - ✅ Printer/copies/collate/duplex controls bound to `PrintOptions`.
 - ✅ Non-blocking PDF submission through `lp`, with persistent success/error status.
@@ -198,7 +198,7 @@ fn main() -> anyhow::Result<()> {
   copies remain one multi-copy job.
 - ✅ A pure `SubmissionPlan` maps document page count and `PrintOptions` to explicit jobs and selected-page batches for simplex, duplex, odd pages, arbitrary ranges, and N-up.
 - ✅ The worker uses the plan; Denali verified odd-page duplex, duplex N-up, and non-contiguous `1,3` output ordering.
-- 🚧 Capability discovery, capability-aware controls, and the compact settings panel are implemented; Denali UI verification remains.
+- ✅ Capability discovery, capability-aware controls, and the bordered settings panel are Denali/KDE/Wayland verified; see `vis-ver-results.txt`.
 - ℹ️ Sending sequential collated jobs to legacy Boomaga can crash that legacy
   application; validate physical output against the real downstream printer.
 
@@ -265,5 +265,5 @@ fn main() -> anyhow::Result<()> {
 4. ✅ **Phase C** — custom canvas + Poppler/Cairo renderer handoff, host-verified.
 5. ✅ **Phase D** — file-open UI, async rendering, worker delivery, and on-demand cache; host-verified on `main`.
 6. ✅ **Phase E** — N-up imposition + versioned Unix-socket IPC wiring; host-verified and merged to `main`.
-7. 🚧 **Phase F** — planning and arbitrary ranges verified; capability discovery implemented; host-verify it, then finish the full dialog.
+7. ✅ **Phase F** — planning, arbitrary ranges, capability-aware settings, and downstream submission are host-verified.
 8. 🚧 Phase G — testing, polish, docs.

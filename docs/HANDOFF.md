@@ -16,13 +16,13 @@
 # Boomaga-IPP — Session Handoff
 
 > **Last updated:** 2026-07-27 · **By:** Codex + Gary Scott Martin
-> **Session focus:** Phase F now has capability-aware controls and a compact print-settings panel; Denali UI verification remains.
+> **Session focus:** Phase F capability-aware controls and the bordered print-settings panel are Denali-verified; Phase F is complete.
 
 ---
 
 ## 1. TL;DR — where things stand
 <!-- One short paragraph. What just happened, what's the single most important next step. -->
-Xilem migration Phases A through E are complete and Phase F is in progress on `main`.
+Xilem migration Phases A through F are complete on `main`.
 The preview now discovers downstream CUPS printers asynchronously, binds destination,
 copies, collate, and duplex controls to `PrintOptions`, submits PDFs through `lp`, and
 keeps submission results visible. Denali verified real ET-3750 output: simplex
@@ -105,7 +105,7 @@ failures. Deterministic duplex planning and arbitrary page selection are Denali-
       `AppData` job status. Denali passed 7 layout, 3 IPC, 1 backend, and 19 preview tests.
       The feature branch was deleted after the fast-forward merge. At that milestone,
       booklet controls were deferred and Phase F had not yet started.
-- [~] **XILEM Phase F — FIRST SLICE IMPLEMENTED AND DENALI-VERIFIED (2026-07-27,
+- [x] **XILEM Phase F — COMPLETE AND DENALI-VERIFIED (2026-07-29,
       `8a2258c`..`d242e80`).** Added a persistent Xilem print worker, asynchronous
       `lpstat` destination discovery, `PrintOptions` controls for copies/collate/duplex,
       and non-blocking PDF submission through `lp`. Submission results persist in the
@@ -114,7 +114,7 @@ failures. Deterministic duplex planning and arbitrary page selection are Denali-
       document sets. Collated copies are sequential one-copy jobs; uncollated simplex
       is one multi-copy job. Sequential jobs can crash legacy Boomaga when it is used
       as the downstream destination; that is not a valid physical-printer test.
-      **Update:** `SubmissionPlan` and the `1-3,7,9` page-selection field are Denali-verified. Capability discovery, pending/unsupported behavior, and the compact settings panel are implemented; Denali UI verification is next.
+      **Update:** `SubmissionPlan`, arbitrary page selection, capability discovery, pending/unsupported behavior, and the bordered settings panel are Denali-verified. Evidence is recorded in `docs/vis-ver-results.txt`.
 - [x] **Codex startup context and native provisioning (`60b0900`, `1a9e04e`).**
       Replaced the `AGENTS.md` symlink with a real Codex instruction file that
       requires the seven context documents. Expanded the tracked Codex sandbox
@@ -125,7 +125,6 @@ failures. Deterministic duplex planning and arbitrary page selection are Denali-
 ## 3. Open questions / waiting on
 <!-- Decisions or inputs owned by the human, or external events being awaited. -->
 - Real IPP request parsing/response generation and captured-document handoff remain incomplete.
-- Phase F deterministic duplex ordering and arbitrary page selection are physically verified. Selected-printer duplex/collation discovery is implemented but awaits Denali UI verification; the full dialog remains open.
 - Booklet controls were outside the accepted Phase E N-up scope and remain open.
 
 ## 4. Key decisions & rationale (durable — don't re-litigate)
@@ -202,7 +201,7 @@ failures. Deterministic duplex planning and arbitrary page selection are Denali-
 <!-- Where the real detail lives. Keep this file thin; link out. -->
 - `README.md`, `CLAUDE.md` — project overview, build, inter-crate patterns, Claude Code setup.
 - `docs/PROJECT_PLAN.md` — architecture, phases, honest per-crate status.
-- `docs/XILEM_MIGRATION.md` — GUI migration plan (Phase F is in progress).
+- `docs/XILEM_MIGRATION.md` — GUI migration plan (Phases A through F are complete).
 - `docs/SW-Reqrmnts-Spec--latest.pdf`, `docs/User-Interface-Spec--latest.pdf` — current specs (v0.2.2).
 - `docs/uml/*.puml` — code-conformant PlantUML (now also embedded in spec Appendix C).
 - `openshell/create-bipp-sandbox.sh` + `openshell/README.md` — host-side sandbox
