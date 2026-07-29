@@ -268,3 +268,4 @@ fn main() -> anyhow::Result<()> {
 6. ✅ **Phase E** — N-up imposition + versioned Unix-socket IPC wiring; host-verified and merged to `main`.
 7. ✅ **Phase F** — planning, arbitrary ranges, capability-aware settings, and downstream submission are host-verified.
 8. 🚧 Phase G — testing, polish, docs.
+9. 📋 After Phase G, reconcile `docs/uml/*.puml` with the then-current configuration and implementation.

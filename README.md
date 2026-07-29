@@ -148,7 +148,7 @@ Contributions are welcome! Please see CONTRIBUTING.md for guidelines.
 - [x] Project foundation
 - [x] Core infrastructure
 - [ ] Complete IPP server implementation
-- [x] Xilem preview Phases A/B/C/D/E
+- [x] Xilem preview Phases A/B/C/D/E/F
 - [x] Layout engine
 - [x] Configuration management system
 - [x] PDF rendering foundation (Poppler)
@@ -165,7 +165,7 @@ Contributions are welcome! Please see CONTRIBUTING.md for guidelines.
 - [x] Phase E N-up imposition and job-status IPC
 - [ ] Complete document viewer implementation
 - [x] Navigation and zoom controls
-- [ ] Print dialog UI
+- [x] Print dialog UI
 
 ### Phase 3: Advanced Features (Weeks 9-12) - 📋 Planned
 - [ ] Systemd integration

@@ -126,6 +126,7 @@ failures and all doc-tests passed. Deterministic planning, arbitrary page select
 <!-- Decisions or inputs owned by the human, or external events being awaited. -->
 - Real IPP request parsing/response generation and captured-document handoff remain incomplete.
 - Booklet controls were outside the accepted Phase E N-up scope and remain open.
+- After Phase G closes, update the authoritative `docs/uml/*.puml` diagrams to the then-current configuration and implementation.
 
 ## 4. Key decisions & rationale (durable — don't re-litigate)
 <!-- Settled calls a future session should honor unless explicitly revisited. -->
