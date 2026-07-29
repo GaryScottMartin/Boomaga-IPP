@@ -84,6 +84,7 @@ pub struct AppData {
     pub print_state: PrintState,
     pub print_message: Option<String>,
     pub printer_capabilities: Option<(String, PrinterCapabilities)>,
+    pub printer_capabilities_pending: bool,
     /// Ids of jobs submitted this session.
     pub job_history: Vec<JobId>,
     /// Latest status received for each backend job.
@@ -113,6 +114,7 @@ impl Default for AppData {
             print_state: PrintState::Discovering,
             print_message: None,
             printer_capabilities: None,
+            printer_capabilities_pending: false,
             job_history: Vec::new(),
             job_statuses: HashMap::new(),
             ipc_state: IpcState::Disconnected,
@@ -161,6 +163,7 @@ impl AppData {
                 capabilities,
             } => {
                 if self.selected_printer_name() == Some(printer.as_str()) {
+                    self.printer_capabilities_pending = false;
                     if !capabilities.supports_duplex {
                         self.print_options.duplex = DuplexMode::None;
                     }
@@ -172,6 +175,7 @@ impl AppData {
             }
             PrintEvent::CapabilitiesFailed { printer, message } => {
                 if self.selected_printer_name() == Some(printer.as_str()) {
+                    self.printer_capabilities_pending = false;
                     self.printer_capabilities = None;
                     self.print_message =
                         Some(format!("Could not read {printer} capabilities: {message}"));
@@ -205,8 +209,10 @@ impl AppData {
 
     fn refresh_selected_printer_capabilities(&mut self) {
         self.printer_capabilities = None;
+        self.printer_capabilities_pending = false;
         if let Some(printer) = self.selected_printer_name().map(str::to_owned) {
-            self.send_print_command(PrintCommand::DiscoverCapabilities { printer });
+            self.printer_capabilities_pending =
+                self.send_print_command(PrintCommand::DiscoverCapabilities { printer });
         }
     }
 
@@ -226,6 +232,9 @@ impl AppData {
     }
 
     pub fn toggle_collate(&mut self) {
+        if self.printer_capabilities_pending {
+            return;
+        }
         if self
             .selected_printer_capabilities()
             .is_none_or(|caps| caps.supports_collate)
@@ -239,6 +248,9 @@ impl AppData {
     }
 
     pub fn cycle_duplex(&mut self) {
+        if self.printer_capabilities_pending {
+            return;
+        }
         if self
             .selected_printer_capabilities()
             .is_some_and(|caps| !caps.supports_duplex)
@@ -792,5 +804,96 @@ mod tests {
         let (latest_id, latest_status) = data.latest_job_status().unwrap();
         assert_eq!(latest_id.to_string(), job_id.to_string());
         assert_eq!(latest_status, JobStatus::Processing);
+    }
+
+    #[test]
+    fn capability_discovery_marks_controls_pending_and_targets_selected_printer() {
+        let mut data = AppData {
+            printers: vec!["Office".into(), "Photo".into()],
+            ..AppData::default()
+        };
+        let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
+        data.install_print_worker(sender);
+        assert!(matches!(
+            receiver.try_recv().unwrap(),
+            PrintCommand::Discover
+        ));
+
+        data.handle_print_event(PrintEvent::Printers(data.printers.clone()));
+        assert!(data.printer_capabilities_pending);
+        assert!(matches!(
+            receiver.try_recv().unwrap(),
+            PrintCommand::DiscoverCapabilities { printer } if printer == "Office"
+        ));
+
+        data.select_next_printer();
+        assert!(data.printer_capabilities_pending);
+        assert!(matches!(
+            receiver.try_recv().unwrap(),
+            PrintCommand::DiscoverCapabilities { printer } if printer == "Photo"
+        ));
+    }
+
+    #[test]
+    fn capability_controls_wait_for_discovery_and_enforce_unsupported_options() {
+        let mut data = AppData {
+            printers: vec!["Office".into()],
+            printer_capabilities_pending: true,
+            ..AppData::default()
+        };
+
+        data.toggle_collate();
+        data.cycle_duplex();
+        assert!(!data.print_options.collate);
+        assert_eq!(data.print_options.duplex, DuplexMode::None);
+
+        data.print_options.collate = true;
+        data.print_options.duplex = DuplexMode::LongEdge;
+        data.handle_print_event(PrintEvent::Capabilities {
+            printer: "Office".into(),
+            capabilities: PrinterCapabilities::default(),
+        });
+        assert!(!data.printer_capabilities_pending);
+        assert!(!data.print_options.collate);
+        assert_eq!(data.print_options.duplex, DuplexMode::None);
+
+        data.toggle_collate();
+        data.cycle_duplex();
+        assert!(!data.print_options.collate);
+        assert_eq!(data.print_options.duplex, DuplexMode::None);
+    }
+
+    #[test]
+    fn stale_capability_results_do_not_change_selected_printer_options() {
+        let capabilities = PrinterCapabilities {
+            supports_duplex: true,
+            supports_collate: true,
+        };
+        let mut data = AppData {
+            printers: vec!["Office".into(), "Photo".into()],
+            selected_printer: 1,
+            printer_capabilities_pending: true,
+            print_options: PrintOptions {
+                collate: true,
+                duplex: DuplexMode::LongEdge,
+                ..PrintOptions::default()
+            },
+            ..AppData::default()
+        };
+
+        data.handle_print_event(PrintEvent::Capabilities {
+            printer: "Office".into(),
+            capabilities: PrinterCapabilities::default(),
+        });
+        assert!(data.printer_capabilities_pending);
+        assert!(data.print_options.collate);
+        assert_eq!(data.print_options.duplex, DuplexMode::LongEdge);
+
+        data.handle_print_event(PrintEvent::Capabilities {
+            printer: "Photo".into(),
+            capabilities,
+        });
+        assert_eq!(data.selected_printer_capabilities(), Some(capabilities));
+        assert!(!data.printer_capabilities_pending);
     }
 }

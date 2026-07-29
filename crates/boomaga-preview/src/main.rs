@@ -71,6 +71,25 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
         .unwrap_or("No printer")
         .to_owned();
     let copies = format!("Copies: {}", data.print_options.copies);
+    let capability_status = if data.printer_capabilities_pending {
+        "Checking printer capabilities…".to_owned()
+    } else if let Some(capabilities) = data.selected_printer_capabilities() {
+        format!(
+            "Capabilities: {} · {}",
+            if capabilities.supports_duplex {
+                "duplex"
+            } else {
+                "simplex only"
+            },
+            if capabilities.supports_collate {
+                "collation"
+            } else {
+                "no collation"
+            }
+        )
+    } else {
+        "Capabilities unavailable".to_owned()
+    };
     let capabilities = data.selected_printer_capabilities();
     let collate = format!(
         "Collate: {}",
@@ -94,13 +113,19 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
             }
         }
     );
-    let print_toolbar = flex(
+    let printer_row = flex(
         Axis::Horizontal,
         (
             button(label(format!("Printer: {printer}")), |d: &mut AppData| {
                 d.select_next_printer()
             }),
             button(label("Refresh"), |d: &mut AppData| d.refresh_printers()),
+            label(capability_status),
+        ),
+    );
+    let options_row = flex(
+        Axis::Horizontal,
+        (
             button(label("− copy"), |d: &mut AppData| d.decrement_copies()),
             button(label(copies), |_: &mut AppData| {}),
             button(label("+ copy"), |d: &mut AppData| d.increment_copies()),
@@ -117,6 +142,12 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
             button(label("Print"), |d: &mut AppData| d.submit_print_job()),
         ),
     );
+    let print_panel = sized_box(flex(
+        Axis::Vertical,
+        (label("Print settings"), printer_row, options_row),
+    ))
+    .expand_width()
+    .border(Color::from_rgb8(96, 96, 96), 1.0);
 
     let canvas = pdf_canvas(
         data.current_canvas_images(),
@@ -142,7 +173,7 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
     let content = sized_box(
         flex(
             Axis::Vertical,
-            (toolbar, imposition_toolbar, print_toolbar, canvas.flex(1.0)),
+            (toolbar, imposition_toolbar, print_panel, canvas.flex(1.0)),
         )
         .must_fill_major_axis(true),
     )

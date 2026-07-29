@@ -88,7 +88,7 @@ document set in both modes. On 2026-07-26, a fresh Codex sandbox completed
 `cargo check --workspace` with warnings and no errors, establishing the
 workspace-wide compiler baseline and verifying the provisioned GLib, Cairo,
 Poppler GLib, QPDF, and libclang dependency stack. On 2026-07-27,
-`cargo test --workspace` also passed all 43 tests with no failures. Phase F deterministic duplex planning and arbitrary page selection are Denali-verified. The capability-aware print dialog remains incomplete. Booklet controls remain a follow-up.
+`cargo test --workspace` also passed all 43 tests with no failures. Phase F deterministic duplex planning and arbitrary page selection are Denali-verified. Capability-aware print settings are implemented and await Denali UI verification. Booklet controls remain a follow-up.
 
 Phase E verification commands used on Denali:
 

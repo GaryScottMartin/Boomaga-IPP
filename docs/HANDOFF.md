@@ -16,7 +16,7 @@
 # Boomaga-IPP — Session Handoff
 
 > **Last updated:** 2026-07-27 · **By:** Codex + Gary Scott Martin
-> **Session focus:** Phase F deterministic duplex planning and arbitrary page selection are Denali-verified; selected-printer capability discovery is implemented and awaits Denali UI verification.
+> **Session focus:** Phase F now has capability-aware controls and a compact print-settings panel; Denali UI verification remains.
 
 ---
 
@@ -27,11 +27,11 @@ The preview now discovers downstream CUPS printers asynchronously, binds destina
 copies, collate, and duplex controls to `PrintOptions`, submits PDFs through `lp`, and
 keeps submission results visible. Denali verified real ET-3750 output: simplex
 collate-on is `123 123 123`, collate-off is `111 222 333`, and duplex preserves
-complete document sets in both modes. The focused preview suite passes 27 tests;
+complete document sets in both modes. The focused preview suite passes 30 tests;
 the prior 7 layout-engine, 3 IPC, and 1 backend focused baselines still stand. A
 2026-07-26 Codex sandbox completed `cargo check --workspace` with warnings and no
 errors; on 2026-07-27, `cargo test --workspace` passed all 43 tests with no
-failures. Deterministic duplex planning and arbitrary page selection are Denali-verified. The preview now discovers selected-printer duplex and collation capabilities asynchronously; host verification and the full dialog layout are next. Booklet UI remains deferred.
+failures. Deterministic duplex planning and arbitrary page selection are Denali-verified. Capability-aware print settings are implemented; Denali UI verification is next. Booklet UI remains deferred.
 
 ## 2. Active threads / in progress
 <!-- The heart of the file. Each item: what, state, concrete next action. Delete when done. -->
@@ -114,7 +114,7 @@ failures. Deterministic duplex planning and arbitrary page selection are Denali-
       document sets. Collated copies are sequential one-copy jobs; uncollated simplex
       is one multi-copy job. Sequential jobs can crash legacy Boomaga when it is used
       as the downstream destination; that is not a valid physical-printer test.
-      **Update:** `SubmissionPlan` and the `1-3,7,9` page-selection field are Denali-verified. Selected-printer duplex/collation discovery via `lpoptions` is implemented (`3f79bed`); Denali UI verification and the full dialog layout are next.
+      **Update:** `SubmissionPlan` and the `1-3,7,9` page-selection field are Denali-verified. Capability discovery, pending/unsupported behavior, and the compact settings panel are implemented; Denali UI verification is next.
 - [x] **Codex startup context and native provisioning (`60b0900`, `1a9e04e`).**
       Replaced the `AGENTS.md` symlink with a real Codex instruction file that
       requires the seven context documents. Expanded the tracked Codex sandbox

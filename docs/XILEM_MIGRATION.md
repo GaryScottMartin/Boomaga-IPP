@@ -4,7 +4,7 @@
 > **Status:** Phases A through E are complete and Phase F is in progress on
 > `main`. Its first slice adds asynchronous CUPS discovery, `PrintOptions`
 > controls, and downstream `lp` submission, verified on Denali with an ET-3750.
-> The preview suite passes 27 tests. On 2026-07-27,
+> The preview suite passes 30 tests. On 2026-07-27,
 > `cargo test --workspace` passed all 43 workspace tests with no failures.
 > Deterministic duplex planning and arbitrary page selection are Denali-verified; capability discovery awaits host UI verification and the full dialog remains.
 
@@ -198,7 +198,7 @@ fn main() -> anyhow::Result<()> {
   copies remain one multi-copy job.
 - ✅ A pure `SubmissionPlan` maps document page count and `PrintOptions` to explicit jobs and selected-page batches for simplex, duplex, odd pages, arbitrary ranges, and N-up.
 - ✅ The worker uses the plan; Denali verified odd-page duplex, duplex N-up, and non-contiguous `1,3` output ordering.
-- 🚧 Selected-printer duplex/collation discovery via `lpoptions` is implemented; Denali UI verification and the full dialog layout remain.
+- 🚧 Capability discovery, capability-aware controls, and the compact settings panel are implemented; Denali UI verification remains.
 - ℹ️ Sending sequential collated jobs to legacy Boomaga can crash that legacy
   application; validate physical output against the real downstream printer.
 
