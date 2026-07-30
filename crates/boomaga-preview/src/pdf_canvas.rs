@@ -2,9 +2,10 @@
 
 use xilem::core::{MessageContext, MessageResult, Mut, View, ViewMarker};
 use xilem::masonry::accesskit::{Node, Role};
+use xilem::masonry::core::keyboard::{Key, NamedKey};
 use xilem::masonry::core::{
-    AccessCtx, BoxConstraints, ChildrenIds, LayoutCtx, NoAction, PaintCtx, PropertiesMut,
-    PropertiesRef, RegisterCtx, Widget, WidgetId, WidgetMut,
+    AccessCtx, BoxConstraints, ChildrenIds, EventCtx, LayoutCtx, PaintCtx, PointerEvent,
+    PropertiesMut, PropertiesRef, RegisterCtx, TextEvent, Widget, WidgetId, WidgetMut,
 };
 use xilem::masonry::kurbo::{Affine, Size};
 use xilem::masonry::peniko::{Color, Fill, ImageBrush, ImageFormat};
@@ -12,6 +13,8 @@ use xilem::masonry::properties::ObjectFit;
 use xilem::masonry::vello::peniko::{ImageAlphaType, ImageData};
 use xilem::masonry::vello::Scene;
 use xilem::{Pod, ViewCtx};
+
+use crate::app::{AppData, PreviewShortcut};
 
 /// A rendered PDF page ready for Masonry/Vello painting.
 #[derive(Clone, PartialEq)]
@@ -133,7 +136,54 @@ impl PdfCanvasWidget {
 }
 
 impl Widget for PdfCanvasWidget {
-    type Action = NoAction;
+    type Action = PreviewShortcut;
+
+    fn on_pointer_event(
+        &mut self,
+        ctx: &mut EventCtx<'_>,
+        _props: &mut PropertiesMut<'_>,
+        event: &PointerEvent,
+    ) {
+        if matches!(event, PointerEvent::Down(_)) {
+            ctx.request_focus();
+        }
+    }
+
+    fn on_text_event(
+        &mut self,
+        ctx: &mut EventCtx<'_>,
+        _props: &mut PropertiesMut<'_>,
+        event: &TextEvent,
+    ) {
+        let TextEvent::Keyboard(event) = event else {
+            return;
+        };
+        if !event.state.is_down() || event.repeat {
+            return;
+        }
+
+        let shortcut = match &event.key {
+            Key::Character(key) if key == " " => Some(PreviewShortcut::NextPage),
+            Key::Named(NamedKey::ArrowRight) => Some(PreviewShortcut::NextPage),
+            Key::Character(key) if key.eq_ignore_ascii_case("n") => Some(PreviewShortcut::NextPage),
+            Key::Named(NamedKey::ArrowLeft) => Some(PreviewShortcut::PreviousPage),
+            Key::Character(key) if key.eq_ignore_ascii_case("p") => {
+                Some(PreviewShortcut::PreviousPage)
+            }
+            Key::Character(key) if key == "+" || key == "=" => Some(PreviewShortcut::ZoomIn),
+            Key::Character(key) if key == "-" => Some(PreviewShortcut::ZoomOut),
+            Key::Character(key) if key == "0" => Some(PreviewShortcut::ResetZoom),
+            _ => None,
+        };
+        if let Some(shortcut) = shortcut {
+            ctx.submit_action::<Self::Action>(shortcut);
+            ctx.set_handled();
+        }
+    }
+
+    fn accepts_focus(&self) -> bool {
+        true
+    }
 
     fn register_children(&mut self, _ctx: &mut RegisterCtx<'_>) {}
 
@@ -227,18 +277,20 @@ pub fn pdf_canvas(
 
 impl ViewMarker for PdfCanvas {}
 
-impl<State, Action> View<State, Action, ViewCtx> for PdfCanvas {
+impl<Action> View<AppData, Action, ViewCtx> for PdfCanvas {
     type Element = Pod<PdfCanvasWidget>;
     type ViewState = ();
 
-    fn build(&self, ctx: &mut ViewCtx, _: &mut State) -> (Self::Element, Self::ViewState) {
+    fn build(&self, ctx: &mut ViewCtx, _: &mut AppData) -> (Self::Element, Self::ViewState) {
         (
-            ctx.create_pod(PdfCanvasWidget::new(
-                self.images.clone(),
-                self.pages_per_sheet,
-                self.vertical_fill,
-                self.zoom,
-            )),
+            ctx.with_action_widget(|ctx| {
+                ctx.create_pod(PdfCanvasWidget::new(
+                    self.images.clone(),
+                    self.pages_per_sheet,
+                    self.vertical_fill,
+                    self.zoom,
+                ))
+            }),
             (),
         )
     }
@@ -249,7 +301,7 @@ impl<State, Action> View<State, Action, ViewCtx> for PdfCanvas {
         (): &mut Self::ViewState,
         _: &mut ViewCtx,
         mut element: Mut<'_, Self::Element>,
-        _: &mut State,
+        _: &mut AppData,
     ) {
         if self.images != prev.images
             || self.pages_per_sheet != prev.pages_per_sheet
@@ -280,10 +332,18 @@ impl<State, Action> View<State, Action, ViewCtx> for PdfCanvas {
         (): &mut Self::ViewState,
         message: &mut MessageContext,
         _: Mut<'_, Self::Element>,
-        _: &mut State,
+        app_state: &mut AppData,
     ) -> MessageResult<Action> {
-        tracing::error!(?message, "unexpected message delivered to PdfCanvas");
-        MessageResult::Stale
+        match message.take_message::<PreviewShortcut>() {
+            Some(shortcut) => {
+                app_state.apply_shortcut(*shortcut);
+                MessageResult::Nop
+            }
+            None => {
+                tracing::error!(?message, "unexpected message delivered to PdfCanvas");
+                MessageResult::Stale
+            }
+        }
     }
 }
 

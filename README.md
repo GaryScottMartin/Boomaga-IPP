@@ -89,6 +89,15 @@ boomaga-ipp-backend --socket /tmp/boomaga.sock --port 631
 boomaga-preview [--debug] [/path/to/document.pdf]
 ```
 
+### Preview keyboard shortcuts
+
+Click the PDF preview (or move focus to it with Tab), then use:
+
+- `Right Arrow`, `Space`, or `N`: next sheet
+- `Left Arrow` or `P`: previous sheet
+- `+` / `-`: zoom in / out
+- `0`: reset zoom to 100%
+
 ## Project Status
 
 The six-crate workspace remains under active development. Xilem preview migration

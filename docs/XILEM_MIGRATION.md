@@ -203,8 +203,12 @@ fn main() -> anyhow::Result<()> {
   application; validate physical output against the real downstream printer.
 
 ### Phase G: Testing, polish, docs
-- Unit tests for navigation/zoom/state; keyboard shortcuts; accessibility.
-- Update README/CLAUDE; remove any lingering Druid references.
+- ✅ Added typed, unit-tested shortcut state transitions for Left/Right, Space/N/P/+/−/0.
+- ✅ Made the accessible PDF preview focusable and keyboard-operable; clicking it
+  requests focus and its AccessKit image label remains exposed.
+- ✅ Confirmed there are no Druid dependencies or dead `_xilem.rs` duplicates.
+  Remaining Druid text is intentional migration history.
+- 🚧 Interactive Wayland keyboard/accessibility verification remains before Phase G closes.
 
 ## Druid → Xilem concept mapping (corrected)
 
@@ -228,7 +232,7 @@ fn main() -> anyhow::Result<()> {
 - [ ] Add booklet controls and preview mode
 - [x] Select downstream printer and submit
 - [ ] Toolbar + menu
-- [ ] Keyboard shortcuts (Space, N, P, +/-, 0)
+- [x] Keyboard shortcuts (Space, N, P, +/-, 0)
 
 ### Technical
 - [x] `cargo build` succeeds with **no Druid references** and a coherent Xilem tree
@@ -239,7 +243,7 @@ fn main() -> anyhow::Result<()> {
 ### Code Quality
 - [x] Uses the real Xilem 0.4 view-based API (verified against docs.rs), not renamed Druid
 - [ ] Test coverage > 70% for state logic
-- [ ] Clear, documented modules; no dead `_xilem.rs` duplicates
+- [x] Clear, documented modules; no dead `_xilem.rs` duplicates
 
 ## Risk Assessment
 

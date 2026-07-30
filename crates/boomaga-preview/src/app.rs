@@ -50,6 +50,16 @@ pub enum PrintState {
     Error,
 }
 
+/// Keyboard commands accepted by the focused preview canvas.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PreviewShortcut {
+    NextPage,
+    PreviousPage,
+    ZoomIn,
+    ZoomOut,
+    ResetZoom,
+}
+
 /// Preview application state.
 pub struct AppData {
     /// Path of the document being previewed, if any.
@@ -131,6 +141,17 @@ impl Default for AppData {
 }
 
 impl AppData {
+    /// Apply a keyboard command delivered by the preview canvas.
+    pub fn apply_shortcut(&mut self, shortcut: PreviewShortcut) {
+        match shortcut {
+            PreviewShortcut::NextPage => self.next_page(),
+            PreviewShortcut::PreviousPage => self.previous_page(),
+            PreviewShortcut::ZoomIn => self.zoom_in(),
+            PreviewShortcut::ZoomOut => self.zoom_out(),
+            PreviewShortcut::ResetZoom => self.reset_zoom(),
+        }
+    }
+
     pub fn install_print_worker(&mut self, sender: PrintSender) {
         self.print_sender = Some(sender);
         self.refresh_printers();
@@ -677,6 +698,27 @@ mod tests {
         assert_eq!(data.zoom, 4.0);
 
         data.reset_zoom();
+        assert_eq!(data.zoom, 1.0);
+    }
+
+    #[test]
+    fn preview_shortcuts_drive_navigation_and_zoom() {
+        let mut data = AppData {
+            document: Some(document_with_pages(3)),
+            ..AppData::default()
+        };
+
+        data.apply_shortcut(PreviewShortcut::NextPage);
+        assert_eq!(data.current_page, 1);
+        data.apply_shortcut(PreviewShortcut::PreviousPage);
+        assert_eq!(data.current_page, 0);
+
+        data.apply_shortcut(PreviewShortcut::ZoomIn);
+        assert!(data.zoom > 1.0);
+        data.apply_shortcut(PreviewShortcut::ZoomOut);
+        assert!((data.zoom - 1.0).abs() < f64::EPSILON);
+        data.apply_shortcut(PreviewShortcut::ZoomIn);
+        data.apply_shortcut(PreviewShortcut::ResetZoom);
         assert_eq!(data.zoom, 1.0);
     }
 
