@@ -32,3 +32,6 @@ rfd = { workspace = true }
 xilem = { workspace = true }
 kurbo = { workspace = true }
 winit = { workspace = true }
+
+[dev-dependencies]
+masonry = { version = "0.4", features = ["testing"] }

@@ -350,6 +350,25 @@ impl View<AppData, (), ViewCtx> for PdfCanvas {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use xilem::masonry::core::NewWidget;
+    use xilem::masonry::testing::TestHarness;
+    use xilem::masonry::theme::default_property_set;
+
+    #[test]
+    fn focused_canvas_emits_shortcuts_from_real_keyboard_events() {
+        let widget = NewWidget::new(PdfCanvasWidget::new(Vec::new(), 1, false, 1.0));
+        let mut harness = TestHarness::create(default_property_set(), widget);
+        let canvas_id = harness.root_id();
+
+        harness.mouse_click_on(canvas_id);
+        assert_eq!(harness.focused_widget_id(), Some(canvas_id));
+
+        harness.process_text_event(TextEvent::key_down(Key::Named(NamedKey::ArrowRight)));
+        assert_eq!(
+            harness.pop_action::<PreviewShortcut>(),
+            Some((PreviewShortcut::NextPage, canvas_id))
+        );
+    }
 
     #[test]
     fn rejects_incorrect_pixel_buffer_length() {
