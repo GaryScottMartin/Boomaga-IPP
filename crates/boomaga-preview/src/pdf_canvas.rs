@@ -277,7 +277,7 @@ pub fn pdf_canvas(
 
 impl ViewMarker for PdfCanvas {}
 
-impl<Action> View<AppData, Action, ViewCtx> for PdfCanvas {
+impl View<AppData, (), ViewCtx> for PdfCanvas {
     type Element = Pod<PdfCanvasWidget>;
     type ViewState = ();
 
@@ -333,11 +333,11 @@ impl<Action> View<AppData, Action, ViewCtx> for PdfCanvas {
         message: &mut MessageContext,
         _: Mut<'_, Self::Element>,
         app_state: &mut AppData,
-    ) -> MessageResult<Action> {
+    ) -> MessageResult<()> {
         match message.take_message::<PreviewShortcut>() {
             Some(shortcut) => {
                 app_state.apply_shortcut(*shortcut);
-                MessageResult::Nop
+                MessageResult::Action(())
             }
             None => {
                 tracing::error!(?message, "unexpected message delivered to PdfCanvas");
