@@ -1,29 +1,33 @@
-
-package "boomaga-preview (Xilem 0.4)" {
-  class AppData {
-    +document_path: Option<PathBuf>
-    +document: Option<Document>
-    +current_page: usize
-    +rendered_pages: Vec<Option<CanvasImage>>
-    +load_state: LoadState
-    +zoom: f64
-    +fill_order: FillOrder
-    +print_options: PrintOptions
-    +page_range_input: String
-    +printers: Vec<String>
-    +print_state: PrintState
-    +job_statuses: HashMap<String, JobStatus>
-    +ipc_state: IpcState
-    +apply_shortcut(PreviewShortcut)
-    +handle_renderer_event(RendererEvent)
-    +handle_ipc_event(IpcEvent)
     +handle_print_event(PrintEvent)
   }
-  enum PreviewShortcut { NextPage; PreviousPage; ZoomIn; ZoomOut; ResetZoom }
-  enum LoadState { Idle; Loading; Ready; Error }
-  enum FillOrder { Horizontal; Vertical }
-  enum IpcState { Connecting; Connected; Disconnected }
-  enum PrintState { Discovering; Ready; Submitting; Error }
+  enum PreviewShortcut {
+    NextPage
+    PreviousPage
+    ZoomIn
+    ZoomOut
+    ResetZoom
+  }
+  enum LoadState {
+    Idle
+    Loading
+    Ready
+    Error
+  }
+  enum FillOrder {
+    Horizontal
+    Vertical
+  }
+  enum IpcState {
+    Connecting
+    Connected
+    Disconnected
+  }
+  enum PrintState {
+    Discovering
+    Ready
+    Submitting
+    Error
+  }
 
   class PdfCanvasWidget {
     -images: Vec<CanvasImage>
@@ -37,16 +41,7 @@ package "boomaga-preview (Xilem 0.4)" {
     +load_document(Path): Result<Document>
     +render_page(usize): Result<CanvasImage>
   }
-  enum RendererCommand { LoadDocument; RenderPage }
-  enum RendererEvent { DocumentLoaded; PageRendered; Failed }
-  enum IpcCommand { Connect }
-  enum IpcEvent { Message; Disconnected }
-  class PrinterCapabilities { +supports_duplex: bool; +supports_collate: bool }
-  enum PrintCommand { Discover; DiscoverCapabilities; Submit }
-  enum PrintEvent { Printers; Capabilities; CapabilitiesFailed; Submitted; Failed }
-  class SubmissionPlan {
-    +jobs: Vec<SubmissionJob>
-    +new(page_count, options): Result<Self>
+  enum RendererCommand {
+    LoadDocument
+    RenderPage
   }
-  class SubmissionJob { +copies: u32; +pages: PageRange }
-}

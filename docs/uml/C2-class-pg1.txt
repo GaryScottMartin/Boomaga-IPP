@@ -30,3 +30,19 @@ package "boomaga-core" {
     +from_pages(&[usize]): Self
     +pages(page_count): Result<Vec<usize>>
   }
+  class PrintOptions {
+    +copies: u32
+    +collate: bool
+    +duplex: DuplexMode
+    +orientation: Orientation
+    +page_range: Option<PageRange>
+    +pages_per_sheet: PagesPerSheet
+    +scale: f64
+    +margins: MarginMode
+    +validate(): Result
+  }
+  class JobMetadata {
+    +job_id: JobId
+    +status: JobStatus
+    +priority: JobPriority
+    +pages: Vec<PageInfo>

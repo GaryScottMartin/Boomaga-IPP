@@ -17,8 +17,13 @@ package "boomaga-ipp-backend" {
     +push(PrintJobRequest): Result
     +pop(): Result<PrintJobRequest>
   }
-  class IppRequest { +operation_id: IppOperation; +data: Vec<u8> }
-  class IppResponse { +status_code: IppStatusCode }
+  class IppRequest {
+    +operation_id: IppOperation
+    +data: Vec<u8>
+  }
+  class IppResponse {
+    +status_code: IppStatusCode
+  }
   enum IppOperation
   enum IppStatusCode
 }

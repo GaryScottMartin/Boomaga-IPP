@@ -47,14 +47,50 @@ package "boomaga-core" {
     +priority: JobPriority
     +pages: Vec<PageInfo>
   }
-  class JobId { +0: Uuid }
-  enum JobStatus { Queued; Processing; Completed; Cancelled; Failed; Held; Aborted }
-  enum JobPriority { Low; Normal; High; Urgent }
-  enum PageContents { Vector; Raster; Pdf }
-  enum FileType { Pdf; PwgRaster; Jpeg }
-  enum DuplexMode { None; LongEdge; ShortEdge }
-  enum Orientation { Portrait; Landscape }
-  enum PagesPerSheet { One; Two; Four; Six; Eight }
+  class JobId {
+    +0: Uuid
+  }
+  enum JobStatus {
+    Queued
+    Processing
+    Completed
+    Cancelled
+    Failed
+    Held
+    Aborted
+  }
+  enum JobPriority {
+    Low
+    Normal
+    High
+    Urgent
+  }
+  enum PageContents {
+    Vector
+    Raster
+    Pdf
+  }
+  enum FileType {
+    Pdf
+    PwgRaster
+    Jpeg
+  }
+  enum DuplexMode {
+    None
+    LongEdge
+    ShortEdge
+  }
+  enum Orientation {
+    Portrait
+    Landscape
+  }
+  enum PagesPerSheet {
+    One
+    Two
+    Four
+    Six
+    Eight
+  }
   enum MarginMode
 }
 
@@ -76,8 +112,13 @@ package "boomaga-ipp-backend" {
     +push(PrintJobRequest): Result
     +pop(): Result<PrintJobRequest>
   }
-  class IppRequest { +operation_id: IppOperation; +data: Vec<u8> }
-  class IppResponse { +status_code: IppStatusCode }
+  class IppRequest {
+    +operation_id: IppOperation
+    +data: Vec<u8>
+  }
+  class IppResponse {
+    +status_code: IppStatusCode
+  }
   enum IppOperation
   enum IppStatusCode
 }
@@ -111,7 +152,14 @@ package "boomaga-ipc" {
     +payload: MessagePayload
     +timestamp: i64
   }
-  enum MessagePayload { PrintJobRequest; PrintJobStatus; DocumentReady; PageRendered; PrinterInfo; Custom }
+  enum MessagePayload {
+    PrintJobRequest
+    PrintJobStatus
+    DocumentReady
+    PageRendered
+    PrinterInfo
+    Custom
+  }
   class NotificationServer {
     -socket_path: PathBuf
     +bind(path): (Self, NotificationSender)
@@ -143,11 +191,34 @@ package "boomaga-preview (Xilem 0.4)" {
     +handle_ipc_event(IpcEvent)
     +handle_print_event(PrintEvent)
   }
-  enum PreviewShortcut { NextPage; PreviousPage; ZoomIn; ZoomOut; ResetZoom }
-  enum LoadState { Idle; Loading; Ready; Error }
-  enum FillOrder { Horizontal; Vertical }
-  enum IpcState { Connecting; Connected; Disconnected }
-  enum PrintState { Discovering; Ready; Submitting; Error }
+  enum PreviewShortcut {
+    NextPage
+    PreviousPage
+    ZoomIn
+    ZoomOut
+    ResetZoom
+  }
+  enum LoadState {
+    Idle
+    Loading
+    Ready
+    Error
+  }
+  enum FillOrder {
+    Horizontal
+    Vertical
+  }
+  enum IpcState {
+    Connecting
+    Connected
+    Disconnected
+  }
+  enum PrintState {
+    Discovering
+    Ready
+    Submitting
+    Error
+  }
 
   class PdfCanvasWidget {
     -images: Vec<CanvasImage>
@@ -161,18 +232,46 @@ package "boomaga-preview (Xilem 0.4)" {
     +load_document(Path): Result<Document>
     +render_page(usize): Result<CanvasImage>
   }
-  enum RendererCommand { LoadDocument; RenderPage }
-  enum RendererEvent { DocumentLoaded; PageRendered; Failed }
-  enum IpcCommand { Connect }
-  enum IpcEvent { Message; Disconnected }
-  class PrinterCapabilities { +supports_duplex: bool; +supports_collate: bool }
-  enum PrintCommand { Discover; DiscoverCapabilities; Submit }
-  enum PrintEvent { Printers; Capabilities; CapabilitiesFailed; Submitted; Failed }
+  enum RendererCommand {
+    LoadDocument
+    RenderPage
+  }
+  enum RendererEvent {
+    DocumentLoaded
+    PageRendered
+    Failed
+  }
+  enum IpcCommand {
+    Connect
+  }
+  enum IpcEvent {
+    Message
+    Disconnected
+  }
+  class PrinterCapabilities {
+    +supports_duplex: bool
+    +supports_collate: bool
+  }
+  enum PrintCommand {
+    Discover
+    DiscoverCapabilities
+    Submit
+  }
+  enum PrintEvent {
+    Printers
+    Capabilities
+    CapabilitiesFailed
+    Submitted
+    Failed
+  }
   class SubmissionPlan {
     +jobs: Vec<SubmissionJob>
     +new(page_count, options): Result<Self>
   }
-  class SubmissionJob { +copies: u32; +pages: PageRange }
+  class SubmissionJob {
+    +copies: u32
+    +pages: PageRange
+  }
 }
 
 package "boomaga-config" {

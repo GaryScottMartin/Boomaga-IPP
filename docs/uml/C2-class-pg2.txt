@@ -1,27 +1,47 @@
-  class PrintOptions {
-    +copies: u32
-    +collate: bool
-    +duplex: DuplexMode
-    +orientation: Orientation
-    +page_range: Option<PageRange>
-    +pages_per_sheet: PagesPerSheet
-    +scale: f64
-    +margins: MarginMode
-    +validate(): Result
   }
-  class JobMetadata {
-    +job_id: JobId
-    +status: JobStatus
-    +priority: JobPriority
-    +pages: Vec<PageInfo>
+  class JobId {
+    +0: Uuid
   }
-  class JobId { +0: Uuid }
-  enum JobStatus { Queued; Processing; Completed; Cancelled; Failed; Held; Aborted }
-  enum JobPriority { Low; Normal; High; Urgent }
-  enum PageContents { Vector; Raster; Pdf }
-  enum FileType { Pdf; PwgRaster; Jpeg }
-  enum DuplexMode { None; LongEdge; ShortEdge }
-  enum Orientation { Portrait; Landscape }
-  enum PagesPerSheet { One; Two; Four; Six; Eight }
+  enum JobStatus {
+    Queued
+    Processing
+    Completed
+    Cancelled
+    Failed
+    Held
+    Aborted
+  }
+  enum JobPriority {
+    Low
+    Normal
+    High
+    Urgent
+  }
+  enum PageContents {
+    Vector
+    Raster
+    Pdf
+  }
+  enum FileType {
+    Pdf
+    PwgRaster
+    Jpeg
+  }
+  enum DuplexMode {
+    None
+    LongEdge
+    ShortEdge
+  }
+  enum Orientation {
+    Portrait
+    Landscape
+  }
+  enum PagesPerSheet {
+    One
+    Two
+    Four
+    Six
+    Eight
+  }
   enum MarginMode
 }

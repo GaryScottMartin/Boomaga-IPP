@@ -1,3 +1,20 @@
+PrintJobRequest --> PrintOptions
+PrintJobRequest --> FileType
+PrintOptions --> PageRange
+PrintOptions --> DuplexMode
+PrintOptions --> Orientation
+PrintOptions --> PagesPerSheet
+PrintOptions --> MarginMode
+JobMetadata --> JobId
+JobMetadata --> JobStatus
+JobMetadata --> JobPriority
+IppServer o--> JobProcessor
+JobProcessor o--> JobQueue
+JobProcessor --> NotificationServer : sender
+JobQueue --> PrintJobRequest
+IppRequest --> IppOperation
+IppResponse --> IppStatusCode
+NotificationServer --> Message
 UnixSocketTransport --> Message
 NUpCalculator --> NUpLayout
 NUpLayout "1" *-- "*" PageResult
