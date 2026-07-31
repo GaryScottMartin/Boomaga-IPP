@@ -15,22 +15,24 @@
 
 # Boomaga-IPP — Session Handoff
 
-> **Last updated:** 2026-07-29 · **By:** Codex + Gary Scott Martin
-> **Session focus:** Phase F capability-aware controls and the bordered print-settings panel are Denali-verified; Phase F is complete.
+> **Last updated:** 2026-07-31 · **By:** Codex + Gary Scott Martin
+> **Session focus:** Phase G keyboard shortcuts and focus routing are Denali-verified; Phase G is complete.
 
 ---
 
 ## 1. TL;DR — where things stand
 <!-- One short paragraph. What just happened, what's the single most important next step. -->
-Xilem migration Phases A through F are complete on `main`.
+Xilem migration Phases A through G are complete on `main`.
 The preview now discovers downstream CUPS printers asynchronously, binds destination,
 copies, collate, and duplex controls to `PrintOptions`, submits PDFs through `lp`, and
 keeps submission results visible. Denali verified real ET-3750 output: simplex
 collate-on is `123 123 123`, collate-off is `111 222 333`, and duplex preserves
-complete document sets in both modes. The focused preview suite passes 30 tests;
+complete document sets in both modes. Phase G keyboard navigation and zoom work
+after the rendered document canvas receives focus; clicking non-document window
+background does not focus it. The focused preview suite passes 32 tests;
 the prior 7 layout-engine, 3 IPC, and 1 backend focused baselines still stand. A
 2026-07-26 Codex sandbox completed `cargo check --workspace` with warnings and no
-errors; on 2026-07-29, `cargo test --workspace` passed all 46 tests with no
+errors; on 2026-07-31, `cargo test --workspace` passed all 48 tests with no
 failures and all doc-tests passed. Deterministic planning, arbitrary page selection, and capability-aware print settings are Denali-verified. Booklet UI remains deferred.
 
 ## 2. Active threads / in progress
@@ -114,7 +116,14 @@ failures and all doc-tests passed. Deterministic planning, arbitrary page select
       document sets. Collated copies are sequential one-copy jobs; uncollated simplex
       is one multi-copy job. Sequential jobs can crash legacy Boomaga when it is used
       as the downstream destination; that is not a valid physical-printer test.
-      **Update:** `SubmissionPlan`, arbitrary page selection, capability discovery, pending/unsupported behavior, and the bordered settings panel are Denali-verified. Evidence is recorded in `docs/vis-ver-results.txt`.
+      **Update:** `SubmissionPlan`, arbitrary page selection, capability discovery, pending/unsupported behavior, and the bordered settings panel are Denali-verified. Evidence is recorded in `docs/XILEM-vis-ver-results.txt`.
+- [x] **XILEM Phase G — COMPLETE AND DENALI-VERIFIED (2026-07-31).**
+      Added typed preview shortcuts for Right Arrow/Space/N, Left Arrow/P, +/−,
+      and 0; made the accessible PDF canvas focusable; and added state plus real
+      Masonry focus/event-routing regression tests. Denali/KDE/Wayland verified
+      all shortcuts after clicking the rendered document. Clicking non-document
+      window background intentionally leaves the canvas unfocused. The preview
+      suite passes 32 tests. Evidence: `docs/XILEM-vis-ver-results.txt`.
 - [x] **Codex startup context and native provisioning (`60b0900`, `1a9e04e`).**
       Replaced the `AGENTS.md` symlink with a real Codex instruction file that
       requires the seven context documents. Expanded the tracked Codex sandbox
@@ -126,7 +135,7 @@ failures and all doc-tests passed. Deterministic planning, arbitrary page select
 <!-- Decisions or inputs owned by the human, or external events being awaited. -->
 - Real IPP request parsing/response generation and captured-document handoff remain incomplete.
 - Booklet controls were outside the accepted Phase E N-up scope and remain open.
-- After Phase G closes, update the authoritative `docs/uml/*.puml` diagrams to the then-current configuration and implementation.
+- Reconcile the authoritative `docs/uml/*.puml` diagrams with the current configuration and implementation now that Phase G is closed.
 
 ## 4. Key decisions & rationale (durable — don't re-litigate)
 <!-- Settled calls a future session should honor unless explicitly revisited. -->
@@ -139,7 +148,7 @@ failures and all doc-tests passed. Deterministic planning, arbitrary page select
 - **Imposition (N-up/booklet/scale/rotate/margins/gutter) computed in `boomaga-layout-engine`**;
   qpdf-rs assembles/applies content-preserving transforms; poppler-rs renders preview. (Issue #11.)
 - **No plugin system.** `boomaga-plugins` deleted; specs stay silent. (Issue #10.) Code fully clean.
-- **GUI = Xilem** (Druid deprecated). Phases A/B/C/D/E/F are complete and
+- **GUI = Xilem** (Druid deprecated). Phases A/B/C/D/E/F/G are complete and
   Denali-verified on `main`; booklet controls remain a follow-up.
 - **SRS/UIS v0.2.2 Appendix C now conforms to code** (`c471a71`); `docs/uml/*.puml` is the
   maintained source. (Supersedes the earlier "Appendix C is an unreconciled Perplexity model" note.)
@@ -178,7 +187,7 @@ failures and all doc-tests passed. Deterministic planning, arbitrary page select
   `git mv` plus separate edits, `git add -A` (or `--amend` afterward) so all files land in one commit.
 - **Workspace compiler and test baselines are recorded.** A fresh Codex sandbox
   completed `cargo check --workspace` with warnings and no errors on 2026-07-26.
-  On 2026-07-29, `cargo test --workspace` passed all 46 tests with no failures;
+  On 2026-07-31, `cargo test --workspace` passed all 48 tests with no failures;
   all doc-tests also passed.
 - **Live policy updates must originate on the OpenShell host.** Editing the active policy from
   the originating host can affect a running sandbox; recreating the sandbox is not inherently
@@ -202,7 +211,8 @@ failures and all doc-tests passed. Deterministic planning, arbitrary page select
 <!-- Where the real detail lives. Keep this file thin; link out. -->
 - `README.md`, `CLAUDE.md` — project overview, build, inter-crate patterns, Claude Code setup.
 - `docs/PROJECT_PLAN.md` — architecture, phases, honest per-crate status.
-- `docs/XILEM_MIGRATION.md` — GUI migration plan (Phases A through F are complete).
+- `docs/XILEM_MIGRATION.md` — GUI migration plan (Phases A through G are complete).
+- `docs/XILEM-vis-ver-results.txt` — Denali/KDE/Wayland interactive verification record.
 - `docs/SW-Reqrmnts-Spec--latest.pdf`, `docs/User-Interface-Spec--latest.pdf` — current specs (v0.2.2).
 - `docs/uml/*.puml` — code-conformant PlantUML (now also embedded in spec Appendix C).
 - `openshell/create-bipp-sandbox.sh` + `openshell/README.md` — host-side sandbox

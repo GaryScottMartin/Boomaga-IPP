@@ -72,23 +72,29 @@ cargo build -p boomaga-ipp-backend
 ```
 ## Current State
 
-The Xilem migration’s Phases A through E are complete, host-verified, and merged
+The Xilem migration’s Phases A through G are complete, host-verified, and merged
 to `main`. The preview supports native PDF selection, asynchronous on-demand
 rendering, navigation/zoom, and 1/2/4/6/8-up imposition with horizontal/vertical
 fill and the intended sheet orientations. Versioned Unix-socket IPC carries
 backend job lifecycle notifications into preview state. Phase F is complete:
 an asynchronous print worker discovers CUPS destinations with `lpstat`, submits
 PDFs with `lp`, and reports persistent results in the footer. The current toolbar
-binds destination, copies, collate, and duplex controls to `PrintOptions`.
+binds destination, copies, collate, and duplex controls to `PrintOptions`. Phase G
+added typed keyboard navigation/zoom shortcuts and real Masonry focus/event-routing
+coverage. On Denali, the shortcuts work after the rendered document canvas is
+clicked; non-document window background intentionally does not focus the canvas.
 
 Focused verification on Denali passed with 7 layout-engine, 3 IPC, 1 backend,
-and 27 preview tests. Denali also verified real ET-3750 output: simplex collate-on
+and 32 preview tests. Denali also verified real ET-3750 output: simplex collate-on
 prints `123 123 123`, collate-off prints `111 222 333`, and duplex preserves each
 document set in both modes. On 2026-07-26, a fresh Codex sandbox completed
 `cargo check --workspace` with warnings and no errors, establishing the
 workspace-wide compiler baseline and verifying the provisioned GLib, Cairo,
-Poppler GLib, QPDF, and libclang dependency stack. On 2026-07-29,
-`cargo test --workspace` passed all 46 tests with no failures; all doc-tests passed. Phase F deterministic duplex planning, arbitrary page selection, and capability-aware print settings are Denali-verified. Booklet controls remain a follow-up.
+Poppler GLib, QPDF, and libclang dependency stack. On 2026-07-31,
+`cargo test --workspace` passed all 48 tests with no failures; all doc-tests passed.
+Phase F deterministic duplex planning, arbitrary page selection, and
+capability-aware print settings are Denali-verified. Phase G keyboard evidence is
+recorded in `docs/XILEM-vis-ver-results.txt`. Booklet controls remain a follow-up.
 
 Phase E verification commands used on Denali:
 
@@ -182,8 +188,8 @@ cargo test -p boomaga-layout-engine
 ## Known Issues
 
 - A fresh Codex sandbox completed `cargo check --workspace` with warnings and
-  no errors on 2026-07-26. On 2026-07-29, `cargo test --workspace` passed all
-  46 tests with no failures; all doc-tests passed.
+  no errors on 2026-07-26. On 2026-07-31, `cargo test --workspace` passed all
+  48 tests with no failures; all doc-tests passed.
 - Real IPP request parsing/response generation and captured-document handoff
   remain incomplete.
 - Phase F is complete and Denali-verified. Downstream submission forwards the

@@ -1,6 +1,6 @@
 # Modern Boomaga Virtual Printer - Implementation Plan
 
-> **Last reviewed against code:** 2026-07-29 (6-crate workspace; 2 binaries).
+> **Last reviewed against code:** 2026-07-31 (6-crate workspace; 2 binaries).
 > **Authoritative architecture:** SRS & UIS **v0.2.2**, Appendix C, and the
 > code-conformant PlantUML in [`docs/uml/`](./uml/) (conforms to code @ `34652fa`).
 > Where this plan and the specs/UML disagree, the specs/UML win — this document
@@ -68,11 +68,13 @@ component diagram (solid = present in code; dashed = decided-but-not-yet-wired).
 - Active development by the Linebender community
 - Druid (the original choice) is unmaintained — see [`docs/XILEM_MIGRATION.md`](./XILEM_MIGRATION.md)
 
-**Status:** migration Phases A through F are complete and Denali-verified.
-The Xilem 0.4 preview builds, all 30 tests pass, and Denali verified native PDF
+**Status:** migration Phases A through G are complete and Denali-verified.
+The Xilem 0.4 preview builds, all 32 tests pass, and Denali verified native PDF
 selection, asynchronous rendering, navigation, N-up, IPC status, CUPS destination
 discovery, and real ET-3750 submission. Simplex collate-on produces `123 123 123`;
 collate-off produces `111 222 333`; duplex preserves document sets. Deterministic duplex planning, arbitrary page selection, and capability-aware print settings are Denali-verified.
+Keyboard navigation and zoom shortcuts are also verified after the rendered
+document canvas receives focus.
 
 ### Display: Native Wayland
 - Direct Wayland compositor access (via winit)
@@ -251,7 +253,7 @@ crates/
 - Cancellation support
 
 ### Week 6: GUI Foundation
-- Xilem migration Phases A/B/C/D/E/F complete and Denali-verified
+- Xilem migration Phases A/B/C/D/E/F/G complete and Denali-verified
   (see `XILEM_MIGRATION.md`)
 - Main window (winit)
 - Preview rendering
@@ -327,7 +329,7 @@ crates/
 > A fresh Codex sandbox completed
 > `cargo check --workspace` with warnings and no errors, establishing the
 > workspace compiler baseline and verifying the rootless native dependency
-> provisioning. On 2026-07-29, `cargo test --workspace` passed all 46 tests with
+> provisioning. On 2026-07-31, `cargo test --workspace` passed all 48 tests with
 > no failures; all doc-tests passed. Percentages below remain estimates of
 > *design + partial implementation*.
 
@@ -338,7 +340,7 @@ crates/
 | `boomaga-core` | lib | Types complete; compiles | 2 | Plugin residue removed. `FileType` matches PDF/PWG Raster/JPEG. `parse_metadata()` is a TODO no-op. |
 | `boomaga-config` | lib | Complete | 3 | `ConfigManager` wired; plugin settings removed. |
 | `boomaga-layout-engine` | lib | Real & usable | 7 | N-up, booklet, transforms implemented; N-up partial-sheet behavior is tested. |
-| `boomaga-preview` | bin | Phases A/B/C/D/E/F complete | 30 | Capability-aware settings and downstream submission are Denali-verified. |
+| `boomaga-preview` | bin | Phases A/B/C/D/E/F/G complete | 32 | Capability-aware settings, downstream submission, and focused-canvas keyboard shortcuts are Denali-verified. |
 | `boomaga-ipc` | lib | Transport wired | 3 | Versioned newline-delimited JSON framing is used by backend and preview; focused tests pass. |
 | `boomaga-ipp-backend` | bin | Scaffolded, partial | 1 | Queue/processor compile and emit ordered lifecycle notifications; real IPP parsing remains incomplete. |
 
@@ -384,7 +386,7 @@ cargo test -p boomaga-ipp-backend
 cargo test -p boomaga-layout-engine
 ```
 
-All focused checks passed. The current preview suite reports 30 tests; the prior
+All focused checks passed. The current preview suite reports 32 tests; the prior
 focused baselines remain 3 IPC, 1 backend, and 7 layout-engine tests. Denali/KDE/
 Wayland interactively verified CUPS discovery and physical ET-3750 submission.
 Simplex output was `123 123 123` with collate on and `111 222 333` with collate

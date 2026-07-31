@@ -101,16 +101,18 @@ Click the PDF preview (or move focus to it with Tab), then use:
 ## Project Status
 
 The six-crate workspace remains under active development. Xilem preview migration
-Phases A through E are complete and host-verified on Denali, including native file
+Phases A through G are complete and host-verified on Denali, including native file
 selection, asynchronous on-demand PDF rendering, navigation/zoom, 1/2/4/6/8-up
 imposition, and backend job-status IPC. Phase F is complete: the preview now
 discovers CUPS destinations asynchronously, exposes copies/collate/duplex controls
 bound to `PrintOptions`, and submits PDFs through `lp` without blocking the UI.
 Denali verified real ET-3750 output, persistent submission status, simplex
 collation (`123 123 123` versus `111 222 333`), and duplex set preservation.
-The focused preview suite now passes 30 tests. A fresh Codex sandbox completed
+Phase G added tested keyboard navigation and zoom shortcuts; Denali verified
+that they work after the rendered document canvas receives focus. The focused
+preview suite now passes 32 tests. A fresh Codex sandbox completed
 `cargo check --workspace` with warnings and no errors on 2026-07-26. On
-2026-07-29, `cargo test --workspace` passed all 46 tests and all doc-tests.
+2026-07-31, `cargo test --workspace` passed all 48 tests and all doc-tests.
 Deterministic duplex planning, arbitrary page selection, and the bordered capability-aware print-settings panel are Denali-verified. See
 [`docs/HANDOFF.md`](docs/HANDOFF.md) for current session state and
 [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) for detailed status.
@@ -157,7 +159,7 @@ Contributions are welcome! Please see CONTRIBUTING.md for guidelines.
 - [x] Project foundation
 - [x] Core infrastructure
 - [ ] Complete IPP server implementation
-- [x] Xilem preview Phases A/B/C/D/E/F
+- [x] Xilem preview Phases A/B/C/D/E/F/G
 - [x] Layout engine
 - [x] Configuration management system
 - [x] PDF rendering foundation (Poppler)

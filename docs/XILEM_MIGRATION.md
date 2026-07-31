@@ -1,11 +1,12 @@
 # Xilem Migration Plan
 
-> **Last reviewed against code:** 2026-07-29.
-> **Status:** Phases A through F are complete on `main`. Phase F adds
+> **Last reviewed against code:** 2026-07-31.
+> **Status:** Phases A through G are complete on `main`. Phase F adds
 > asynchronous CUPS discovery, `PrintOptions`
 > controls, and downstream `lp` submission, verified on Denali with an ET-3750.
-> The preview suite passes 30 tests. On 2026-07-29,
-> `cargo test --workspace` passed all 46 workspace tests with no failures; all doc-tests passed.
+> Phase G adds keyboard navigation/zoom and focus routing, verified on Denali/KDE/Wayland.
+> The preview suite passes 32 tests. On 2026-07-31,
+> `cargo test --workspace` passed all 48 workspace tests with no failures; all doc-tests passed.
 > Deterministic duplex planning, arbitrary page selection, and capability-aware controls are Denali-verified.
 
 ## Overview
@@ -28,7 +29,7 @@ Target architecture: SRS/UIS **v0.2.2** Appendix C and [`docs/uml/`](./uml/)
 
 ## Current Status
 
-Phases A through F are complete and host-verified on `main`: a native PDF chooser
+Phases A through G are complete and host-verified on `main`: a native PDF chooser
 and command-line paths feed one background renderer thread through Xilem 0.4's
 `worker`/`MessageProxy` mechanism. `AppData` holds loading/error/progress state
 and a sparse on-demand page cache. The preview now composes 1/2/4/6/8-up sheets,
@@ -37,8 +38,10 @@ and receives versioned JSON job notifications over a Unix socket. Phase F added 
 second persistent worker for `lpstat` discovery and `lp` submission; its bordered
 settings panel binds printer, copies, collate, and duplex to `PrintOptions`, and
 submission results persist in the footer. Denali verified physical ET-3750 output: simplex collate-on
-`123 123 123`, collate-off `111 222 333`, plus duplex set preservation. All 30
-preview tests pass; capability-aware UI behavior is Denali/KDE/Wayland verified.
+`123 123 123`, collate-off `111 222 333`, plus duplex set preservation. Phase G
+added typed keyboard navigation/zoom shortcuts and focus/event-routing coverage.
+All 32 preview tests pass; capability-aware UI behavior and keyboard operation
+after focusing the rendered canvas are Denali/KDE/Wayland verified.
 
 **Dependencies:**
 - Workspace `Cargo.toml` and `crates/boomaga-preview/Cargo.toml` declare
@@ -198,17 +201,19 @@ fn main() -> anyhow::Result<()> {
   copies remain one multi-copy job.
 - ✅ A pure `SubmissionPlan` maps document page count and `PrintOptions` to explicit jobs and selected-page batches for simplex, duplex, odd pages, arbitrary ranges, and N-up.
 - ✅ The worker uses the plan; Denali verified odd-page duplex, duplex N-up, and non-contiguous `1,3` output ordering.
-- ✅ Capability discovery, capability-aware controls, and the bordered settings panel are Denali/KDE/Wayland verified; see `vis-ver-results.txt`.
+- ✅ Capability discovery, capability-aware controls, and the bordered settings panel are Denali/KDE/Wayland verified; see [`XILEM-vis-ver-results.txt`](./XILEM-vis-ver-results.txt).
 - ℹ️ Sending sequential collated jobs to legacy Boomaga can crash that legacy
   application; validate physical output against the real downstream printer.
 
-### Phase G: Testing, polish, docs
+### Phase G: Testing, polish, docs — ✅ DONE, HOST-VERIFIED (2026-07-31)
 - ✅ Added typed, unit-tested shortcut state transitions for Left/Right, Space/N/P/+/−/0.
 - ✅ Made the accessible PDF preview focusable and keyboard-operable; clicking it
   requests focus and its AccessKit image label remains exposed.
 - ✅ Confirmed there are no Druid dependencies or dead `_xilem.rs` duplicates.
   Remaining Druid text is intentional migration history.
-- 🚧 Interactive Wayland keyboard/accessibility verification remains before Phase G closes.
+- ✅ Denali/KDE/Wayland verified Right Arrow/Space/N, Left Arrow/P, +/−, and 0
+  after the rendered canvas receives focus. Clicking non-document background
+  intentionally leaves the canvas unfocused. Evidence: [`XILEM-vis-ver-results.txt`](./XILEM-vis-ver-results.txt).
 
 ## Druid → Xilem concept mapping (corrected)
 
@@ -271,5 +276,6 @@ fn main() -> anyhow::Result<()> {
 5. ✅ **Phase D** — file-open UI, async rendering, worker delivery, and on-demand cache; host-verified on `main`.
 6. ✅ **Phase E** — N-up imposition + versioned Unix-socket IPC wiring; host-verified and merged to `main`.
 7. ✅ **Phase F** — planning, arbitrary ranges, capability-aware settings, and downstream submission are host-verified.
-8. 🚧 Phase G — testing, polish, docs.
-9. 📋 After Phase G, reconcile `docs/uml/*.puml` with the then-current configuration and implementation.
+8. ✅ **Phase G** — keyboard navigation/zoom, focus routing, regression coverage,
+   and interactive Wayland verification are complete.
+9. 🚧 Reconcile `docs/uml/*.puml` with the current configuration and implementation.
