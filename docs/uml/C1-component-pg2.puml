@@ -1,28 +1,38 @@
+
 ' ==== Realized in code (solid) ====
-HOSTCUPS --> IPPSRV        : IPP Everywhere (driverless);\nCUPS forwards jobs IN
+HOSTCUPS --> IPPSRV        : TCP requests into virtual printer\n(IPP handling remains partial)
 IPPSRV --> PROC
 PROC --> QUEUE
+PROC --> NOTIFY            : lifecycle Message
+NOTIFY --> IPC             : protocol-v1 framed JSON
+IPC --> IPCWORKER          : Unix socket
+IPCWORKER --> APP          : typed status events
 IPPSRV ..> CORE
 PROC   ..> CORE
 QUEUE  ..> CORE
 APP    ..> CORE
 APP    ..> CONFIG
+APP --> LAYOUT             : N-up preview calculation
 CONFIG ..> CORE
 LAYOUT ..> CORE
 IPC    ..> CORE
-APP --> RENDER
-WAYLAND --> APP            : display / input
-SYSTEMD ..> IPPSRV         : socket activation /\nlifecycle (zbus_systemd)
+APP --> RENDER             : load/render commands
+RENDER --> APP             : generation-safe page events
+APP --> CANVAS             : imposed cached images + zoom
+CANVAS --> APP             : focused keyboard shortcuts
+APP --> PRINTWORKER        : discovery/capability/submit commands
+PRINTWORKER --> PLAN
+PRINTWORKER --> CUPSTOOLS
+CUPSTOOLS --> TARGET       : CUPS queue discovery + submission
+WAYLAND --> CANVAS         : display / pointer / keyboard
 
-' ==== Decided design, NOT yet wired in code (dashed = Phase 1 gap) ====
-IPPSRV .[#gray,dashed].> IPC    : <<planned>> notify GUI (Unix socket + JSON)
-APP    .[#gray,dashed].> IPC    : <<planned>> receive job / status
-PROC   .[#gray,dashed].> LAYOUT : <<planned>> imposition
-APP    .[#gray,dashed].> LAYOUT : <<planned>> imposition preview
-APP    .[#gray,dashed].> TARGET : <<planned>> submit downstream\n(CUPS API; no cups dep yet)
+' ==== Decided design, not yet wired (dashed) ====
+SYSTEMD .[#gray,dashed].> IPPSRV : <<planned>> socket activation / lifecycle
+PROC   .[#gray,dashed].> LAYOUT  : <<planned>> output imposition
+IPPSRV .[#gray,dashed].> APP     : <<planned>> captured-document handoff
 
 legend right
-  Solid  = present in code / Cargo deps @ 34652fa
-  Dashed = decided design, not yet wired (Phase 1)
+  Solid  = present in code @ e77d08c
+  Dashed = decided but not yet wired
 endlegend
 @enduml

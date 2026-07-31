@@ -1,44 +1,44 @@
-  enum JobPriority {
-    Low
-    Normal
-    High
-    Urgent
-  }
-  class PrinterInfo {
-    +name: String
-    +uri: String
-    +is_remote: bool
-    +status: PrinterStatus
-    +capabilities: PrinterCapabilities
-    +default_settings: PrintOptions
-  }
-  enum PrinterStatus {
-    Idle
-    Busy
-    Paused
-    Stopped
-    Error
-    Offline
-  }
-  class PrinterCapabilities {
-    +supports_color: bool
-    +supports_duplex: bool
-    +supported_page_sizes: Vec<PageSize>
-  }
-  enum FileType {}
-  enum DuplexMode {}
-  enum Orientation {}
-  enum PagesPerSheet {}
-  enum MarginMode {}
-  enum PageSize {}
-}
 
 package "boomaga-ipp-backend" {
   class IppServer {
     -port: u16
-    -ipc_socket_path: PathBuf
-    -dbus_service_name: String
     -processor: Arc<JobProcessor>
-    +new(...): Result<Self>
     +run(): Result
   }
+  class JobProcessor {
+    -queue: Arc<JobQueue>
+    -jobs: HashMap<String, JobStatus>
+    -notification_sender: NotificationSender
+    +add_job(PrintJobRequest): Result
+  }
+  class JobQueue {
+    -queue_size: AtomicUsize
+    -max_size: usize
+    +push(PrintJobRequest): Result
+    +pop(): Result<PrintJobRequest>
+  }
+  class IppRequest { +operation_id: IppOperation; +data: Vec<u8> }
+  class IppResponse { +status_code: IppStatusCode }
+  enum IppOperation
+  enum IppStatusCode
+}
+
+package "boomaga-layout-engine" {
+  class NUpCalculator {
+    +new(u8): Result
+    +with_config(NUpConfig)
+    +calculate(input, PageSize): NUpLayout
+  }
+  class NUpLayout {
+    +pages: Vec<PageResult>
+    +output_size: PageSize
+    +pages_per_sheet: u8
+  }
+  class PageResult {
+    +output_page: usize
+    +input_pages: Vec<usize>
+    +position: PagePosition
+  }
+  class BookletCalculator
+  class PageTransformer
+}

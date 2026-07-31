@@ -1,40 +1,30 @@
-' ---- Relationships realized in code (solid) ----
-Document "1" *-- "*" Page
-Page --> PageContents
-PrintJobRequest --> JobId
-PrintJobRequest --> PrintOptions
-PrintJobRequest --> FileType
-PrintOptions --> DuplexMode
-PrintOptions --> Orientation
-PrintOptions --> PagesPerSheet
-PrintOptions --> MarginMode
-JobMetadata --> JobId
-JobMetadata --> JobStatus
-JobMetadata --> JobPriority
-JobMetadata "1" *-- "*" PageInfo
-PrinterInfo --> PrinterStatus
-PrinterInfo --> PrinterCapabilities
-PrinterInfo --> PrintOptions
-IppServer o--> JobProcessor
-JobProcessor o--> JobQueue
-JobProcessor --> JobStatus
-JobQueue --> PrintJobRequest
-IppRequest --> IppOperation
-IppResponse --> IppStatusCode
+UnixSocketTransport --> Message
 NUpCalculator --> NUpLayout
 NUpLayout "1" *-- "*" PageResult
-PageResult --> PagePosition
-BookletCalculator --> BookletLayout
-PageTransformer --> TransformOperation
 AppData --> Document
 AppData --> PrintOptions
-AppData --> JobId
-DocumentRenderer --> Document
+AppData --> JobStatus
+AppData --> NUpCalculator
+AppData --> PreviewShortcut
+AppData --> RendererCommand
+RendererEvent --> AppData
+AppData --> IpcCommand
+IpcEvent --> AppData
+UnixSocketTransport --> IpcEvent
+AppData --> PrintCommand
+PrintEvent --> AppData
+AppData --> PdfCanvasWidget
+PdfCanvasWidget --> CanvasImage
+PdfCanvasWidget --> PreviewShortcut : focused key event
+DocumentRenderer --> RendererEvent
+PrintCommand --> PrintOptions
+PrintCommand --> SubmissionPlan
+SubmissionPlan "1" *-- "*" SubmissionJob
+SubmissionJob --> PageRange
 Message --> MessagePayload
 ConfigManager --> Settings
 
-' ---- Decided but not-yet-wired (dashed) ----
-AppData .[#gray,dashed].> NUpCalculator : <<planned>>
-AppData .[#gray,dashed].> UnixSocket : <<planned>>
-IppServer .[#gray,dashed].> UnixSocket : <<planned>>
+' ---- Decided but not yet wired ----
+IppServer .[#gray,dashed].> AppData : <<planned>> captured-document handoff
+JobProcessor .[#gray,dashed].> NUpCalculator : <<planned>> output imposition
 @enduml

@@ -1,45 +1,21 @@
-  class JobProcessor {
-    -queue: Arc<JobQueue>
-    -max_concurrent: usize
-    -worker_threads: usize
-    -jobs: HashMap<String,JobStatus>
-    +new(...): Result<Self>
-    +add_job(PrintJobRequest): Result
+
+package "boomaga-ipc" {
+  class Message {
+    +message_id: u64
+    +message_type: MessageType
+    +source: MessageSource
+    +destination: MessageDestination
+    +payload: MessagePayload
+    +timestamp: i64
   }
-  class JobQueue {
-    -queue_size: AtomicUsize
-    -max_size: usize
-    +push(PrintJobRequest): Result
-    +pop(): Result<PrintJobRequest>
-    +size(): usize
+  enum MessagePayload { PrintJobRequest; PrintJobStatus; DocumentReady; PageRendered; PrinterInfo; Custom }
+  class NotificationServer {
+    -socket_path: PathBuf
+    +bind(path): (Self, NotificationSender)
+    +run(): Result
   }
-  class IppRequest {
-    +version: IppVersion
-    +operation_id: IppOperation
-    +attributes
-    +data: Vec<u8>
-  }
-  class IppResponse {
-    +status_code: IppStatusCode
-    +operation_id: IppOperation
-  }
-  enum IppOperation {
-    GetPrinterAttributes
-    CreateJob
-    SendDocument
-    GetJobs
-    CancelJob
-  }
-  enum IppStatusCode {
-    Successful
-    ClientError
-    ServerError
+  class UnixSocketTransport {
+    -socket_path: PathBuf
+    +receive_message(): Result<Message>
   }
 }
-
-package "boomaga-layout-engine" {
-  class NUpCalculator {
-    +new(u8): Result
-    +with_config(NUpConfig)
-    +calculate(input,PageSize): NUpLayout
-  }

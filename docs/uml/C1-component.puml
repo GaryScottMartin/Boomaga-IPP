@@ -1,10 +1,11 @@
 @startuml
-title Boomaga-IPP — System Component Diagram (conforms to code @ 34652fa)
+title Boomaga-IPP — System Component Diagram (conforms to code @ e77d08c)
 skinparam componentStyle rectangle
 
 ' ---- External actors / systems ----
 cloud "Host CUPS + applications\n(IPP Everywhere source)" as HOSTCUPS
 cloud "Downstream CUPS printer\n(physical or CUPS-PDF)" as TARGET
+node "CUPS command tools\n(lpstat, lpoptions, lp)" as CUPSTOOLS
 node "Wayland compositor" as WAYLAND
 node "systemd" as SYSTEMD
 
@@ -13,47 +14,61 @@ package "Shared library crates" {
   [boomaga-core\n(domain types, Error; qpdf)] as CORE
   [boomaga-config\n(Settings, ConfigManager)] as CONFIG
   [boomaga-layout-engine\n(N-up, booklet, transforms)] as LAYOUT
-  [boomaga-ipc\n(Unix-socket transport, JSON protocol)] as IPC
+  [boomaga-ipc\n(protocol-v1 JSON + Unix socket)] as IPC
 }
 
 ' ---- Binary: backend daemon ----
 package "boomaga-ipp-backend (daemon)" {
-  [IppServer\n(IPP 2.x print service, TCP)] as IPPSRV
+  [IppServer\n(TCP listener; partial IPP parsing)] as IPPSRV
   [JobProcessor\n(worker pool)] as PROC
   [JobQueue\n(tokio mpsc)] as QUEUE
+  [NotificationServer\n(backend → preview)] as NOTIFY
 }
 
 ' ---- Binary: GUI ----
-package "boomaga-preview (GUI · Xilem)" {
-  [AppData\n(Xilem app state)] as APP
-  [DocumentRenderer\n(poppler)] as RENDER
+package "boomaga-preview (GUI · Xilem 0.4)" {
+  [AppData\n(app state + transitions)] as APP
+  [PdfCanvasWidget\n(Masonry render/focus/input)] as CANVAS
+  [Renderer worker\n(poppler + cairo)] as RENDER
+  [IPC worker\n(status notifications)] as IPCWORKER
+  [Print worker\n(discovery + submission)] as PRINTWORKER
+  [SubmissionPlan\n(copy/range/duplex batches)] as PLAN
 }
 
 ' ==== Realized in code (solid) ====
-HOSTCUPS --> IPPSRV        : IPP Everywhere (driverless);\nCUPS forwards jobs IN
+HOSTCUPS --> IPPSRV        : TCP requests into virtual printer\n(IPP handling remains partial)
 IPPSRV --> PROC
 PROC --> QUEUE
+PROC --> NOTIFY            : lifecycle Message
+NOTIFY --> IPC             : protocol-v1 framed JSON
+IPC --> IPCWORKER          : Unix socket
+IPCWORKER --> APP          : typed status events
 IPPSRV ..> CORE
 PROC   ..> CORE
 QUEUE  ..> CORE
 APP    ..> CORE
 APP    ..> CONFIG
+APP --> LAYOUT             : N-up preview calculation
 CONFIG ..> CORE
 LAYOUT ..> CORE
 IPC    ..> CORE
-APP --> RENDER
-WAYLAND --> APP            : display / input
-SYSTEMD ..> IPPSRV         : socket activation /\nlifecycle (zbus_systemd)
+APP --> RENDER             : load/render commands
+RENDER --> APP             : generation-safe page events
+APP --> CANVAS             : imposed cached images + zoom
+CANVAS --> APP             : focused keyboard shortcuts
+APP --> PRINTWORKER        : discovery/capability/submit commands
+PRINTWORKER --> PLAN
+PRINTWORKER --> CUPSTOOLS
+CUPSTOOLS --> TARGET       : CUPS queue discovery + submission
+WAYLAND --> CANVAS         : display / pointer / keyboard
 
-' ==== Decided design, NOT yet wired in code (dashed = Phase 1 gap) ====
-IPPSRV .[#gray,dashed].> IPC    : <<planned>> notify GUI (Unix socket + JSON)
-APP    .[#gray,dashed].> IPC    : <<planned>> receive job / status
-PROC   .[#gray,dashed].> LAYOUT : <<planned>> imposition
-APP    .[#gray,dashed].> LAYOUT : <<planned>> imposition preview
-APP    .[#gray,dashed].> TARGET : <<planned>> submit downstream\n(CUPS API; no cups dep yet)
+' ==== Decided design, not yet wired (dashed) ====
+SYSTEMD .[#gray,dashed].> IPPSRV : <<planned>> socket activation / lifecycle
+PROC   .[#gray,dashed].> LAYOUT  : <<planned>> output imposition
+IPPSRV .[#gray,dashed].> APP     : <<planned>> captured-document handoff
 
 legend right
-  Solid  = present in code / Cargo deps @ 34652fa
-  Dashed = decided design, not yet wired (Phase 1)
+  Solid  = present in code @ e77d08c
+  Dashed = decided but not yet wired
 endlegend
 @enduml

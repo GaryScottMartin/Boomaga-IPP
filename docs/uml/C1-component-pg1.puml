@@ -1,10 +1,11 @@
 @startuml
-title Boomaga-IPP — System Component Diagram (conforms to code @ 34652fa)
+title Boomaga-IPP — System Component Diagram (conforms to code @ e77d08c)
 skinparam componentStyle rectangle
 
 ' ---- External actors / systems ----
 cloud "Host CUPS + applications\n(IPP Everywhere source)" as HOSTCUPS
 cloud "Downstream CUPS printer\n(physical or CUPS-PDF)" as TARGET
+node "CUPS command tools\n(lpstat, lpoptions, lp)" as CUPSTOOLS
 node "Wayland compositor" as WAYLAND
 node "systemd" as SYSTEMD
 
@@ -13,18 +14,23 @@ package "Shared library crates" {
   [boomaga-core\n(domain types, Error; qpdf)] as CORE
   [boomaga-config\n(Settings, ConfigManager)] as CONFIG
   [boomaga-layout-engine\n(N-up, booklet, transforms)] as LAYOUT
-  [boomaga-ipc\n(Unix-socket transport, JSON protocol)] as IPC
+  [boomaga-ipc\n(protocol-v1 JSON + Unix socket)] as IPC
 }
 
 ' ---- Binary: backend daemon ----
 package "boomaga-ipp-backend (daemon)" {
-  [IppServer\n(IPP 2.x print service, TCP)] as IPPSRV
+  [IppServer\n(TCP listener; partial IPP parsing)] as IPPSRV
   [JobProcessor\n(worker pool)] as PROC
   [JobQueue\n(tokio mpsc)] as QUEUE
+  [NotificationServer\n(backend → preview)] as NOTIFY
 }
 
 ' ---- Binary: GUI ----
-package "boomaga-preview (GUI · Xilem)" {
-  [AppData\n(Xilem app state)] as APP
-  [DocumentRenderer\n(poppler)] as RENDER
+package "boomaga-preview (GUI · Xilem 0.4)" {
+  [AppData\n(app state + transitions)] as APP
+  [PdfCanvasWidget\n(Masonry render/focus/input)] as CANVAS
+  [Renderer worker\n(poppler + cairo)] as RENDER
+  [IPC worker\n(status notifications)] as IPCWORKER
+  [Print worker\n(discovery + submission)] as PRINTWORKER
+  [SubmissionPlan\n(copy/range/duplex batches)] as PLAN
 }

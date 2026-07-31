@@ -1,5 +1,5 @@
 @startuml
-title Boomaga-IPP — System Class Diagram (conforms to code @ 34652fa)
+title Boomaga-IPP — System Class Diagram (conforms to code @ e77d08c)
 skinparam classAttributeIconSize 0
 hide empty members
 
@@ -9,12 +9,8 @@ package "boomaga-core" {
     +file_path: PathBuf
     +file_type: FileType
     +title: String
-    +author: Option<String>
-    +keywords: Vec<String>
     +pages: Vec<Page>
     +page_count(): usize
-    +add_page(Page)
-    +parse_metadata()
   }
   class Page {
     +number: usize
@@ -22,18 +18,15 @@ package "boomaga-core" {
     +height: f64
     +orientation: Orientation
     +contents: PageContents
-    +has_content(): bool
   }
-  enum PageContents {
-    Vector
-    Raster
-    Pdf
-  }
-
   class PrintJobRequest {
     +job_id: JobId
     +file_path: PathBuf
     +file_type: FileType
     +printer_name: Option<String>
     +options: PrintOptions
+  }
+  class PageRange {
+    +from_pages(&[usize]): Self
+    +pages(page_count): Result<Vec<usize>>
   }

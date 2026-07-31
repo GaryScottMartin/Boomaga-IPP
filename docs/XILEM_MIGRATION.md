@@ -278,4 +278,4 @@ fn main() -> anyhow::Result<()> {
 7. ✅ **Phase F** — planning, arbitrary ranges, capability-aware settings, and downstream submission are host-verified.
 8. ✅ **Phase G** — keyboard navigation/zoom, focus routing, regression coverage,
    and interactive Wayland verification are complete.
-9. 🚧 Reconcile `docs/uml/*.puml` with the current configuration and implementation.
+9. ✅ Reconciled `docs/uml/*.puml` with the current implementation through Phase G; realized and planned boundaries are explicit.

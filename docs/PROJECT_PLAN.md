@@ -2,7 +2,7 @@
 
 > **Last reviewed against code:** 2026-07-31 (6-crate workspace; 2 binaries).
 > **Authoritative architecture:** SRS & UIS **v0.2.2**, Appendix C, and the
-> code-conformant PlantUML in [`docs/uml/`](./uml/) (conforms to code @ `34652fa`).
+> code-conformant PlantUML in [`docs/uml/`](./uml/) (reconciled through Phase G on 2026-07-31).
 > Where this plan and the specs/UML disagree, the specs/UML win — this document
 > is the *implementation* view and is kept in sync with them.
 

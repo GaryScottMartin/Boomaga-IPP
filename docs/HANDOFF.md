@@ -124,6 +124,12 @@ failures and all doc-tests passed. Deterministic planning, arbitrary page select
       all shortcuts after clicking the rendered document. Clicking non-document
       window background intentionally leaves the canvas unfocused. The preview
       suite passes 32 tests. Evidence: `docs/XILEM-vis-ver-results.txt`.
+- [x] **Authoritative UML reconciled through Phase G (2026-07-31).**
+      Updated the component, class, sequence, and use-case PlantUML sources plus
+      their paginated fragments to reflect realized Xilem workers, N-up preview,
+      protocol-v1 IPC, CUPS discovery/submission, deterministic planning, and
+      focused keyboard input. Incomplete IPP/document handoff, backend imposition,
+      booklet UI, and page editing remain explicitly planned/dashed.
 - [x] **Codex startup context and native provisioning (`60b0900`, `1a9e04e`).**
       Replaced the `AGENTS.md` symlink with a real Codex instruction file that
       requires the seven context documents. Expanded the tracked Codex sandbox
@@ -135,7 +141,6 @@ failures and all doc-tests passed. Deterministic planning, arbitrary page select
 <!-- Decisions or inputs owned by the human, or external events being awaited. -->
 - Real IPP request parsing/response generation and captured-document handoff remain incomplete.
 - Booklet controls were outside the accepted Phase E N-up scope and remain open.
-- Reconcile the authoritative `docs/uml/*.puml` diagrams with the current configuration and implementation now that Phase G is closed.
 
 ## 4. Key decisions & rationale (durable — don't re-litigate)
 <!-- Settled calls a future session should honor unless explicitly revisited. -->
