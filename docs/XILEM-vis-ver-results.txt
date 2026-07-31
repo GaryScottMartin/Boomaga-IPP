@@ -129,3 +129,110 @@ Phase G keyboard verification — Denali/KDE/Wayland — 2026-07-31
   The absent grep results are not concerning—the relevant framework logs were
   evidently not emitted at the configured debug level.
 
+
+running 3 tests
+test tests::test_default_backend_config ... ok
+test tests::test_default_preview_config ... ok
+test tests::test_config_manager_creation ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 4 tests
+test job::page_range_tests::parses_and_formats_individual_pages_and_ranges ... ok
+test job::page_range_tests::rejects_malformed_unordered_overlapping_and_out_of_bounds_selections ... ok
+test pdf_assembler::tests::rejects_out_of_bounds_source_pages ... ok
+test pdf_assembler::tests::assembles_ordered_two_up_sides_and_preserves_blanks ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 3 tests
+test transport::tests::rejects_unsupported_protocol_version ... ok
+test transport::tests::framed_message_round_trip ... ok
+test notifier::tests::delivers_notification_to_preview_client ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+test job_processor::tests::emits_job_status_notifications_in_order ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+
+running 10 tests
+test booklet::tests::test_booklet_calculation ... ok
+test booklet::tests::test_odd_page_count ... ok
+test booklet_plan::tests::eight_pages_are_ordered_for_two_saddle_stitched_sheets ... ok
+test booklet_plan::tests::incomplete_signatures_are_padded_with_blank_slots ... ok
+test n_up::tests::partial_final_sheet_contains_remaining_pages ... ok
+test booklet_plan::tests::empty_documents_are_rejected ... ok
+test transforms::tests::test_page_rotation ... ok
+test n_up::tests::test_n_up_calculation ... ok
+test transforms::tests::test_transformed_size ... ok
+test n_up::tests::test_config_validation ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 36 tests
+test app::tests::capability_controls_wait_for_discovery_and_enforce_unsupported_options ... ok
+test app::tests::booklet_preview_uses_fold_order_and_preserves_blank_slots ... ok
+test app::tests::booklet_submission_maps_selected_pages_into_fold_order ... ok
+test app::tests::capability_discovery_marks_controls_pending_and_targets_selected_printer ... ok
+test app::tests::changing_n_up_invalidates_imposition_without_discarding_rasters ... ok
+test app::tests::choosing_n_up_exits_booklet_mode ... ok
+test app::tests::command_line_path_is_loaded_after_worker_connects ... ok
+test app::tests::job_notifications_update_existing_status_without_duplicates ... ok
+test app::tests::loaded_document_requests_only_the_current_page ... ok
+test app::tests::navigation_without_a_document_stays_on_first_page ... ok
+test app::tests::preview_shortcuts_drive_navigation_and_zoom ... ok
+test app::tests::stale_capability_results_do_not_change_selected_printer_options ... ok
+test app::tests::two_up_navigation_uses_sheet_count ... ok
+test app::tests::two_up_requests_every_page_on_current_sheet ... ok
+test app::tests::zoom_is_clamped_and_can_be_reset ... ok
+test document_renderer::tests::detects_page_orientation_from_dimensions ... ok
+test document_renderer::tests::validates_pixel_dimensions ... ok
+test ipc_worker::tests::ipc_commands_and_events_are_send ... ok
+test pdf_canvas::tests::accepts_exact_pixel_buffer_length ... ok
+test pdf_canvas::tests::horizontal_fill_is_row_major ... ok
+test pdf_canvas::tests::rejects_incorrect_pixel_buffer_length ... ok
+test pdf_canvas::tests::two_up_uses_landscape_sheet_orientation ... ok
+test app::tests::navigation_stays_within_document_bounds ... ok
+test pdf_canvas::tests::uses_expected_n_up_grids ... ok
+test pdf_canvas::tests::vertical_fill_matches_classic_boomaga_order ... ok
+test print_worker::tests::booklet_artifacts_use_short_edge_duplex_and_complete_copy_sets ... ok
+test print_worker::tests::maps_options_to_lp_arguments ... ok
+test print_worker::tests::parses_lpstat_output ... ok
+test print_worker::tests::parses_standard_cups_capabilities ... ok
+test render_worker::tests::worker_commands_and_events_are_send ... ok
+test submission_plan::tests::collated_copies_repeat_the_complete_selection ... ok
+test submission_plan::tests::duplex_n_up_uses_selected_page_count_for_sheet_capacity ... ok
+test submission_plan::tests::invalid_inputs_are_rejected ... ok
+test submission_plan::tests::uncollated_duplex_packs_selected_pages_into_physical_sheets ... ok
+test submission_plan::tests::uncollated_simplex_is_one_multi_copy_job ... ok
+test pdf_canvas::tests::focused_canvas_emits_shortcuts_from_real_keyboard_events ... ok
+
+test result: ok. 36 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
