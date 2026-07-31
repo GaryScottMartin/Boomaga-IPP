@@ -324,8 +324,10 @@ crates/
 
 ## Implementation Status
 
-> **Reality check (2026-07-29):** focused Phase E checks still pass, and the
-> 30-test preview suite plus Phase F physical-printer and UI checks pass on Denali.
+> **Reality check (2026-07-31):** the 32-test preview suite and focused
+> layout-engine, IPC, and backend checks pass. Phases A through G, including
+> Phase F physical-printer/capability-aware UI behavior and Phase G focused-canvas
+> keyboard routing, are Denali/KDE/Wayland verified.
 > A fresh Codex sandbox completed
 > `cargo check --workspace` with warnings and no errors, establishing the
 > workspace compiler baseline and verifying the rootless native dependency
@@ -369,12 +371,14 @@ crates/
 - IPC protocol message types defined
 - Phase F: asynchronous CUPS/capability discovery, capability-aware controls,
   deterministic planning, non-blocking submission, and persistent result status
+- Phase G: keyboard navigation/zoom, canvas focus routing, regression coverage,
+  and interactive Wayland verification
 
 #### Remaining Phase 2 Tasks
 - Add booklet controls (deferred from the accepted Phase E/F scope)
 - Complete document-ready IPC and captured-document handoff
 
-### Preview host verification (Denali, updated 2026-07-29)
+### Preview host verification (Denali, updated 2026-07-31)
 
 ```bash
 cargo check -p boomaga-preview
@@ -394,6 +398,8 @@ off. A three-page long-edge duplex job preserved `(1|2) (3|blank)` sets in both
 modes; four CUPS jobs for the two tests confirmed one uncollated multi-copy job
 plus three collated one-copy jobs. Legacy Boomaga is not a suitable downstream
 collation target because rapid sequential jobs can crash that legacy application.
+Denali also verified Right Arrow/Space/N, Left Arrow/P, +/−, and 0 after the
+rendered document canvas receives focus.
 
 ---
 
