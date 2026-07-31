@@ -5,7 +5,10 @@
 > asynchronous CUPS discovery, `PrintOptions`
 > controls, and downstream `lp` submission, verified on Denali with an ET-3750.
 > Phase G adds keyboard navigation/zoom and focus routing, verified on Denali/KDE/Wayland.
-> The preview suite passes 32 tests. On 2026-07-31,
+> Phase H code is implemented: deterministic saddle-stitch ordering, blank padding,
+> preview state, qpdf imposed-PDF assembly, and short-edge duplex submission are
+> covered; Denali visual and physical-output verification remains.
+> The preview suite now passes 36 tests. On 2026-07-31,
 > `cargo test --workspace` passed all 48 workspace tests with no failures; all doc-tests passed.
 > Deterministic duplex planning, arbitrary page selection, and capability-aware controls are Denali-verified.
 
@@ -215,6 +218,19 @@ fn main() -> anyhow::Result<()> {
   after the rendered canvas receives focus. Clicking non-document background
   intentionally leaves the canvas unfocused. Evidence: [`XILEM-vis-ver-results.txt`](./XILEM-vis-ver-results.txt).
 
+### Phase H: Booklet preview and output — 🚧 IN PROGRESS (2026-07-31)
+- ✅ Added a pure `BookletPlan` with zero-based source slots, saddle-stitch
+  front/back ordering, and explicit blank padding to a multiple of four pages.
+- ✅ Added Booklet mode to `AppData`, a Xilem Booklet control, imposed-side
+  navigation, blank-slot-preserving preview composition, and focused tests.
+- ✅ Returning to any N-up selection exits Booklet mode deterministically.
+- ✅ Added content-preserving qpdf assembly using copied Form XObjects, explicit
+  blank slots, and two-up landscape output pages.
+- ✅ The print worker submits the temporary artifact as one-up, short-edge duplex;
+  copies remain complete booklet sets and RAII removes the artifact afterward.
+- ✅ Added assembler, selected-page mapping, and submission-option coverage.
+- [ ] Complete Denali/KDE/Wayland visual and physical-output verification.
+
 ## Druid → Xilem concept mapping (corrected)
 
 | Druid concept | Xilem 0.4 equivalent |
@@ -234,7 +250,7 @@ fn main() -> anyhow::Result<()> {
 - [x] Navigate pages (next, previous, first, last)
 - [x] Zoom in/out/reset
 - [x] Apply N-up imposition in preview
-- [ ] Add booklet controls and preview mode
+- [x] Add booklet controls and preview mode (Phase H foundation; output remains)
 - [x] Select downstream printer and submit
 - [ ] Toolbar + menu
 - [x] Keyboard shortcuts (Space, N, P, +/-, 0)
@@ -279,3 +295,5 @@ fn main() -> anyhow::Result<()> {
 8. ✅ **Phase G** — keyboard navigation/zoom, focus routing, regression coverage,
    and interactive Wayland verification are complete.
 9. ✅ Reconciled `docs/uml/*.puml` with the current implementation through Phase G; realized and planned boundaries are explicit.
+10. 🚧 **Phase H** — booklet ordering/padding, preview, qpdf assembly, and
+    submission are implemented; host visual/physical verification remains.

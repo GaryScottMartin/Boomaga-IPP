@@ -1,7 +1,7 @@
 //! Background CUPS command bridge for printer discovery and submission.
 use crate::app::AppData;
 use crate::submission_plan::SubmissionPlan;
-use boomaga_core::{DuplexMode, PrintOptions};
+use boomaga_core::{assemble_booklet_pdf, DuplexMode, PagesPerSheet, PrintOptions};
 use std::{
     path::{Path, PathBuf},
     process::Command,
@@ -30,6 +30,7 @@ pub enum PrintCommand {
         document: PathBuf,
         page_count: usize,
         options: PrintOptions,
+        booklet_sides: Option<Vec<[Option<usize>; 2]>>,
     },
 }
 #[derive(Debug, PartialEq, Eq)]
@@ -76,7 +77,14 @@ fn run_loop(proxy: MessageProxy<PrintEvent>, mut receiver: UnboundedReceiver<Pri
                 document,
                 page_count,
                 options,
-            } => run_submit(&printer, &document, page_count, &options),
+                booklet_sides,
+            } => run_submit(
+                &printer,
+                &document,
+                page_count,
+                &options,
+                booklet_sides.as_deref(),
+            ),
         };
         if proxy.message(event).is_err() {
             break;
@@ -133,8 +141,34 @@ fn run_submit(
     document: &Path,
     page_count: usize,
     options: &PrintOptions,
+    booklet_sides: Option<&[[Option<usize>; 2]]>,
 ) -> PrintEvent {
-    let plan = match SubmissionPlan::new(page_count, options) {
+    let mut submitted_options = options.clone();
+    let artifact = if let Some(sides) = booklet_sides {
+        let artifact = match tempfile::Builder::new()
+            .prefix("boomaga-booklet-")
+            .suffix(".pdf")
+            .tempfile()
+        {
+            Ok(artifact) => artifact,
+            Err(error) => {
+                return PrintEvent::Failed(format!(
+                    "unable to create temporary booklet PDF: {error}"
+                ))
+            }
+        };
+        if let Err(error) = assemble_booklet_pdf(document, artifact.path(), sides) {
+            return PrintEvent::Failed(format!("unable to assemble booklet PDF: {error}"));
+        }
+        submitted_options = booklet_submission_options(options);
+        Some(artifact)
+    } else {
+        None
+    };
+    let submitted_document = artifact.as_ref().map_or(document, |file| file.path());
+    let submitted_page_count = booklet_sides.map_or(page_count, <[_]>::len);
+
+    let plan = match SubmissionPlan::new(submitted_page_count, &submitted_options) {
         Ok(plan) => plan,
         Err(error) => return PrintEvent::Failed(error.to_string()),
     };
@@ -145,10 +179,10 @@ fn run_submit(
             copies: job.copies,
             collate: false,
             page_range: Some(job.pages.clone()),
-            ..options.clone()
+            ..submitted_options.clone()
         };
         match Command::new("lp")
-            .args(lp_arguments(printer, document, &batch))
+            .args(lp_arguments(printer, submitted_document, &batch))
             .output()
         {
             Ok(out) if out.status.success() => {
@@ -168,6 +202,15 @@ fn run_submit(
         }
     }
     PrintEvent::Submitted(responses.join(" · "))
+}
+fn booklet_submission_options(options: &PrintOptions) -> PrintOptions {
+    PrintOptions {
+        collate: true,
+        duplex: DuplexMode::ShortEdge,
+        pages_per_sheet: PagesPerSheet::One,
+        page_range: None,
+        ..options.clone()
+    }
 }
 fn command_error(command: &str, stderr: &[u8]) -> String {
     let detail = String::from_utf8_lossy(stderr);
@@ -260,5 +303,23 @@ mod tests {
         ] {
             assert!(args.contains(&expected.to_owned()));
         }
+    }
+    #[test]
+    fn booklet_artifacts_use_short_edge_duplex_and_complete_copy_sets() {
+        let options = PrintOptions {
+            copies: 3,
+            collate: false,
+            duplex: DuplexMode::None,
+            pages_per_sheet: PagesPerSheet::Two,
+            page_range: Some(PageRange::from_str("2-3").unwrap()),
+            ..PrintOptions::default()
+        };
+
+        let submitted = booklet_submission_options(&options);
+        assert_eq!(submitted.copies, 3);
+        assert!(submitted.collate);
+        assert_eq!(submitted.duplex, DuplexMode::ShortEdge);
+        assert_eq!(submitted.pages_per_sheet, PagesPerSheet::One);
+        assert!(submitted.page_range.is_none());
     }
 }

@@ -8,7 +8,7 @@ use boomaga_core::{
     Document, DuplexMode, JobId, JobStatus, PageRange, PageSize, PagesPerSheet, PrintOptions,
 };
 use boomaga_ipc::MessagePayload;
-use boomaga_layout_engine::NUpCalculator;
+use boomaga_layout_engine::{BookletPlan, NUpCalculator};
 use std::collections::{BTreeSet, HashMap};
 use std::path::PathBuf;
 
@@ -31,6 +31,13 @@ pub enum LoadState {
 pub enum FillOrder {
     Horizontal,
     Vertical,
+}
+
+/// Active preview imposition strategy.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ImpositionMode {
+    NUp,
+    Booklet,
 }
 
 /// Connection state for backend job notifications.
@@ -85,6 +92,8 @@ pub struct AppData {
     imposition_revision: u64,
     /// Page fill order for multi-page imposed sheets.
     pub fill_order: FillOrder,
+    /// N-up or saddle-stitch booklet preview.
+    pub imposition_mode: ImpositionMode,
     /// Imposition / print options.
     pub print_options: PrintOptions,
     pub page_range_input: String,
@@ -136,6 +145,7 @@ impl Default for AppData {
             rendering_pages: BTreeSet::new(),
             imposition_revision: 0,
             fill_order: FillOrder::Horizontal,
+            imposition_mode: ImpositionMode::NUp,
         }
     }
 }
@@ -309,18 +319,54 @@ impl AppData {
                 }
             }
         };
-        if let Some(selection) = &self.print_options.page_range {
-            if let Err(error) = selection.pages(page_count) {
-                self.print_state = PrintState::Error;
-                self.print_message = Some(error.to_string());
-                return;
+        let selected_pages = if let Some(selection) = &self.print_options.page_range {
+            match selection.pages(page_count) {
+                Ok(pages) => pages,
+                Err(error) => {
+                    self.print_state = PrintState::Error;
+                    self.print_message = Some(error.to_string());
+                    return;
+                }
             }
-        }
+        } else {
+            (1..=page_count).collect()
+        };
         if let Err(error) = self.print_options.validate() {
             self.print_state = PrintState::Error;
             self.print_message = Some(error.to_string());
             return;
         }
+        let booklet_sides = if self.imposition_mode == ImpositionMode::Booklet {
+            if self
+                .selected_printer_capabilities()
+                .is_some_and(|capabilities| !capabilities.supports_duplex)
+            {
+                self.print_state = PrintState::Error;
+                self.print_message =
+                    Some("Selected printer does not support booklet duplex".into());
+                return;
+            }
+            match BookletPlan::new(selected_pages.len()) {
+                Ok(plan) => Some(
+                    plan.sides
+                        .into_iter()
+                        .map(|side| {
+                            side.slots.map(|slot| {
+                                slot.map(|index| selected_pages[index].saturating_sub(1))
+                            })
+                        })
+                        .collect(),
+                ),
+                Err(error) => {
+                    self.print_state = PrintState::Error;
+                    self.print_message = Some(error.to_string());
+                    return;
+                }
+            }
+        } else {
+            None
+        };
+
         self.print_state = PrintState::Submitting;
         self.print_message = Some(format!("Submitting to {printer}…"));
         let options = self.print_options.clone();
@@ -329,6 +375,7 @@ impl AppData {
             document,
             page_count,
             options,
+            booklet_sides,
         }) {
             self.print_state = PrintState::Error;
         }
@@ -363,9 +410,11 @@ impl AppData {
 
     /// Ordered rendered-image slots for the source pages on the current sheet.
     pub fn current_canvas_images(&self) -> Vec<Option<CanvasImage>> {
-        self.current_sheet_pages()
+        self.current_sheet_slots()
             .into_iter()
-            .map(|page_index| self.rendered_pages.get(page_index).cloned().flatten())
+            .map(|slot| {
+                slot.and_then(|page_index| self.rendered_pages.get(page_index).cloned().flatten())
+            })
             .collect()
     }
 
@@ -524,7 +573,7 @@ impl AppData {
     }
 
     fn request_current_page(&mut self) {
-        for page_index in self.current_sheet_pages() {
+        for page_index in self.current_sheet_slots().into_iter().flatten() {
             if self.rendered_pages.get(page_index).is_none()
                 || self.rendered_pages[page_index].is_some()
                 || !self.rendering_pages.insert(page_index)
@@ -545,13 +594,28 @@ impl AppData {
     }
 
     pub fn current_sheet_pages(&self) -> Vec<usize> {
+        self.current_sheet_slots().into_iter().flatten().collect()
+    }
+
+    pub fn current_sheet_slots(&self) -> Vec<Option<usize>> {
         self.sheet_pages()
             .get(self.current_page)
             .cloned()
             .unwrap_or_default()
     }
 
-    fn sheet_pages(&self) -> Vec<Vec<usize>> {
+    fn sheet_pages(&self) -> Vec<Vec<Option<usize>>> {
+        if self.imposition_mode == ImpositionMode::Booklet {
+            return BookletPlan::new(self.source_page_count())
+                .map(|plan| {
+                    plan.sides
+                        .into_iter()
+                        .map(|side| side.slots.into_iter().collect())
+                        .collect()
+                })
+                .unwrap_or_default();
+        }
+
         let pages: Vec<_> = (0..self.source_page_count()).collect();
         NUpCalculator::new(self.print_options.pages_per_sheet as u8)
             .and_then(|calculator| calculator.calculate(&pages, PageSize::A4))
@@ -559,7 +623,7 @@ impl AppData {
                 layout
                     .pages
                     .into_iter()
-                    .map(|page| page.input_pages)
+                    .map(|page| page.input_pages.into_iter().map(Some).collect())
                     .collect()
             })
             .unwrap_or_default()
@@ -571,10 +635,24 @@ impl AppData {
     }
 
     pub fn set_pages_per_sheet(&mut self, pages_per_sheet: PagesPerSheet) {
-        if self.print_options.pages_per_sheet == pages_per_sheet {
+        if self.imposition_mode == ImpositionMode::NUp
+            && self.print_options.pages_per_sheet == pages_per_sheet
+        {
             return;
         }
+        self.imposition_mode = ImpositionMode::NUp;
         self.print_options.pages_per_sheet = pages_per_sheet;
+        self.current_page = 0;
+        self.imposition_revision = self.imposition_revision.wrapping_add(1);
+        self.request_current_page();
+    }
+
+    pub fn set_booklet_mode(&mut self) {
+        if self.imposition_mode == ImpositionMode::Booklet {
+            return;
+        }
+        self.imposition_mode = ImpositionMode::Booklet;
+        self.print_options.pages_per_sheet = PagesPerSheet::Two;
         self.current_page = 0;
         self.imposition_revision = self.imposition_revision.wrapping_add(1);
         self.request_current_page();
@@ -937,5 +1015,75 @@ mod tests {
         });
         assert_eq!(data.selected_printer_capabilities(), Some(capabilities));
         assert!(!data.printer_capabilities_pending);
+    }
+
+    #[test]
+    fn booklet_preview_uses_fold_order_and_preserves_blank_slots() {
+        let mut data = AppData {
+            document: Some(document_with_pages(6)),
+            ..AppData::default()
+        };
+
+        data.set_booklet_mode();
+
+        assert_eq!(data.imposition_mode, ImpositionMode::Booklet);
+        assert_eq!(data.print_options.pages_per_sheet, PagesPerSheet::Two);
+        assert_eq!(data.page_count(), 4);
+        assert_eq!(data.current_sheet_slots(), vec![None, Some(0)]);
+        data.next_page();
+        assert_eq!(data.current_sheet_slots(), vec![Some(1), None]);
+        data.last_page();
+        assert_eq!(data.current_sheet_slots(), vec![Some(3), Some(4)]);
+    }
+
+    #[test]
+    fn booklet_submission_maps_selected_pages_into_fold_order() {
+        let mut data = AppData {
+            document_path: Some(PathBuf::from("selected.pdf")),
+            document: Some(document_with_pages(6)),
+            printers: vec!["Office".into()],
+            page_range_input: "2-5".into(),
+            ..AppData::default()
+        };
+        let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
+        data.install_print_worker(sender);
+        assert!(matches!(
+            receiver.try_recv().unwrap(),
+            PrintCommand::Discover
+        ));
+        data.set_booklet_mode();
+
+        data.submit_print_job();
+
+        match receiver.try_recv().unwrap() {
+            PrintCommand::Submit {
+                page_count,
+                booklet_sides,
+                ..
+            } => {
+                assert_eq!(page_count, 6);
+                assert_eq!(
+                    booklet_sides.unwrap(),
+                    vec![[Some(4), Some(1)], [Some(2), Some(3)]]
+                );
+            }
+            command => panic!("unexpected print command: {command:?}"),
+        }
+        assert_eq!(data.print_state, PrintState::Submitting);
+    }
+
+    #[test]
+    fn choosing_n_up_exits_booklet_mode() {
+        let mut data = AppData {
+            document: Some(document_with_pages(8)),
+            ..AppData::default()
+        };
+        data.set_booklet_mode();
+
+        data.set_pages_per_sheet(PagesPerSheet::Four);
+
+        assert_eq!(data.imposition_mode, ImpositionMode::NUp);
+        assert_eq!(data.page_count(), 2);
+        assert_eq!(data.current_sheet_pages(), vec![0, 1, 2, 3]);
     }
 }

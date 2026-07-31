@@ -68,8 +68,8 @@ component diagram (solid = present in code; dashed = decided-but-not-yet-wired).
 - Active development by the Linebender community
 - Druid (the original choice) is unmaintained — see [`docs/XILEM_MIGRATION.md`](./XILEM_MIGRATION.md)
 
-**Status:** migration Phases A through G are complete and Denali-verified.
-The Xilem 0.4 preview builds, all 32 tests pass, and Denali verified native PDF
+**Status:** migration Phases A through G are complete and Denali-verified; Phase H is in progress.
+The Xilem 0.4 preview builds, all 36 tests pass, and Denali verified native PDF
 selection, asynchronous rendering, navigation, N-up, IPC status, CUPS destination
 discovery, and real ET-3750 submission. Simplex collate-on produces `123 123 123`;
 collate-off produces `111 222 333`; duplex preserves document sets. Deterministic duplex planning, arbitrary page selection, and capability-aware print settings are Denali-verified.
@@ -375,7 +375,7 @@ crates/
   and interactive Wayland verification
 
 #### Remaining Phase 2 Tasks
-- Add booklet controls (deferred from the accepted Phase E/F scope)
+- Complete Phase H Denali visual and physical booklet-output verification
 - Complete document-ready IPC and captured-document handoff
 
 ### Preview host verification (Denali, updated 2026-07-31)
@@ -390,8 +390,8 @@ cargo test -p boomaga-ipp-backend
 cargo test -p boomaga-layout-engine
 ```
 
-All focused checks passed. The current preview suite reports 32 tests; the prior
-focused baselines remain 3 IPC, 1 backend, and 7 layout-engine tests. Denali/KDE/
+All focused checks passed. The current preview suite reports 36 tests; core
+passes 4, IPC 3, backend 1, and layout-engine 10 tests. Denali/KDE/
 Wayland interactively verified CUPS discovery and physical ET-3750 submission.
 Simplex output was `123 123 123` with collate on and `111 222 333` with collate
 off. A three-page long-edge duplex job preserved `(1|2) (3|blank)` sets in both

@@ -23,13 +23,17 @@
 ## 1. TL;DR — where things stand
 <!-- One short paragraph. What just happened, what's the single most important next step. -->
 Xilem migration Phases A through G are complete on `main`.
+Phase H code is implemented: deterministic saddle-stitch ordering with explicit
+blank padding, Booklet preview controls, content-preserving qpdf imposed-PDF
+assembly, and complete-set short-edge duplex submission. Denali visual and
+physical-output verification remains.
 The preview now discovers downstream CUPS printers asynchronously, binds destination,
 copies, collate, and duplex controls to `PrintOptions`, submits PDFs through `lp`, and
 keeps submission results visible. Denali verified real ET-3750 output: simplex
 collate-on is `123 123 123`, collate-off is `111 222 333`, and duplex preserves
 complete document sets in both modes. Phase G keyboard navigation and zoom work
 after the rendered document canvas receives focus; clicking non-document window
-background does not focus it. The focused preview suite passes 32 tests;
+background does not focus it. The focused preview suite passes 36 tests;
 the prior 7 layout-engine, 3 IPC, and 1 backend focused baselines still stand. A
 2026-07-26 Codex sandbox completed `cargo check --workspace` with warnings and no
 errors; on 2026-07-31, `cargo test --workspace` passed all 48 tests with no
@@ -133,6 +137,13 @@ failures and all doc-tests passed. Deterministic planning, arbitrary page select
       Denali rendered all four primary `.puml` files cleanly and refreshed their
       PNGs. Paginated sources use `.pg1`, `.pg2`, etc. so PlantUML directory scans
       do not attempt to render incomplete fragments.
+- [ ] **XILEM Phase H — CODE COMPLETE; DENALI VERIFICATION PENDING (2026-07-31).**
+      `BookletPlan` provides saddle-stitch ordering and blank padding; preview
+      controls navigate the same sides. `boomaga-core` now assembles a temporary
+      vector-preserving imposed PDF with qpdf Form XObjects. The print worker
+      submits it as one-up, short-edge duplex and preserves complete booklet copy
+      sets; RAII removes the artifact. Workspace tests pass: 57 total (core 4,
+      config 3, IPC 3, backend 1, layout-engine 10, preview 36).
 - [x] **Codex startup context and native provisioning (`60b0900`, `1a9e04e`).**
       Replaced the `AGENTS.md` symlink with a real Codex instruction file that
       requires the seven context documents. Expanded the tracked Codex sandbox

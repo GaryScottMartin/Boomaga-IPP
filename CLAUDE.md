@@ -94,7 +94,9 @@ Poppler GLib, QPDF, and libclang dependency stack. On 2026-07-31,
 `cargo test --workspace` passed all 48 tests with no failures; all doc-tests passed.
 Phase F deterministic duplex planning, arbitrary page selection, and
 capability-aware print settings are Denali-verified. Phase G keyboard evidence is
-recorded in `docs/XILEM-vis-ver-results.txt`. Booklet controls remain a follow-up.
+recorded in `docs/XILEM-vis-ver-results.txt`. Phase H code is implemented:
+deterministic booklet ordering/blank padding, preview controls, qpdf imposed-PDF
+assembly, and short-edge duplex submission; Denali verification remains.
 
 Phase E verification commands used on Denali:
 
@@ -192,9 +194,9 @@ cargo test -p boomaga-layout-engine
   48 tests with no failures; all doc-tests passed.
 - Real IPP request parsing/response generation and captured-document handoff
   remain incomplete.
-- Phase F is complete and Denali-verified. Downstream submission forwards the
-  source PDF plus explicit CUPS options and a deterministic `SubmissionPlan`;
-  local content-preserving imposed-PDF assembly remains separate future work.
+- Phase F is complete and Denali-verified. Normal downstream submission forwards
+  the source PDF plus explicit CUPS options and a deterministic `SubmissionPlan`.
+  Phase H booklet submission assembles a temporary content-preserving imposed PDF.
 - Deferred booklet controls remain open.
 
 Historical note: earlier reports of roughly 82 workspace errors and roughly 38

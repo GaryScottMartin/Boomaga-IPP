@@ -110,7 +110,9 @@ Denali verified real ET-3750 output, persistent submission status, simplex
 collation (`123 123 123` versus `111 222 333`), and duplex set preservation.
 Phase G added tested keyboard navigation and zoom shortcuts; Denali verified
 that they work after the rendered document canvas receives focus. The focused
-preview suite now passes 32 tests. A fresh Codex sandbox completed
+preview suite now passes 36 tests. Phase H code now includes deterministic
+booklet ordering/blank padding, preview controls, qpdf imposed-PDF assembly,
+and short-edge duplex submission; Denali verification remains. A fresh Codex sandbox completed
 `cargo check --workspace` with warnings and no errors on 2026-07-26. On
 2026-07-31, `cargo test --workspace` passed all 48 tests and all doc-tests.
 Deterministic duplex planning, arbitrary page selection, and the bordered capability-aware print-settings panel are Denali-verified. See

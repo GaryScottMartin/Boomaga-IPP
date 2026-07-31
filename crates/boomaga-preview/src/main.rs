@@ -12,7 +12,7 @@ mod print_worker;
 mod render_worker;
 mod submission_plan;
 
-use app::{AppData, FillOrder, LoadState, PrintState};
+use app::{AppData, FillOrder, ImpositionMode, LoadState, PrintState};
 use boomaga_core::{DuplexMode, PagesPerSheet};
 use ipc_worker::ipc_worker;
 use pdf_canvas::pdf_canvas;
@@ -57,6 +57,7 @@ fn app_logic(data: &mut AppData) -> impl WidgetView<AppData> + use<> {
             button(label("8-up"), |d: &mut AppData| {
                 d.set_pages_per_sheet(PagesPerSheet::Eight)
             }),
+            button(label("Booklet"), |d: &mut AppData| d.set_booklet_mode()),
             button(label("Horizontal"), |d: &mut AppData| {
                 d.set_fill_order(FillOrder::Horizontal)
             }),
@@ -230,10 +231,14 @@ fn status_text(data: &AppData) -> String {
                 .map_or_else(String::new, |(job_id, status)| {
                     format!("   ·   job {job_id}: {status}")
                 });
+            let imposition = if data.imposition_mode == ImpositionMode::Booklet {
+                "booklet".to_owned()
+            } else {
+                format!("{}-up", data.print_options.pages_per_sheet as u8)
+            };
             format!(
-                "Sheet {} of {page_count} ({page_status})   ·   {}-up   ·   cached {rendered}/{}   ·   zoom {:.0}%{}",
+                "Sheet {} of {page_count} ({page_status})   ·   {imposition}   ·   cached {rendered}/{}   ·   zoom {:.0}%{}",
                 data.current_page + 1,
-                data.print_options.pages_per_sheet as u8,
                 data.rendered_pages.len(),
                 data.zoom * 100.0,
                 job_status
