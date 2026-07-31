@@ -16,7 +16,7 @@
 # Boomaga-IPP — Session Handoff
 
 > **Last updated:** 2026-07-31 · **By:** Codex + Gary Scott Martin
-> **Session focus:** Phase G keyboard shortcuts and focus routing are Denali-verified; Phase G is complete.
+> **Session focus:** Authoritative UML sources, paginated fragments, and rendered PNGs are reconciled through Phase G.
 
 ---
 
@@ -130,6 +130,9 @@ failures and all doc-tests passed. Deterministic planning, arbitrary page select
       protocol-v1 IPC, CUPS discovery/submission, deterministic planning, and
       focused keyboard input. Incomplete IPP/document handoff, backend imposition,
       booklet UI, and page editing remain explicitly planned/dashed.
+      Denali rendered all four primary `.puml` files cleanly and refreshed their
+      PNGs. Paginated sources use `.pg1`, `.pg2`, etc. so PlantUML directory scans
+      do not attempt to render incomplete fragments.
 - [x] **Codex startup context and native provisioning (`60b0900`, `1a9e04e`).**
       Replaced the `AGENTS.md` symlink with a real Codex instruction file that
       requires the seven context documents. Expanded the tracked Codex sandbox
@@ -219,7 +222,7 @@ failures and all doc-tests passed. Deterministic planning, arbitrary page select
 - `docs/XILEM_MIGRATION.md` — GUI migration plan (Phases A through G are complete).
 - `docs/XILEM-vis-ver-results.txt` — Denali/KDE/Wayland interactive verification record.
 - `docs/SW-Reqrmnts-Spec--latest.pdf`, `docs/User-Interface-Spec--latest.pdf` — current specs (v0.2.2).
-- `docs/uml/*.puml` — code-conformant PlantUML (now also embedded in spec Appendix C).
+- `docs/uml/*.puml` — renderable code-conformant PlantUML; matching `.pgN` files are paginated source fragments, and `.png` files are current Denali renders (the earlier model is also embedded in spec Appendix C).
 - `openshell/create-bipp-sandbox.sh` + `openshell/README.md` — host-side sandbox
   provisioning (auto-clone + launch claude); `BIPP_VERIFY=1` for a smoke test.
 - GitHub issues: <https://github.com/GaryScottMartin/Boomaga-IPP/issues>

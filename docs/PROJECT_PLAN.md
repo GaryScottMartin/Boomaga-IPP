@@ -111,7 +111,7 @@ boomaga-ipp/
 │   ├── HANDOFF.md
 │   ├── SW-Reqrmnts-Spec--*.pdf         # SRS (latest == v0.2.2)
 │   ├── User-Interface-Spec--*.pdf      # UIS (latest == v0.2.2)
-│   └── uml/                            # code-conformant PlantUML (spec Appendix C)
+│   └── uml/                            # primary .puml, paginated .pgN fragments, rendered PNGs
 ├── openshell/
 │   ├── create-bipp-sandbox.sh          # host-side sandbox provisioning
 │   ├── BIPP-project-policy.yaml        # sandbox network/fs policy
