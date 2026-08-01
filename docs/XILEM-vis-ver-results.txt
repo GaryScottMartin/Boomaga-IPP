@@ -415,7 +415,7 @@ ADD 4 Page, 6 Page, and 8 Page Test Documents
     the preview, but prints with a +180 orientation (upside-down) on the 4-up print.
 
 =============================================================================================================================================
-Target Denali Visual Reverification of XILEM Phase H
+Targeted Denali Visual Reverification of XILEM Phase H
 
 1. Confirm setting pages range to 2-5 immediately changes the booklet preview.
   CONFIRMED
@@ -431,6 +431,9 @@ Target Denali Visual Reverification of XILEM Phase H
      preview and output orientation agree.
 
 =============================================================================================================================================
+Second Targeted Denali Visual Reverification of XILEM Phase H
 
+Printed Printer-Test-05.pdf using duplex 4-up
+  CONFIRMED that the physical orientation matches the preview (-90 deg/ccw quarter rotation).
 
-
+=============================================================================================================================================
