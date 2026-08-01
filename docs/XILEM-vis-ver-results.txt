@@ -129,6 +129,8 @@ Phase G keyboard verification — Denali/KDE/Wayland — 2026-07-31
   The absent grep results are not concerning—the relevant framework logs were
   evidently not emitted at the configured debug level.
 
+=============================================================================================================================================
+PHASE H Visual Verification
 
 running 3 tests
 test tests::test_default_backend_config ... ok
@@ -236,3 +238,180 @@ running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
+=============================================================================================================================================
+ADD 4 Page, 6 Page, and 8 Page Test Documents
+
+[main 6224b15] Add 4 page (Printer-Test-02.pdf), 6 page (Printer-Test-03.pdf), and 8 page (Printer-Test-04.pdf) test PDF documents to ./docs/test-documents.
+ 4 files changed, 107 insertions(+)
+ create mode 100644 docs/test-documents/Printer-Test-02.pdf
+ create mode 100644 docs/test-documents/Printer-Test-03.pdf
+ create mode 100644 docs/test-documents/Printer-Test-04.pdf
+=============================================================================================================================================
+4. After Launching the six-page document
+
+  cargo run -p boomaga-preview -- /absolute/path/to/numbered-6-page.pdf
+
+  Observed:
+    - The document rendered.
+    - CUPS discovered the ET-3750.
+    - The footer showed normal ready status.
+
+=============================================================================================================================================
+5. Activate Booklet mode
+
+  After:
+    Clicking Booklet.
+
+  Observed:
+  - Footer identified the mode as booklet,
+  - Preview became landscape with two source-page slots,
+  - Navigation reset to the first imposed side, and
+  - The six-page document produced four imposed sides.
+
+=============================================================================================================================================
+6. Check six-page preview order
+
+  After Navigating through every side without issue:
+  
+    Observed
+
+    Side     Left    Right
+    ━━━━━━  ━━━━━━━  ━━━━━━━
+    1       blank        1
+    ──────  ───────  ───────
+    2           2    blank
+    ──────  ───────  ───────
+    3           6        3
+    ──────  ───────  ───────
+    4           4        5
+
+    Verified that blank slots remain empty and Next/Previous navigates imposed sides.
+
+=============================================================================================================================================
+7. Check eight-page preview order
+
+    After:
+      Opening the eight-page PDF and selecting Booklet.
+    
+    Observed:
+      Side    Left    Right
+      ━━━━━━  ━━━━━━  ━━━━━━━
+      1          8        1
+      ──────  ──────  ───────
+      2          2        7
+      ──────  ──────  ───────
+      3          6        3
+      ──────  ──────  ───────
+      4          4        5
+
+  Confirmed: no blank slots.
+
+=============================================================================================================================================
+8. Check mode switching
+
+  While in Booklet mode Clicked 4-up and then:
+    - Confirmed the footer changes to 4-up, and
+    - Confirmed the preview returns to normal N-up ordering.
+  After clicking Booklet again:
+    Confirmed Booklet mode returns deterministically at side 1.
+
+=============================================================================================================================================
+9. Check a selected page range
+
+  Using the six page test document:
+    - Entered page range 2-5,
+    - Selected Booklet, and
+    - Submitting one copy.
+
+  Observed imposed output:
+    Side             Left            Right
+    ━━━━━━  ━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━
+    1       source page 5    source page 2
+    ──────  ───────────────  ───────────────
+    2       source page 3    source page 4
+
+  After folding, the reading order observed was 2, 3, 4, 5. No other source pages
+  printed.
+  
+  NOTE: Entering a page range has no effect on the previewed print document. This should be corrected. The previewed
+        print document should reflect tha actual pages to be printed.
+
+=============================================================================================================================================
+10. Print the four-page booklet
+
+    After:
+      - Opening the four-page PDF,
+      - Selecting the ET-3750,
+      - Selecting  Booklet,
+      - Setting copies to 1,
+      - Submitting, and
+      - Folding the printed sheet at its center.
+
+    Observed:
+      - One duplex physical sheet
+      - Front: 4 | 1
+      - Back: 2 | 3
+      - Folded reading order: 1, 2, 3, 4
+      - Correct short-edge orientation
+      - No upside-down pages, clipping, or unexpected scaling
+
+=============================================================================================================================================
+11. Print the six-page booklet
+
+  After:
+    Submitting the six-page PDF in Booklet mode.
+
+  Observed:
+    - Two duplex physical sheets
+    - Correct nesting and orientation
+    - Folded reading order: 1–6
+    - Padding appears only as blank pages at the booklet’s end
+    - No duplicated or missing pages
+
+=============================================================================================================================================
+12. Check multiple copies
+
+    After
+      - Setting copies to 2,
+      - Not Enabling Collate ("Collate Unavailable"),
+      - Submitting the six-page booklet, and
+      - Separating and folding the two sets.
+
+  Observed:
+    - Two complete booklet sets
+    - No interleaving of sheets between copies
+    - Both booklets have identical correct reading order
+
+  Unable to verify Collate off in Booklet mode, "Collate Unavailable".
+
+=============================================================================================================================================
+13. Check rotated pages
+
+  Using a rotated-page PDF (./docs/test-documents/Printer-Test-05.pdf):
+    - Inspected the page in Booklet preview.
+    - Printed the booklet.
+
+  Expected:
+    - The sheet containing the rotated page is displayed in the preview in Portrait, rather than Landscape, orientation,
+    - While there was no clipping, overlap, or displacement, this cause the unrotated page on that sheet to appear smalled than other pages.
+    - However, the physical orientation was correct (Landscape), not matching the preview, but producing the desired print orientation.
+
+=============================================================================================================================================
+14. Check duplex capability enforcement
+
+  No genuine simplex-only CUPS destination was available.
+  It was not possible to verify this expected behavior.
+
+=============================================================================================================================================
+15. Check post-submission behavior
+
+  After successful submissions (no failed submissions were observed), it was confirmed that:
+  - The footer retained the result message,
+  - The application remained responsive,
+  - Another job could be submitted,
+  - No imposed PDF remained permanently in the temporary directory, and
+  - A normal N-up job still works after leaving Booklet mode.
+    However, printing the rotated page test document in 4-up with duplex, the rotate page appears as expected (with a +90 rotation) in
+    the preview, but prints with a +180 orientation (upside-down) on the 4-up print.
+
+=============================================================================================================================================
