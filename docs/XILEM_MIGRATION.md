@@ -9,9 +9,11 @@
 > preview state, qpdf imposed-PDF assembly, and short-edge duplex submission are
 > covered. Initial Denali verification passed booklet ordering and physical output,
 > then found selected-range preview and rotated-page inconsistencies. Fixes are
-> implemented; targeted Denali re-verification remains.
-> The preview suite now passes 38 tests. On 2026-08-01,
-> `cargo test --workspace` passed all 60 workspace tests with no failures; all doc-tests passed.
+> implemented; range preview and booklet rotation now pass. Because CUPS still
+> rotated mixed-orientation 4-up output, Boomaga now assembles complete vector N-up
+> sheets and submits them as one-up; one final Denali 4-up print remains.
+> The preview suite now passes 39 tests. On 2026-08-01,
+> `cargo test --workspace` passed all 62 workspace tests with no failures; all doc-tests passed.
 > Deterministic duplex planning, arbitrary page selection, and capability-aware controls are Denali-verified.
 
 ## Overview

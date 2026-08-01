@@ -372,6 +372,14 @@ impl AppData {
         } else {
             None
         };
+        let n_up_pages = (self.imposition_mode == ImpositionMode::NUp
+            && self.print_options.pages_per_sheet != PagesPerSheet::One)
+            .then(|| {
+                selected_pages
+                    .iter()
+                    .map(|page| page.saturating_sub(1))
+                    .collect()
+            });
 
         self.print_state = PrintState::Submitting;
         self.print_message = Some(format!("Submitting to {printer}…"));
@@ -382,6 +390,8 @@ impl AppData {
             page_count,
             options,
             booklet_sides,
+            n_up_pages,
+            n_up_vertical_fill: self.fill_order == FillOrder::Vertical,
         }) {
             self.print_state = PrintState::Error;
         }

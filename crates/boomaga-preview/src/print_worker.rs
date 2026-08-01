@@ -2,7 +2,7 @@
 use crate::app::AppData;
 use crate::submission_plan::SubmissionPlan;
 use boomaga_core::{
-    assemble_booklet_pdf, normalize_pdf_page_rotations, DuplexMode, PagesPerSheet, PrintOptions,
+    assemble_booklet_pdf, assemble_n_up_pdf, DuplexMode, PagesPerSheet, PrintOptions,
 };
 use std::{
     path::{Path, PathBuf},
@@ -33,6 +33,8 @@ pub enum PrintCommand {
         page_count: usize,
         options: PrintOptions,
         booklet_sides: Option<Vec<[Option<usize>; 2]>>,
+        n_up_pages: Option<Vec<usize>>,
+        n_up_vertical_fill: bool,
     },
 }
 #[derive(Debug, PartialEq, Eq)]
@@ -80,12 +82,16 @@ fn run_loop(proxy: MessageProxy<PrintEvent>, mut receiver: UnboundedReceiver<Pri
                 page_count,
                 options,
                 booklet_sides,
+                n_up_pages,
+                n_up_vertical_fill,
             } => run_submit(
                 &printer,
                 &document,
                 page_count,
                 &options,
                 booklet_sides.as_deref(),
+                n_up_pages.as_deref(),
+                n_up_vertical_fill,
             ),
         };
         if proxy.message(event).is_err() {
@@ -144,6 +150,8 @@ fn run_submit(
     page_count: usize,
     options: &PrintOptions,
     booklet_sides: Option<&[[Option<usize>; 2]]>,
+    n_up_pages: Option<&[usize]>,
+    n_up_vertical_fill: bool,
 ) -> PrintEvent {
     let mut submitted_options = options.clone();
     let artifact = if let Some(sides) = booklet_sides {
@@ -164,7 +172,7 @@ fn run_submit(
         }
         submitted_options = booklet_submission_options(options);
         Some(artifact)
-    } else if options.pages_per_sheet != PagesPerSheet::One {
+    } else if let Some(pages) = n_up_pages {
         let artifact = match tempfile::Builder::new()
             .prefix("boomaga-n-up-")
             .suffix(".pdf")
@@ -175,15 +183,29 @@ fn run_submit(
                 return PrintEvent::Failed(format!("unable to create temporary N-up PDF: {error}"))
             }
         };
-        if let Err(error) = normalize_pdf_page_rotations(document, artifact.path()) {
-            return PrintEvent::Failed(format!("unable to normalize PDF page rotations: {error}"));
+        if let Err(error) = assemble_n_up_pdf(
+            document,
+            artifact.path(),
+            pages,
+            options.pages_per_sheet as u8,
+            n_up_vertical_fill,
+        ) {
+            return PrintEvent::Failed(format!("unable to assemble N-up PDF: {error}"));
         }
+        submitted_options = n_up_submission_options(options);
         Some(artifact)
     } else {
         None
     };
     let submitted_document = artifact.as_ref().map_or(document, |file| file.path());
-    let submitted_page_count = booklet_sides.map_or(page_count, <[_]>::len);
+    let submitted_page_count = booklet_sides.map_or_else(
+        || {
+            n_up_pages.map_or(page_count, |pages| {
+                pages.len().div_ceil(options.pages_per_sheet as usize)
+            })
+        },
+        <[_]>::len,
+    );
 
     let plan = match SubmissionPlan::new(submitted_page_count, &submitted_options) {
         Ok(plan) => plan,
@@ -229,6 +251,14 @@ fn booklet_submission_options(options: &PrintOptions) -> PrintOptions {
         ..options.clone()
     }
 }
+fn n_up_submission_options(options: &PrintOptions) -> PrintOptions {
+    PrintOptions {
+        pages_per_sheet: PagesPerSheet::One,
+        page_range: None,
+        ..options.clone()
+    }
+}
+
 fn command_error(command: &str, stderr: &[u8]) -> String {
     let detail = String::from_utf8_lossy(stderr);
     format!(
@@ -336,6 +366,23 @@ mod tests {
         assert_eq!(submitted.copies, 3);
         assert!(submitted.collate);
         assert_eq!(submitted.duplex, DuplexMode::ShortEdge);
+        assert_eq!(submitted.pages_per_sheet, PagesPerSheet::One);
+        assert!(submitted.page_range.is_none());
+    }
+
+    #[test]
+    fn n_up_artifacts_are_submitted_without_second_cups_imposition() {
+        let options = PrintOptions {
+            copies: 2,
+            duplex: DuplexMode::LongEdge,
+            pages_per_sheet: PagesPerSheet::Four,
+            page_range: Some(PageRange::from_str("2-5").unwrap()),
+            ..PrintOptions::default()
+        };
+
+        let submitted = n_up_submission_options(&options);
+        assert_eq!(submitted.copies, 2);
+        assert_eq!(submitted.duplex, DuplexMode::LongEdge);
         assert_eq!(submitted.pages_per_sheet, PagesPerSheet::One);
         assert!(submitted.page_range.is_none());
     }

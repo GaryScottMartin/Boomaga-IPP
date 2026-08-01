@@ -88,6 +88,112 @@ pub fn assemble_booklet_pdf(
     output.writer().write(output_path).map_err(pdf_error)
 }
 
+/// Assemble source pages into deterministic N-up sheets in row-major or
+/// column-major fill order. Source indices are zero-based.
+pub fn assemble_n_up_pdf(
+    source_path: &Path,
+    output_path: &Path,
+    pages: &[usize],
+    pages_per_sheet: u8,
+    vertical_fill: bool,
+) -> Result<()> {
+    let (columns, rows) = n_up_grid(pages_per_sheet)?;
+    if pages.is_empty() {
+        return Err(Error::Validation(
+            "N-up assembly requires at least one source page".into(),
+        ));
+    }
+
+    let source = QPdf::read(source_path).map_err(pdf_error)?;
+    let source_page_count = source.get_num_pages().map_err(pdf_error)? as usize;
+    for page_index in pages {
+        if *page_index >= source_page_count {
+            return Err(Error::Validation(format!(
+                "N-up source page {} exceeds PDF page count {source_page_count}",
+                page_index + 1
+            )));
+        }
+    }
+
+    let first_page = source
+        .get_page(pages[0] as u32)
+        .ok_or_else(|| Error::Pdf("Unable to read the first selected PDF page".into()))?;
+    let first_geometry = page_geometry(&first_page)?;
+    let portrait_width = first_geometry.width.min(first_geometry.height);
+    let portrait_height = first_geometry.width.max(first_geometry.height);
+    let (output_width, output_height) = if matches!(pages_per_sheet, 2 | 6 | 8) {
+        (portrait_height, portrait_width)
+    } else {
+        (portrait_width, portrait_height)
+    };
+    let output = QPdf::empty();
+
+    for sheet_pages in pages.chunks(usize::from(pages_per_sheet)) {
+        let xobjects = output.new_dictionary();
+        let mut operators = String::new();
+        for (input_index, source_index) in sheet_pages.iter().enumerate() {
+            let slot_index = n_up_slot(input_index, columns, rows, vertical_fill);
+            let page = source.get_page(*source_index as u32).ok_or_else(|| {
+                Error::Pdf(format!("Unable to read source page {}", source_index + 1))
+            })?;
+            let form_name = format!("/N{}", input_index + 1);
+            let (form, transform) = create_n_up_page_form(
+                &output,
+                &page,
+                slot_index,
+                columns,
+                rows,
+                output_width,
+                output_height,
+            )?;
+            xobjects.set(&form_name, form.into_indirect());
+            let [a, b, c, d, e, f] = transform.normalize;
+            operators.push_str(&format!(
+                "q {:.8} 0 0 {:.8} {:.8} {:.8} cm {a:.8} {b:.8} {c:.8} {d:.8} {e:.8} {f:.8} cm {form_name} Do Q\n",
+                transform.scale, transform.scale, transform.x, transform.y
+            ));
+        }
+
+        let resources = output.new_dictionary();
+        resources.set("/XObject", xobjects);
+        let contents = output.new_stream(operators.as_bytes());
+        let media_box = output
+            .parse_object(&format!("[0 0 {output_width:.8} {output_height:.8}]"))
+            .map_err(pdf_error)?;
+        let page = output.new_dictionary();
+        page.set("/Type", output.new_name("/Page"));
+        page.set("/MediaBox", media_box);
+        page.set("/Resources", resources);
+        page.set("/Contents", contents.into_indirect());
+        output
+            .add_page(page.into_indirect(), false)
+            .map_err(pdf_error)?;
+    }
+
+    output.check_pdf().map_err(pdf_error)?;
+    output.writer().write(output_path).map_err(pdf_error)
+}
+
+fn n_up_grid(pages_per_sheet: u8) -> Result<(usize, usize)> {
+    match pages_per_sheet {
+        1 => Ok((1, 1)),
+        2 => Ok((2, 1)),
+        4 => Ok((2, 2)),
+        6 => Ok((3, 2)),
+        8 => Ok((4, 2)),
+        value => Err(Error::Validation(format!(
+            "Unsupported N-up page count: {value}"
+        ))),
+    }
+}
+
+fn n_up_slot(index: usize, columns: usize, rows: usize, vertical_fill: bool) -> usize {
+    if vertical_fill && rows > 1 {
+        (index % rows) * columns + index / rows
+    } else {
+        index
+    }
+}
 /// Rewrite every source page with its inherited `/Rotate` transform embedded
 /// in the page content, leaving no rotation metadata for CUPS N-up to reapply.
 pub fn normalize_pdf_page_rotations(source_path: &Path, output_path: &Path) -> Result<()> {
@@ -210,6 +316,52 @@ fn create_page_form(
     ))
 }
 
+fn create_n_up_page_form(
+    output: &QPdf,
+    page: &QPdfDictionary,
+    slot_index: usize,
+    columns: usize,
+    rows: usize,
+    output_width: f64,
+    output_height: f64,
+) -> Result<(qpdf::QPdfStream, Placement)> {
+    let source_box = inherited_page_value(page, "/CropBox")
+        .or_else(|| inherited_page_value(page, "/MediaBox"))
+        .ok_or_else(|| Error::Pdf("Source PDF page has no MediaBox".into()))?;
+    let geometry = page_geometry_from_box(page, &source_box)?;
+    let resources = inherited_page_value(page, "/Resources")
+        .map(|value| output.copy_from_foreign(value.into_indirect()))
+        .unwrap_or_else(|| output.new_dictionary().into());
+    let form = output.new_stream(page.get_page_content_data().map_err(pdf_error)?.as_ref());
+    let dictionary = form.get_dictionary();
+    dictionary.set("/Type", output.new_name("/XObject"));
+    dictionary.set("/Subtype", output.new_name("/Form"));
+    dictionary.set("/FormType", output.new_integer(1));
+    dictionary.set(
+        "/BBox",
+        output.copy_from_foreign(source_box.into_indirect()),
+    );
+    dictionary.set("/Resources", resources);
+
+    let cell_width = output_width / columns as f64;
+    let cell_height = output_height / rows as f64;
+    let column = slot_index % columns;
+    let row = slot_index / columns;
+    let scale = (cell_width / geometry.width).min(cell_height / geometry.height);
+    let x = column as f64 * cell_width + (cell_width - geometry.width * scale) / 2.0;
+    let y = output_height - (row + 1) as f64 * cell_height
+        + (cell_height - geometry.height * scale) / 2.0;
+
+    Ok((
+        form,
+        Placement {
+            scale,
+            x,
+            y,
+            normalize: geometry.normalize,
+        },
+    ))
+}
 fn page_geometry(page: &QPdfDictionary) -> Result<PageGeometry> {
     let page_box = inherited_page_value(page, "/CropBox")
         .or_else(|| inherited_page_value(page, "/MediaBox"))
@@ -352,6 +504,30 @@ mod tests {
             let data = form.get_data(StreamDecodeLevel::All).unwrap();
             assert!(!data.is_empty());
         }
+    }
+
+    #[test]
+    fn assembles_rotated_pages_into_complete_four_up_sheets() {
+        let directory = TempDir::new().unwrap();
+        let source_path = directory.path().join("source.pdf");
+        let output_path = directory.path().join("n-up.pdf");
+        create_source(&source_path, 5);
+
+        assemble_n_up_pdf(&source_path, &output_path, &[0, 1, 2, 3, 4], 4, false).unwrap();
+
+        let output = QPdf::read(&output_path).unwrap();
+        output.check_pdf().unwrap();
+        assert_eq!(output.get_num_pages().unwrap(), 2);
+        let first = output.get_page(0).unwrap();
+        assert!(first.get("/Rotate").is_none());
+        assert_eq!(
+            page_box(&first.get("/MediaBox").unwrap()).unwrap(),
+            [0.0, 0.0, 200.0, 300.0]
+        );
+        let content = first.get_page_content_data().unwrap();
+        let content = String::from_utf8_lossy(content.as_ref());
+        assert!(content.contains("/N2 Do"));
+        assert!(content.contains("0.00000000 -1.00000000 1.00000000 0.00000000"));
     }
 
     #[test]
