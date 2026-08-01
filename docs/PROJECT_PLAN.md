@@ -68,11 +68,13 @@ component diagram (solid = present in code; dashed = decided-but-not-yet-wired).
 - Active development by the Linebender community
 - Druid (the original choice) is unmaintained — see [`docs/XILEM_MIGRATION.md`](./XILEM_MIGRATION.md)
 
-**Status:** migration Phases A through G are complete and Denali-verified; Phase H is in progress.
-The Xilem 0.4 preview builds, all 36 tests pass, and Denali verified native PDF
+**Status:** migration Phases A through H are complete and Denali-verified.
+The Xilem 0.4 preview builds, all 39 preview tests pass, and Denali verified native PDF
 selection, asynchronous rendering, navigation, N-up, IPC status, CUPS destination
 discovery, and real ET-3750 submission. Simplex collate-on produces `123 123 123`;
 collate-off produces `111 222 333`; duplex preserves document sets. Deterministic duplex planning, arbitrary page selection, and capability-aware print settings are Denali-verified.
+Phase H adds selected-range-aware booklet preview plus vector-preserving booklet and
+N-up output; mixed-orientation booklet and duplex 4-up output match the preview.
 Keyboard navigation and zoom shortcuts are also verified after the rendered
 document canvas receives focus.
 
@@ -253,7 +255,7 @@ crates/
 - Cancellation support
 
 ### Week 6: GUI Foundation
-- Xilem migration Phases A/B/C/D/E/F/G complete and Denali-verified
+- Xilem migration Phases A/B/C/D/E/F/G/H complete and Denali-verified
   (see `XILEM_MIGRATION.md`)
 - Main window (winit)
 - Preview rendering
@@ -324,14 +326,14 @@ crates/
 
 ## Implementation Status
 
-> **Reality check (2026-07-31):** the 32-test preview suite and focused
-> layout-engine, IPC, and backend checks pass. Phases A through G, including
-> Phase F physical-printer/capability-aware UI behavior and Phase G focused-canvas
-> keyboard routing, are Denali/KDE/Wayland verified.
+> **Reality check (2026-08-01):** the 39-test preview suite and focused
+> core, layout-engine, config, IPC, and backend checks pass. Phases A through H,
+> including Phase H booklet/N-up assembly and mixed-orientation physical output,
+> are Denali/KDE/Wayland verified.
 > A fresh Codex sandbox completed
 > `cargo check --workspace` with warnings and no errors, establishing the
 > workspace compiler baseline and verifying the rootless native dependency
-> provisioning. On 2026-07-31, `cargo test --workspace` passed all 48 tests with
+> provisioning. On 2026-08-01, `cargo test --workspace` passed all 62 tests with
 > no failures; all doc-tests passed. Percentages below remain estimates of
 > *design + partial implementation*.
 
@@ -339,10 +341,10 @@ crates/
 
 | Crate | Kind | State | Tests | Notes |
 |-------|------|-------|-------|-------|
-| `boomaga-core` | lib | Types complete; compiles | 2 | Plugin residue removed. `FileType` matches PDF/PWG Raster/JPEG. `parse_metadata()` is a TODO no-op. |
+| `boomaga-core` | lib | Types complete; compiles | 6 | Plugin residue removed. `FileType` matches PDF/PWG Raster/JPEG. `parse_metadata()` is a TODO no-op. |
 | `boomaga-config` | lib | Complete | 3 | `ConfigManager` wired; plugin settings removed. |
-| `boomaga-layout-engine` | lib | Real & usable | 7 | N-up, booklet, transforms implemented; N-up partial-sheet behavior is tested. |
-| `boomaga-preview` | bin | Phases A/B/C/D/E/F/G complete | 32 | Capability-aware settings, downstream submission, and focused-canvas keyboard shortcuts are Denali-verified. |
+| `boomaga-layout-engine` | lib | Real & usable | 10 | N-up, booklet, transforms implemented; N-up partial-sheet and booklet behavior are tested. |
+| `boomaga-preview` | bin | Phases A/B/C/D/E/F/G/H complete | 39 | Capability-aware settings, downstream submission, keyboard shortcuts, and vector booklet/N-up output are Denali-verified. |
 | `boomaga-ipc` | lib | Transport wired | 3 | Versioned newline-delimited JSON framing is used by backend and preview; focused tests pass. |
 | `boomaga-ipp-backend` | bin | Scaffolded, partial | 1 | Queue/processor compile and emit ordered lifecycle notifications; real IPP parsing remains incomplete. |
 
@@ -375,10 +377,26 @@ crates/
   and interactive Wayland verification
 
 #### Remaining Phase 2 Tasks
-- Complete Phase H Denali visual and physical booklet-output verification
 - Complete document-ready IPC and captured-document handoff
 
-### Preview host verification (Denali, updated 2026-07-31)
+#### Planned Xilem Phase I — specification update required
+
+Implementation is intentionally paused until revised SRS/UIS documents authorize
+and define this phase:
+
+- Discover every available CUPS destination through `lpstat -e`, replacing the
+  current reduced `lpstat -p` enumeration.
+- Keep discovery distinct from selection eligibility so Boomaga's own ingress
+  queue can be identified and blocked as a downstream recursion target.
+- Introduce a typed output destination that distinguishes CUPS submission from
+  internal **Save to PDF** output.
+- Reuse the final vector-preserving imposed PDF for file output; PDF destinations
+  do not pass through `lpoptions` or `lp`.
+- Specify and test save-dialog, overwrite, atomic-write, filename, error, and
+  printer-only-option behavior.
+- Complete automated coverage and Denali verification before closing Phase I.
+
+### Preview host verification (Denali, updated 2026-08-01)
 
 ```bash
 cargo check -p boomaga-preview
@@ -390,8 +408,8 @@ cargo test -p boomaga-ipp-backend
 cargo test -p boomaga-layout-engine
 ```
 
-All focused checks passed. The current preview suite reports 36 tests; core
-passes 4, IPC 3, backend 1, and layout-engine 10 tests. Denali/KDE/
+All focused checks passed. The current preview suite reports 39 tests; core
+passes 6, config 3, IPC 3, backend 1, and layout-engine 10 tests. Denali/KDE/
 Wayland interactively verified CUPS discovery and physical ET-3750 submission.
 Simplex output was `123 123 123` with collate on and `111 222 333` with collate
 off. A three-page long-edge duplex job preserved `(1|2) (3|blank)` sets in both
@@ -405,9 +423,10 @@ rendered document canvas receives focus.
 
 ### Phase 3: Advanced Features (Weeks 9-12) — 📋 **0%**
 - Systemd integration
-- Downstream printer management
+- Downstream printer management, including complete CUPS queue discovery
 - User experience enhancements
-- Advanced features (watermarks, PDF export)
+- Advanced features (watermarks and PDF export); PDF export is planned as the
+  integrated **Save to PDF** destination in Xilem Phase I
 
 ---
 

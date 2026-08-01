@@ -22,22 +22,23 @@
 
 ## 1. TL;DR — where things stand
 <!-- One short paragraph. What just happened, what's the single most important next step. -->
-Xilem migration Phases A through G are complete on `main`.
-Phase H code is implemented: deterministic saddle-stitch ordering with explicit
-blank padding, Booklet preview controls, content-preserving qpdf imposed-PDF
-assembly, and complete-set short-edge duplex submission. Denali visual and
-physical-output verification remains.
+Xilem migration Phases A through H are complete on `main` and Denali-verified.
+Phase H provides deterministic saddle-stitch ordering with blank padding,
+selected-range-aware Booklet preview, vector-preserving booklet and N-up PDF
+assembly, and complete-set short-edge duplex submission. Application-owned N-up
+sheets prevent CUPS from changing mixed-orientation page placement.
 The preview now discovers downstream CUPS printers asynchronously, binds destination,
 copies, collate, and duplex controls to `PrintOptions`, submits PDFs through `lp`, and
 keeps submission results visible. Denali verified real ET-3750 output: simplex
 collate-on is `123 123 123`, collate-off is `111 222 333`, and duplex preserves
 complete document sets in both modes. Phase G keyboard navigation and zoom work
 after the rendered document canvas receives focus; clicking non-document window
-background does not focus it. The focused preview suite passes 36 tests;
-the prior 7 layout-engine, 3 IPC, and 1 backend focused baselines still stand. A
+background does not focus it. Denali also verified selected-range Booklet preview
+and mixed-orientation booklet/duplex 4-up output. The focused preview suite passes
+39 tests; core 6, config 3, layout-engine 10, IPC 3, and backend 1 also pass. A
 2026-07-26 Codex sandbox completed `cargo check --workspace` with warnings and no
-errors; on 2026-07-31, `cargo test --workspace` passed all 48 tests with no
-failures and all doc-tests passed. Deterministic planning, arbitrary page selection, and capability-aware print settings are Denali-verified. Booklet UI remains deferred.
+errors; on 2026-08-01, `cargo test --workspace` passed all 62 tests with no
+failures and all doc-tests passed.
 
 ## 2. Active threads / in progress
 <!-- The heart of the file. Each item: what, state, concrete next action. Delete when done. -->
@@ -137,13 +138,25 @@ failures and all doc-tests passed. Deterministic planning, arbitrary page select
       Denali rendered all four primary `.puml` files cleanly and refreshed their
       PNGs. Paginated sources use `.pg1`, `.pg2`, etc. so PlantUML directory scans
       do not attempt to render incomplete fragments.
-- [ ] **XILEM Phase H — CODE COMPLETE; DENALI VERIFICATION PENDING (2026-07-31).**
-      `BookletPlan` provides saddle-stitch ordering and blank padding; preview
-      controls navigate the same sides. `boomaga-core` now assembles a temporary
-      vector-preserving imposed PDF with qpdf Form XObjects. The print worker
-      submits it as one-up, short-edge duplex and preserves complete booklet copy
-      sets; RAII removes the artifact. Workspace tests pass: 57 total (core 4,
-      config 3, IPC 3, backend 1, layout-engine 10, preview 36).
+- [x] **XILEM Phase H — COMPLETE AND DENALI-VERIFIED (2026-08-01).**
+      `BookletPlan` provides saddle-stitch ordering and blank padding; selected
+      page ranges immediately drive the same preview and output sides.
+      `boomaga-core` assembles temporary vector-preserving booklet and N-up PDFs
+      with qpdf Form XObjects. The print worker submits already-imposed artifacts
+      as one-up, preserves booklet copy sets, and removes artifacts through RAII.
+      Denali verified Booklet and duplex 4-up output with mixed-orientation
+      `Printer-Test-05.pdf`; physical orientation matches preview. Workspace tests
+      pass: 62 total (core 6, config 3, IPC 3, backend 1, layout-engine 10,
+      preview 39). Evidence: `docs/XILEM-vis-ver-results.txt`.
+- [ ] **XILEM Phase I — PLANNED; WAITING FOR REVISED SRS/UIS (2026-08-01).**
+      Expand CUPS discovery from `lpstat -p` to every destination returned by
+      `lpstat -e`, while identifying Boomaga's ingress queue as ineligible for
+      downstream selection to prevent recursion. Introduce a typed output target
+      that distinguishes CUPS queues from an internal **Save to PDF** destination.
+      PDF output will reuse the vector-preserving imposed artifact shown in preview
+      and will not invoke `lpoptions` or `lp`. The revised specifications must
+      settle UI and file-save semantics before implementation begins. See Phase I
+      in `docs/XILEM_MIGRATION.md`.
 - [x] **Codex startup context and native provisioning (`60b0900`, `1a9e04e`).**
       Replaced the `AGENTS.md` symlink with a real Codex instruction file that
       requires the seven context documents. Expanded the tracked Codex sandbox
@@ -153,8 +166,10 @@ failures and all doc-tests passed. Deterministic planning, arbitrary page select
 
 ## 3. Open questions / waiting on
 <!-- Decisions or inputs owned by the human, or external events being awaited. -->
+- Revised SRS and UIS requirements for Phase I complete CUPS destination discovery,
+  self-queue recursion protection, and the integrated **Save to PDF** workflow.
+  Do not implement Phase I against SRS/UIS v0.2.2.
 - Real IPP request parsing/response generation and captured-document handoff remain incomplete.
-- Booklet controls were outside the accepted Phase E N-up scope and remain open.
 
 ## 4. Key decisions & rationale (durable — don't re-litigate)
 <!-- Settled calls a future session should honor unless explicitly revisited. -->
@@ -167,8 +182,8 @@ failures and all doc-tests passed. Deterministic planning, arbitrary page select
 - **Imposition (N-up/booklet/scale/rotate/margins/gutter) computed in `boomaga-layout-engine`**;
   qpdf-rs assembles/applies content-preserving transforms; poppler-rs renders preview. (Issue #11.)
 - **No plugin system.** `boomaga-plugins` deleted; specs stay silent. (Issue #10.) Code fully clean.
-- **GUI = Xilem** (Druid deprecated). Phases A/B/C/D/E/F/G are complete and
-  Denali-verified on `main`; booklet controls remain a follow-up.
+- **GUI = Xilem** (Druid deprecated). Phases A/B/C/D/E/F/G/H are complete and
+  Denali-verified on `main`, including booklet controls and physical output.
 - **SRS/UIS v0.2.2 Appendix C now conforms to code** (`c471a71`); `docs/uml/*.puml` is the
   maintained source. (Supersedes the earlier "Appendix C is an unreconciled Perplexity model" note.)
 - **`.claude/` handoff config is repo-shipped and vendored** (real files — no symlinks, no
@@ -206,7 +221,7 @@ failures and all doc-tests passed. Deterministic planning, arbitrary page select
   `git mv` plus separate edits, `git add -A` (or `--amend` afterward) so all files land in one commit.
 - **Workspace compiler and test baselines are recorded.** A fresh Codex sandbox
   completed `cargo check --workspace` with warnings and no errors on 2026-07-26.
-  On 2026-07-31, `cargo test --workspace` passed all 48 tests with no failures;
+  On 2026-08-01, `cargo test --workspace` passed all 62 tests with no failures;
   all doc-tests also passed.
 - **Live policy updates must originate on the OpenShell host.** Editing the active policy from
   the originating host can affect a running sandbox; recreating the sandbox is not inherently
@@ -230,7 +245,7 @@ failures and all doc-tests passed. Deterministic planning, arbitrary page select
 <!-- Where the real detail lives. Keep this file thin; link out. -->
 - `README.md`, `CLAUDE.md` — project overview, build, inter-crate patterns, Claude Code setup.
 - `docs/PROJECT_PLAN.md` — architecture, phases, honest per-crate status.
-- `docs/XILEM_MIGRATION.md` — GUI migration plan (Phases A through G are complete).
+- `docs/XILEM_MIGRATION.md` — GUI migration plan (Phases A through H are complete).
 - `docs/XILEM-vis-ver-results.txt` — Denali/KDE/Wayland interactive verification record.
 - `docs/SW-Reqrmnts-Spec--latest.pdf`, `docs/User-Interface-Spec--latest.pdf` — current specs (v0.2.2).
 - `docs/uml/*.puml` — renderable code-conformant PlantUML; matching `.pgN` files are paginated source fragments, and `.png` files are current Denali renders (the earlier model is also embedded in spec Appendix C).

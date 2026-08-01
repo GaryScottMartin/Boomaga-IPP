@@ -101,7 +101,7 @@ Click the PDF preview (or move focus to it with Tab), then use:
 ## Project Status
 
 The six-crate workspace remains under active development. Xilem preview migration
-Phases A through G are complete and host-verified on Denali, including native file
+Phases A through H are complete and host-verified on Denali, including native file
 selection, asynchronous on-demand PDF rendering, navigation/zoom, 1/2/4/6/8-up
 imposition, and backend job-status IPC. Phase F is complete: the preview now
 discovers CUPS destinations asynchronously, exposes copies/collate/duplex controls
@@ -110,14 +110,20 @@ Denali verified real ET-3750 output, persistent submission status, simplex
 collation (`123 123 123` versus `111 222 333`), and duplex set preservation.
 Phase G added tested keyboard navigation and zoom shortcuts; Denali verified
 that they work after the rendered document canvas receives focus. The focused
-preview suite now passes 36 tests. Phase H code now includes deterministic
-booklet ordering/blank padding, preview controls, qpdf imposed-PDF assembly,
-and short-edge duplex submission; Denali verification remains. A fresh Codex sandbox completed
+preview suite now passes 39 tests. Phase H adds deterministic booklet ordering and
+blank padding, selected-range-aware preview, vector-preserving booklet and N-up PDF
+assembly, complete-set short-edge duplex submission, and application-owned N-up
+placement. Denali verified booklet and duplex 4-up preview/output orientation,
+including mixed-orientation source pages. A fresh Codex sandbox completed
 `cargo check --workspace` with warnings and no errors on 2026-07-26. On
-2026-07-31, `cargo test --workspace` passed all 48 tests and all doc-tests.
+2026-08-01, `cargo test --workspace` passed all 62 tests and all doc-tests.
 Deterministic duplex planning, arbitrary page selection, and the bordered capability-aware print-settings panel are Denali-verified. See
 [`docs/HANDOFF.md`](docs/HANDOFF.md) for current session state and
 [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) for detailed status.
+Phase I is planned but intentionally not started pending revised SRS/UIS
+requirements. It will expand discovery to all `lpstat -e` CUPS destinations,
+protect Boomaga's ingress queue from recursive downstream selection, and add an
+internal **Save to PDF** output target through a typed destination abstraction.
 
 ## Development
 
@@ -161,7 +167,7 @@ Contributions are welcome! Please see CONTRIBUTING.md for guidelines.
 - [x] Project foundation
 - [x] Core infrastructure
 - [ ] Complete IPP server implementation
-- [x] Xilem preview Phases A/B/C/D/E/F/G
+- [x] Xilem preview Phases A/B/C/D/E/F/G/H
 - [x] Layout engine
 - [x] Configuration management system
 - [x] PDF rendering foundation (Poppler)

@@ -1,17 +1,17 @@
 # Xilem Migration Plan
 
 > **Last reviewed against code:** 2026-08-01.
-> **Status:** Phases A through G are complete on `main`. Phase F adds
+> **Status:** Phases A through H are complete on `main`. Phase F adds
 > asynchronous CUPS discovery, `PrintOptions`
 > controls, and downstream `lp` submission, verified on Denali with an ET-3750.
 > Phase G adds keyboard navigation/zoom and focus routing, verified on Denali/KDE/Wayland.
-> Phase H code is implemented: deterministic saddle-stitch ordering, blank padding,
+> Phase H is Denali-verified: deterministic saddle-stitch ordering, blank padding,
 > preview state, qpdf imposed-PDF assembly, and short-edge duplex submission are
 > covered. Initial Denali verification passed booklet ordering and physical output,
 > then found selected-range preview and rotated-page inconsistencies. Fixes are
 > implemented; range preview and booklet rotation now pass. Because CUPS still
 > rotated mixed-orientation 4-up output, Boomaga now assembles complete vector N-up
-> sheets and submits them as one-up; one final Denali 4-up print remains.
+> sheets and submits them as one-up; final Denali duplex 4-up output matches preview.
 > The preview suite now passes 39 tests. On 2026-08-01,
 > `cargo test --workspace` passed all 62 workspace tests with no failures; all doc-tests passed.
 > Deterministic duplex planning, arbitrary page selection, and capability-aware controls are Denali-verified.
@@ -36,7 +36,7 @@ Target architecture: SRS/UIS **v0.2.2** Appendix C and [`docs/uml/`](./uml/)
 
 ## Current Status
 
-Phases A through G are complete and host-verified on `main`: a native PDF chooser
+Phases A through H are complete and host-verified on `main`: a native PDF chooser
 and command-line paths feed one background renderer thread through Xilem 0.4's
 `worker`/`MessageProxy` mechanism. `AppData` holds loading/error/progress state
 and a sparse on-demand page cache. The preview now composes 1/2/4/6/8-up sheets,
@@ -47,7 +47,7 @@ settings panel binds printer, copies, collate, and duplex to `PrintOptions`, and
 submission results persist in the footer. Denali verified physical ET-3750 output: simplex collate-on
 `123 123 123`, collate-off `111 222 333`, plus duplex set preservation. Phase G
 added typed keyboard navigation/zoom shortcuts and focus/event-routing coverage.
-All 32 preview tests pass; capability-aware UI behavior and keyboard operation
+All 39 preview tests pass; capability-aware UI behavior and keyboard operation
 after focusing the rendered canvas are Denali/KDE/Wayland verified.
 
 **Dependencies:**
@@ -222,7 +222,7 @@ fn main() -> anyhow::Result<()> {
   after the rendered canvas receives focus. Clicking non-document background
   intentionally leaves the canvas unfocused. Evidence: [`XILEM-vis-ver-results.txt`](./XILEM-vis-ver-results.txt).
 
-### Phase H: Booklet preview and output — 🚧 IN PROGRESS (2026-07-31)
+### Phase H: Booklet preview and output — ✅ DONE, HOST-VERIFIED (2026-08-01)
 - ✅ Added a pure `BookletPlan` with zero-based source slots, saddle-stitch
   front/back ordering, and explicit blank padding to a multiple of four pages.
 - ✅ Added Booklet mode to `AppData`, a Xilem Booklet control, imposed-side
@@ -233,7 +233,35 @@ fn main() -> anyhow::Result<()> {
 - ✅ The print worker submits the temporary artifact as one-up, short-edge duplex;
   copies remain complete booklet sets and RAII removes the artifact afterward.
 - ✅ Added assembler, selected-page mapping, and submission-option coverage.
-- [ ] Complete Denali/KDE/Wayland visual and physical-output verification.
+- ✅ Page ranges immediately update booklet preview and submission consistently.
+- ✅ Boomaga-owned vector N-up sheets prevent CUPS rotation changes.
+- ✅ Denali verified booklet and duplex 4-up preview/output orientation, including
+  `Printer-Test-05.pdf`; evidence is in `XILEM-vis-ver-results.txt`.
+
+### Phase I: Destination discovery and PDF output — 📋 PLANNED; SPEC UPDATE REQUIRED
+
+No Phase I implementation begins until the Software Requirements Specification
+and User Interface Specification define and authorize the behavior below.
+
+- Replace the reduced `lpstat -p` discovery set with all destinations reported
+  by `lpstat -e`.
+- Represent discovery separately from eligibility: enumerate every available CUPS
+  queue, but prevent Boomaga's own ingress queue from being selected as a
+  downstream target and recursively receiving its own job.
+- Replace the assumption that every output target is a CUPS queue with a typed
+  destination model that distinguishes a CUPS queue from PDF file output.
+- Present **Save to PDF** in the printer-selection UI while routing it to an
+  internal file-output path, never through `lpoptions` or `lp`.
+- Reuse the vector-preserving selected-page/booklet/N-up assembly pipeline so the
+  saved PDF represents the final imposed sheets shown in preview.
+- Specify save-dialog behavior, overwrite confirmation, atomic replacement,
+  filename/extension handling, error reporting, and persistence of the last
+  directory in the revised SRS/UIS.
+- Define which printer-only options are ignored for PDF output; copy count is not
+  duplicated into the file, while page selection, order, rotation, N-up, and
+  booklet imposition remain meaningful.
+- Add automated tests and require Denali verification for complete CUPS
+  enumeration, self-queue protection, and PDF output fidelity.
 
 ## Druid → Xilem concept mapping (corrected)
 
@@ -254,7 +282,7 @@ fn main() -> anyhow::Result<()> {
 - [x] Navigate pages (next, previous, first, last)
 - [x] Zoom in/out/reset
 - [x] Apply N-up imposition in preview
-- [x] Add booklet controls and preview mode (Phase H foundation; output remains)
+- [x] Add booklet controls, selected-range preview, and vector-preserving output
 - [x] Select downstream printer and submit
 - [ ] Toolbar + menu
 - [x] Keyboard shortcuts (Space, N, P, +/-, 0)
@@ -299,5 +327,7 @@ fn main() -> anyhow::Result<()> {
 8. ✅ **Phase G** — keyboard navigation/zoom, focus routing, regression coverage,
    and interactive Wayland verification are complete.
 9. ✅ Reconciled `docs/uml/*.puml` with the current implementation through Phase G; realized and planned boundaries are explicit.
-10. 🚧 **Phase H** — booklet ordering/padding, preview, qpdf assembly, and
-    submission are implemented; host visual/physical verification remains.
+10. ✅ **Phase H** — booklet ordering/padding, preview, vector booklet/N-up PDF
+    assembly, submission, and mixed-orientation physical output are host-verified.
+11. 📋 **Phase I** — complete CUPS destination discovery and typed PDF output are
+    planned. Work is paused until revised SRS/UIS documents become authoritative.
