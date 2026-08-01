@@ -88,6 +88,72 @@ pub fn assemble_booklet_pdf(
     output.writer().write(output_path).map_err(pdf_error)
 }
 
+/// Rewrite every source page with its inherited `/Rotate` transform embedded
+/// in the page content, leaving no rotation metadata for CUPS N-up to reapply.
+pub fn normalize_pdf_page_rotations(source_path: &Path, output_path: &Path) -> Result<()> {
+    let source = QPdf::read(source_path).map_err(pdf_error)?;
+    let source_page_count = source.get_num_pages().map_err(pdf_error)?;
+    if source_page_count == 0 {
+        return Err(Error::Validation(
+            "Cannot normalize rotations in an empty PDF".into(),
+        ));
+    }
+
+    let output = QPdf::empty();
+    for page_index in 0..source_page_count {
+        let source_page = source
+            .get_page(page_index)
+            .ok_or_else(|| Error::Pdf(format!("Unable to read source page {}", page_index + 1)))?;
+        let source_box = inherited_page_value(&source_page, "/CropBox")
+            .or_else(|| inherited_page_value(&source_page, "/MediaBox"))
+            .ok_or_else(|| Error::Pdf("Source PDF page has no MediaBox".into()))?;
+        let geometry = page_geometry_from_box(&source_page, &source_box)?;
+
+        let resources = inherited_page_value(&source_page, "/Resources")
+            .map(|value| output.copy_from_foreign(value.into_indirect()))
+            .unwrap_or_else(|| output.new_dictionary().into());
+        let form = output.new_stream(
+            source_page
+                .get_page_content_data()
+                .map_err(pdf_error)?
+                .as_ref(),
+        );
+        let form_dictionary = form.get_dictionary();
+        form_dictionary.set("/Type", output.new_name("/XObject"));
+        form_dictionary.set("/Subtype", output.new_name("/Form"));
+        form_dictionary.set("/FormType", output.new_integer(1));
+        form_dictionary.set(
+            "/BBox",
+            output.copy_from_foreign(source_box.into_indirect()),
+        );
+        form_dictionary.set("/Resources", resources);
+
+        let xobjects = output.new_dictionary();
+        xobjects.set("/P", form.into_indirect());
+        let page_resources = output.new_dictionary();
+        page_resources.set("/XObject", xobjects);
+        let [a, b, c, d, e, f] = geometry.normalize;
+        let contents = output
+            .new_stream(format!("{a:.8} {b:.8} {c:.8} {d:.8} {e:.8} {f:.8} cm /P Do\n").as_bytes());
+        let media_box = output
+            .parse_object(&format!(
+                "[0 0 {:.8} {:.8}]",
+                geometry.width, geometry.height
+            ))
+            .map_err(pdf_error)?;
+        let page = output.new_dictionary();
+        page.set("/Type", output.new_name("/Page"));
+        page.set("/MediaBox", media_box);
+        page.set("/Resources", page_resources);
+        page.set("/Contents", contents.into_indirect());
+        output
+            .add_page(page.into_indirect(), false)
+            .map_err(pdf_error)?;
+    }
+
+    output.check_pdf().map_err(pdf_error)?;
+    output.writer().write(output_path).map_err(pdf_error)
+}
 #[derive(Debug, Clone, Copy)]
 struct Placement {
     scale: f64,
@@ -286,6 +352,29 @@ mod tests {
             let data = form.get_data(StreamDecodeLevel::All).unwrap();
             assert!(!data.is_empty());
         }
+    }
+
+    #[test]
+    fn normalizes_page_rotation_into_content_for_cups_n_up() {
+        let directory = TempDir::new().unwrap();
+        let source_path = directory.path().join("source.pdf");
+        let output_path = directory.path().join("normalized.pdf");
+        create_source(&source_path, 2);
+
+        normalize_pdf_page_rotations(&source_path, &output_path).unwrap();
+
+        let output = QPdf::read(&output_path).unwrap();
+        output.check_pdf().unwrap();
+        assert_eq!(output.get_num_pages().unwrap(), 2);
+        let rotated = output.get_page(1).unwrap();
+        assert!(rotated.get("/Rotate").is_none());
+        assert_eq!(
+            page_box(&rotated.get("/MediaBox").unwrap()).unwrap(),
+            [0.0, 0.0, 300.0, 200.0]
+        );
+        let content = rotated.get_page_content_data().unwrap();
+        assert!(String::from_utf8_lossy(content.as_ref())
+            .contains("0.00000000 -1.00000000 1.00000000 0.00000000"));
     }
 
     #[test]

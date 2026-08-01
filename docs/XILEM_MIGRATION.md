@@ -1,15 +1,17 @@
 # Xilem Migration Plan
 
-> **Last reviewed against code:** 2026-07-31.
+> **Last reviewed against code:** 2026-08-01.
 > **Status:** Phases A through G are complete on `main`. Phase F adds
 > asynchronous CUPS discovery, `PrintOptions`
 > controls, and downstream `lp` submission, verified on Denali with an ET-3750.
 > Phase G adds keyboard navigation/zoom and focus routing, verified on Denali/KDE/Wayland.
 > Phase H code is implemented: deterministic saddle-stitch ordering, blank padding,
 > preview state, qpdf imposed-PDF assembly, and short-edge duplex submission are
-> covered; Denali visual and physical-output verification remains.
-> The preview suite now passes 36 tests. On 2026-07-31,
-> `cargo test --workspace` passed all 48 workspace tests with no failures; all doc-tests passed.
+> covered. Initial Denali verification passed booklet ordering and physical output,
+> then found selected-range preview and rotated-page inconsistencies. Fixes are
+> implemented; targeted Denali re-verification remains.
+> The preview suite now passes 38 tests. On 2026-08-01,
+> `cargo test --workspace` passed all 60 workspace tests with no failures; all doc-tests passed.
 > Deterministic duplex planning, arbitrary page selection, and capability-aware controls are Denali-verified.
 
 ## Overview

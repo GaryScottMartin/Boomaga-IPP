@@ -275,7 +275,13 @@ impl AppData {
     }
 
     pub fn set_page_range_input(&mut self, input: String) {
+        if self.page_range_input == input {
+            return;
+        }
         self.page_range_input = input;
+        self.current_page = 0;
+        self.imposition_revision = self.imposition_revision.wrapping_add(1);
+        self.request_current_page();
     }
 
     pub fn cycle_duplex(&mut self) {
@@ -593,6 +599,19 @@ impl AppData {
         self.document.as_ref().map_or(0, Document::page_count)
     }
 
+    fn selected_source_pages(&self) -> Vec<usize> {
+        let page_count = self.source_page_count();
+        if self.page_range_input.trim().is_empty() {
+            return (0..page_count).collect();
+        }
+
+        self.page_range_input
+            .parse::<PageRange>()
+            .and_then(|selection| selection.pages(page_count))
+            .map(|pages| pages.into_iter().map(|page| page - 1).collect())
+            .unwrap_or_else(|_| (0..page_count).collect())
+    }
+
     pub fn current_sheet_pages(&self) -> Vec<usize> {
         self.current_sheet_slots().into_iter().flatten().collect()
     }
@@ -605,18 +624,23 @@ impl AppData {
     }
 
     fn sheet_pages(&self) -> Vec<Vec<Option<usize>>> {
+        let pages = self.selected_source_pages();
         if self.imposition_mode == ImpositionMode::Booklet {
-            return BookletPlan::new(self.source_page_count())
+            return BookletPlan::new(pages.len())
                 .map(|plan| {
                     plan.sides
                         .into_iter()
-                        .map(|side| side.slots.into_iter().collect())
+                        .map(|side| {
+                            side.slots
+                                .map(|slot| slot.map(|index| pages[index]))
+                                .into_iter()
+                                .collect()
+                        })
                         .collect()
                 })
                 .unwrap_or_default();
         }
 
-        let pages: Vec<_> = (0..self.source_page_count()).collect();
         NUpCalculator::new(self.print_options.pages_per_sheet as u8)
             .and_then(|calculator| calculator.calculate(&pages, PageSize::A4))
             .map(|layout| {
@@ -1070,6 +1094,36 @@ mod tests {
             command => panic!("unexpected print command: {command:?}"),
         }
         assert_eq!(data.print_state, PrintState::Submitting);
+    }
+
+    #[test]
+    fn page_range_updates_booklet_preview_to_match_submission() {
+        let mut data = AppData {
+            document: Some(document_with_pages(6)),
+            ..AppData::default()
+        };
+        data.set_booklet_mode();
+
+        data.set_page_range_input("2-5".into());
+
+        assert_eq!(data.page_count(), 2);
+        assert_eq!(data.current_sheet_slots(), vec![Some(4), Some(1)]);
+        data.next_page();
+        assert_eq!(data.current_sheet_slots(), vec![Some(2), Some(3)]);
+    }
+
+    #[test]
+    fn invalid_page_range_keeps_full_preview_until_input_is_valid() {
+        let mut data = AppData {
+            document: Some(document_with_pages(6)),
+            ..AppData::default()
+        };
+        data.set_booklet_mode();
+
+        data.set_page_range_input("2-".into());
+
+        assert_eq!(data.page_count(), 4);
+        assert_eq!(data.current_sheet_slots(), vec![None, Some(0)]);
     }
 
     #[test]

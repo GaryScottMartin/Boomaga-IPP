@@ -91,7 +91,10 @@ fn grid_slot(index: usize, pages_per_sheet: u8, vertical: bool) -> usize {
 
 fn imposed_sheet_size(source_size: Size, pages_per_sheet: u8) -> Size {
     if matches!(pages_per_sheet, 2 | 6 | 8) {
-        Size::new(source_size.height, source_size.width)
+        Size::new(
+            source_size.width.max(source_size.height),
+            source_size.width.min(source_size.height),
+        )
     } else {
         source_size
     }
@@ -405,12 +408,14 @@ mod tests {
     #[test]
     fn two_up_uses_landscape_sheet_orientation() {
         let portrait = Size::new(595.0, 842.0);
+        let landscape = Size::new(842.0, 595.0);
 
         assert_eq!(imposed_sheet_size(portrait, 1), portrait);
-        assert_eq!(imposed_sheet_size(portrait, 2), Size::new(842.0, 595.0));
+        assert_eq!(imposed_sheet_size(portrait, 2), landscape);
+        assert_eq!(imposed_sheet_size(landscape, 2), landscape);
         assert_eq!(imposed_sheet_size(portrait, 4), portrait);
-        assert_eq!(imposed_sheet_size(portrait, 6), Size::new(842.0, 595.0));
-        assert_eq!(imposed_sheet_size(portrait, 8), Size::new(842.0, 595.0));
+        assert_eq!(imposed_sheet_size(portrait, 6), landscape);
+        assert_eq!(imposed_sheet_size(portrait, 8), landscape);
     }
 
     #[test]

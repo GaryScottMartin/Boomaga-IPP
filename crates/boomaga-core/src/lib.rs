@@ -11,7 +11,7 @@ pub mod constants;
 pub mod pdf_assembler;
 
 pub use error::{Error, Result};
-pub use pdf_assembler::assemble_booklet_pdf;
+pub use pdf_assembler::{assemble_booklet_pdf, normalize_pdf_page_rotations};
 pub use job::{JobStatus, JobMetadata, JobPriority, PrintJobRequest, PrintOptions, PageRange, PageInfo, JobId};
 pub use document::{Document, Page, PageSize, Orientation, PageContents, GraphicsElement, PathElement, Color, FileType, PagesPerSheet, MarginMode, DuplexMode};
 pub use printer::{PrinterInfo, PrinterCapabilities, PageLayout};

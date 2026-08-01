@@ -1,7 +1,9 @@
 //! Background CUPS command bridge for printer discovery and submission.
 use crate::app::AppData;
 use crate::submission_plan::SubmissionPlan;
-use boomaga_core::{assemble_booklet_pdf, DuplexMode, PagesPerSheet, PrintOptions};
+use boomaga_core::{
+    assemble_booklet_pdf, normalize_pdf_page_rotations, DuplexMode, PagesPerSheet, PrintOptions,
+};
 use std::{
     path::{Path, PathBuf},
     process::Command,
@@ -161,6 +163,21 @@ fn run_submit(
             return PrintEvent::Failed(format!("unable to assemble booklet PDF: {error}"));
         }
         submitted_options = booklet_submission_options(options);
+        Some(artifact)
+    } else if options.pages_per_sheet != PagesPerSheet::One {
+        let artifact = match tempfile::Builder::new()
+            .prefix("boomaga-n-up-")
+            .suffix(".pdf")
+            .tempfile()
+        {
+            Ok(artifact) => artifact,
+            Err(error) => {
+                return PrintEvent::Failed(format!("unable to create temporary N-up PDF: {error}"))
+            }
+        };
+        if let Err(error) = normalize_pdf_page_rotations(document, artifact.path()) {
+            return PrintEvent::Failed(format!("unable to normalize PDF page rotations: {error}"));
+        }
         Some(artifact)
     } else {
         None
