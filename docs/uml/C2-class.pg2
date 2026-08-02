@@ -1,4 +1,4 @@
- class JobMetadata {
+  class JobMetadata {
     +job_id: JobId
     +status: JobStatus
     +priority: JobPriority
