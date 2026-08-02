@@ -1,0 +1,14 @@
+PdfCanvasWidget --> CanvasImage
+PdfCanvasWidget --> PreviewShortcut : focused key event
+DocumentRenderer --> RendererEvent
+PrintCommand --> PrintOptions
+PrintCommand --> SubmissionPlan
+SubmissionPlan "1" *-- "*" SubmissionJob
+SubmissionJob --> PageRange
+Message --> MessagePayload
+ConfigManager --> Settings
+
+' ---- Decided but not yet wired ----
+IppServer .[#gray,dashed].> AppData : <<planned>> captured-document handoff
+JobProcessor .[#gray,dashed].> NUpCalculator : <<planned>> output imposition
+@enduml

@@ -1,0 +1,42 @@
+package "boomaga-config" {
+  class ConfigManager
+  class Settings
+}
+
+' ---- Relationships realized in code ----
+Document "1" *-- "*" Page
+Page --> PageContents
+PrintJobRequest --> JobId
+PrintJobRequest --> PrintOptions
+PrintJobRequest --> FileType
+PrintOptions --> PageRange
+PrintOptions --> DuplexMode
+PrintOptions --> Orientation
+PrintOptions --> PagesPerSheet
+PrintOptions --> MarginMode
+JobMetadata --> JobId
+JobMetadata --> JobStatus
+JobMetadata --> JobPriority
+IppServer o--> JobProcessor
+JobProcessor o--> JobQueue
+JobProcessor --> NotificationServer : sender
+JobQueue --> PrintJobRequest
+IppRequest --> IppOperation
+IppResponse --> IppStatusCode
+NotificationServer --> Message
+UnixSocketTransport --> Message
+NUpCalculator --> NUpLayout
+NUpLayout "1" *-- "*" PageResult
+AppData --> Document
+AppData --> PrintOptions
+AppData --> JobStatus
+AppData --> NUpCalculator
+AppData --> PreviewShortcut
+AppData --> RendererCommand
+RendererEvent --> AppData
+AppData --> IpcCommand
+IpcEvent --> AppData
+UnixSocketTransport --> IpcEvent
+AppData --> PrintCommand
+PrintEvent --> AppData
+AppData --> PdfCanvasWidget

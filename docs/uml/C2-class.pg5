@@ -1,47 +1,20 @@
-    +handle_print_event(PrintEvent)
+package "boomaga-layout-engine" {
+  class NUpCalculator {
+    +new(u8): Result
+    +with_config(NUpConfig)
+    +calculate(input, PageSize): NUpLayout
   }
-  enum PreviewShortcut {
-    NextPage
-    PreviousPage
-    ZoomIn
-    ZoomOut
-    ResetZoom
+  class NUpLayout {
+    +pages: Vec<PageResult>
+    +output_size: PageSize
+    +pages_per_sheet: u8
   }
-  enum LoadState {
-    Idle
-    Loading
-    Ready
-    Error
+  class PageResult {
+    +output_page: usize
+    +input_pages: Vec<usize>
+    +position: PagePosition
   }
-  enum FillOrder {
-    Horizontal
-    Vertical
-  }
-  enum IpcState {
-    Connecting
-    Connected
-    Disconnected
-  }
-  enum PrintState {
-    Discovering
-    Ready
-    Submitting
-    Error
-  }
+  class BookletCalculator
+  class PageTransformer
+}
 
-  class PdfCanvasWidget {
-    -images: Vec<CanvasImage>
-    -zoom: f64
-    +on_pointer_event(...)
-    +on_text_event(...)
-    +access(...)
-  }
-  class CanvasImage
-  class DocumentRenderer {
-    +load_document(Path): Result<Document>
-    +render_page(usize): Result<CanvasImage>
-  }
-  enum RendererCommand {
-    LoadDocument
-    RenderPage
-  }

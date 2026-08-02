@@ -1,47 +1,28 @@
-  enum RendererEvent {
-    DocumentLoaded
+package "boomaga-ipc" {
+  class Message {
+    +message_id: u64
+    +message_type: MessageType
+    +source: MessageSource
+    +destination: MessageDestination
+    +payload: MessagePayload
+    +timestamp: i64
+  }
+  enum MessagePayload {
+    PrintJobRequest
+    PrintJobStatus
+    DocumentReady
     PageRendered
-    Failed
+    PrinterInfo
+    Custom
   }
-  enum IpcCommand {
-    Connect
+  class NotificationServer {
+    -socket_path: PathBuf
+    +bind(path): (Self, NotificationSender)
+    +run(): Result
   }
-  enum IpcEvent {
-    Message
-    Disconnected
-  }
-  class PrinterCapabilities {
-    +supports_duplex: bool
-    +supports_collate: bool
-  }
-  enum PrintCommand {
-    Discover
-    DiscoverCapabilities
-    Submit
-  }
-  enum PrintEvent {
-    Printers
-    Capabilities
-    CapabilitiesFailed
-    Submitted
-    Failed
-  }
-  class SubmissionPlan {
-    +jobs: Vec<SubmissionJob>
-    +new(page_count, options): Result<Self>
-  }
-  class SubmissionJob {
-    +copies: u32
-    +pages: PageRange
+  class UnixSocketTransport {
+    -socket_path: PathBuf
+    +receive_message(): Result<Message>
   }
 }
 
-package "boomaga-config" {
-  class ConfigManager
-  class Settings
-}
-
-' ---- Relationships realized in code ----
-Document "1" *-- "*" Page
-Page --> PageContents
-PrintJobRequest --> JobId

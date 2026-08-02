@@ -41,8 +41,3 @@ package "boomaga-core" {
     +margins: MarginMode
     +validate(): Result
   }
-  class JobMetadata {
-    +job_id: JobId
-    +status: JobStatus
-    +priority: JobPriority
-    +pages: Vec<PageInfo>

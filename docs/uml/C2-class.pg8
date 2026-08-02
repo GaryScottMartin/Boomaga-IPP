@@ -1,0 +1,44 @@
+  enum PrintState {
+    Discovering
+    Ready
+    Submitting
+    Error
+  }
+
+  class PdfCanvasWidget {
+    -images: Vec<CanvasImage>
+    -zoom: f64
+    +on_pointer_event(...)
+    +on_text_event(...)
+    +access(...)
+  }
+  class CanvasImage
+  class DocumentRenderer {
+    +load_document(Path): Result<Document>
+    +render_page(usize): Result<CanvasImage>
+  }
+  enum RendererCommand {
+    LoadDocument
+    RenderPage
+  }
+  enum RendererEvent {
+    DocumentLoaded
+    PageRendered
+    Failed
+  }
+  enum IpcCommand {
+    Connect
+  }
+  enum IpcEvent {
+    Message
+    Disconnected
+  }
+  class PrinterCapabilities {
+    +supports_duplex: bool
+    +supports_collate: bool
+  }
+  enum PrintCommand {
+    Discover
+    DiscoverCapabilities
+    Submit
+  }

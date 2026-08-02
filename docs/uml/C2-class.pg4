@@ -1,47 +1,29 @@
-
-package "boomaga-ipc" {
-  class Message {
-    +message_id: u64
-    +message_type: MessageType
-    +source: MessageSource
-    +destination: MessageDestination
-    +payload: MessagePayload
-    +timestamp: i64
-  }
-  enum MessagePayload {
-    PrintJobRequest
-    PrintJobStatus
-    DocumentReady
-    PageRendered
-    PrinterInfo
-    Custom
-  }
-  class NotificationServer {
-    -socket_path: PathBuf
-    +bind(path): (Self, NotificationSender)
+package "boomaga-ipp-backend" {
+  class IppServer {
+    -port: u16
+    -processor: Arc<JobProcessor>
     +run(): Result
   }
-  class UnixSocketTransport {
-    -socket_path: PathBuf
-    +receive_message(): Result<Message>
+  class JobProcessor {
+    -queue: Arc<JobQueue>
+    -jobs: HashMap<String, JobStatus>
+    -notification_sender: NotificationSender
+    +add_job(PrintJobRequest): Result
   }
+  class JobQueue {
+    -queue_size: AtomicUsize
+    -max_size: usize
+    +push(PrintJobRequest): Result
+    +pop(): Result<PrintJobRequest>
+  }
+  class IppRequest {
+    +operation_id: IppOperation
+    +data: Vec<u8>
+  }
+  class IppResponse {
+    +status_code: IppStatusCode
+  }
+  enum IppOperation
+  enum IppStatusCode
 }
 
-package "boomaga-preview (Xilem 0.4)" {
-  class AppData {
-    +document_path: Option<PathBuf>
-    +document: Option<Document>
-    +current_page: usize
-    +rendered_pages: Vec<Option<CanvasImage>>
-    +load_state: LoadState
-    +zoom: f64
-    +fill_order: FillOrder
-    +print_options: PrintOptions
-    +page_range_input: String
-    +printers: Vec<String>
-    +print_state: PrintState
-    +job_statuses: HashMap<String, JobStatus>
-    +ipc_state: IpcState
-    +apply_shortcut(PreviewShortcut)
-    +handle_renderer_event(RendererEvent)
-    +handle_ipc_event(IpcEvent)

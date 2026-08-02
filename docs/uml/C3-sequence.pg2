@@ -1,0 +1,14 @@
+== Discover and submit downstream (realized) ==
+GUI -> PRINT : Discover / DiscoverCapabilities
+PRINT -> TARGET : lpstat / lpoptions through CUPS
+TARGET --> PRINT : queues and capabilities
+PRINT --> GUI : Printers / Capabilities event
+User -> GUI : set destination, copies, collate, duplex, pages
+GUI -> PRINT : Submit(document, page_count, PrintOptions)
+PRINT -> PRINT : build deterministic SubmissionPlan
+loop each planned submission batch
+  PRINT -> TARGET : lp with page/copy/N-up/duplex options
+  TARGET --> PRINT : accepted job or error
+end
+PRINT --> GUI : persistent Submitted / Failed event
+@enduml

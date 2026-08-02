@@ -1,0 +1,39 @@
+@startuml
+title Boomaga-IPP — Print/Preview/Submit Sequence (conforms to code @ e77d08c)
+actor "Printer User" as User
+participant "Host CUPS" as CUPS
+participant "IppServer\n(boomaga-ipp-backend)" as IPP
+participant "JobProcessor / JobQueue" as BACKEND
+participant "NotificationServer\n+ boomaga-ipc" as IPC
+participant "Xilem GUI / AppData\n(boomaga-preview)" as GUI
+participant "Renderer worker\n(poppler + cairo)" as REN
+participant "NUpCalculator\n(boomaga-layout-engine)" as LAY
+participant "Print worker\n(lpstat/lpoptions/lp)" as PRINT
+participant "Downstream CUPS printer" as TARGET
+
+== Capture and notify (partial IPP service; notification path realized) ==
+User -> CUPS : print document
+CUPS -> IPP  : TCP / IPP request
+note right of IPP
+  Listener and job scaffolding exist.
+  Complete IPP parsing/response generation
+  and captured-document handoff remain open.
+end note
+IPP -> BACKEND : add_job(PrintJobRequest)
+BACKEND -> BACKEND : queue and process
+BACKEND -> IPC : protocol-v1 lifecycle Message
+IPC -> GUI : Unix-socket status notification
+GUI -> GUI : deduplicate/update job status
+
+== Open and preview PDF (realized) ==
+User -> GUI : choose PDF or pass CLI path
+GUI -> REN : LoadDocument(path, generation)
+REN --> GUI : DocumentLoaded(metadata)
+GUI -> REN : RenderPage(page, generation)
+REN --> GUI : PageRendered(CanvasImage)
+GUI -> LAY : calculate selected 1/2/4/6/8-up sheet
+LAY --> GUI : page positions / sheet orientation
+GUI -> GUI : cache and display imposed sheet
+User -> GUI : click canvas, then arrows/N/P/Space/+/-/0
+GUI -> GUI : navigate or update zoom
+

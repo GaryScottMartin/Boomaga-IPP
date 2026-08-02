@@ -1,0 +1,17 @@
+  enum PrintEvent {
+    Printers
+    Capabilities
+    CapabilitiesFailed
+    Submitted
+    Failed
+  }
+  class SubmissionPlan {
+    +jobs: Vec<SubmissionJob>
+    +new(page_count, options): Result<Self>
+  }
+  class SubmissionJob {
+    +copies: u32
+    +pages: PageRange
+  }
+}
+

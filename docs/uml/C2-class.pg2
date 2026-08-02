@@ -1,3 +1,8 @@
+ class JobMetadata {
+    +job_id: JobId
+    +status: JobStatus
+    +priority: JobPriority
+    +pages: Vec<PageInfo>
   }
   class JobId {
     +0: Uuid
@@ -36,12 +41,3 @@
     Portrait
     Landscape
   }
-  enum PagesPerSheet {
-    One
-    Two
-    Four
-    Six
-    Eight
-  }
-  enum MarginMode
-}
