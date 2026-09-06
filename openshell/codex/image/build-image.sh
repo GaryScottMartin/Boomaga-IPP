@@ -6,12 +6,23 @@ image_dir=$(
     cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
     pwd -P
 )
+readonly image_dir
 
-sandbox_name=${1:-boomaga-codex}
+readonly image_name="${1:-openshell/bipp-codex:latest}"
 
-printf 'Image directory: %s\n' "$image_dir"
+command -v docker >/dev/null 2>&1 || {
+    printf "Error: 'docker' is not available in PATH.\n" >&2
+    exit 1
+}
 
-openshell sandbox create \
-    --name "$sandbox_name" \
-    --from "$image_dir" \
-    -- codex
+printf 'Building fresh image: %s\n' "$image_name"
+printf 'Build context: %s\n' "$image_dir"
+
+docker build \
+    --pull \
+    --no-cache \
+    --tag "$image_name" \
+    "$image_dir"
+
+docker image inspect "$image_name" \
+    --format 'Image={{.RepoTags}} ID={{.Id}} Created={{.Created}}'
