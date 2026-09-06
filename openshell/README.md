@@ -7,7 +7,7 @@ inline a long command into every `openshell sandbox create`.
 ## Usage
 
 Run **on the OpenShell host** (e.g. Denali), from the repo root (so
-`./openshell/BIPP-project-policy.yaml` resolves):
+`./openshell/bipp-project-policy.yaml` resolves):
 
 ```bash
 ./openshell/create-bipp-sandbox.sh [sandbox-name]   # create + launch claude (default name: BIPP)
@@ -53,7 +53,7 @@ Provisioning therefore goes through the `--` **entry command**, kept in this scr
 
 ## Notes / gotchas
 
-- **Keep the `.git` suffix on the clone URL.** The enforced `BIPP-project-policy.yaml`
+- **Keep the `.git` suffix on the clone URL.** The enforced `bipp-project-policy.yaml`
   matches `/GaryScottMartin/Boomaga-IPP*/…`; a bare URL 403s at the proxy.
 - **The `cd /sandbox/BIPP` is load-bearing.** Claude Code discovers project config
   (`.claude/commands` → `/handoff`, `.claude/settings.json` → hooks) from its launch

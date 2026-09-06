@@ -11,12 +11,12 @@ The environment is designed so that a newly created sandbox is immediately ready
 ```text
 openshell/
 └── codex/
-    ├── BIPP-codex-start.sh
+    ├── bipp-codex-start.sh
     ├── create-bipp-sandbox.sh
     ├── README.md
     └── image/
         ├── Dockerfile
-        ├── BIPP-project-policy.yaml
+        ├── bipp-project-policy.yaml
         └── CONTEXT.md
 ```
 
@@ -61,7 +61,7 @@ The startup scripts then:
 Normally, simply run:
 
 ```bash
-BIPP-codex-start.sh
+bipp-codex-start.sh
 ```
 
 The launcher may be executed from any working directory.
@@ -75,7 +75,7 @@ The launcher recreates the sandbox each time so that changes to the Docker image
 When changes are made to:
 
 * `image/Dockerfile`
-* `image/BIPP-project-policy.yaml`
+* `image/bipp-project-policy.yaml`
 
 simply run the normal startup script again.
 
@@ -129,7 +129,7 @@ OpenShell 0.0.86 may leave sandboxes in a permanent provisioning state after the
 Delete the sandbox and recreate it using:
 
 ```bash
-BIPP-codex-start.sh
+bipp-codex-start.sh
 ```
 
 ---

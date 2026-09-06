@@ -3,8 +3,8 @@
 set -euo pipefail
 
 readonly GATEWAY_STARTER="/home/gary/bin/openshell-gateway-up.sh"
-readonly PROJECT_DIR="/home/gary/Projects/Boomaga-IPP/repository/boomaga-ipp"
-readonly SANDBOX_STARTER="$PROJECT_DIR/openshell/claude/create-bipp-sandbox--Claude.sh"
+readonly PROJECT_DIR="/home/gary/Projects/Boomaga-IPP/git/boomaga-ipp"
+readonly SANDBOX_STARTER="$PROJECT_DIR/openshell/claude/create-bipp-sandbox.sh"
 
 readonly STARTUP_TIMEOUT=120
 readonly POLL_INTERVAL=2
@@ -60,7 +60,7 @@ else
     printf ' ready.\n'
 fi
 
-printf 'Opening the BIPP Codex sandbox in a new Konsole tab.\n'
+printf 'Opening the BIPP Claude sandbox in a new Konsole tab.\n'
 
 konsole \
     --new-tab \

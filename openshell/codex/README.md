@@ -5,8 +5,8 @@ fresh Codex sandbox for Boomaga-IPP.
 
 ## Sandbox creation and native build dependencies
 
-`BIPP-codex-start.sh` is the tracked host entry point (and may be symlinked from
-`~/bin`). It invokes `create-bipp-sandbox--Codex.sh`, which recreates the selected
+`bipp-codex-start.sh` is the tracked host entry point (and may be symlinked from
+`~/bin`). It invokes `create-bipp-sandbox.sh`, which recreates the selected
 sandbox, installs Codex and Rust, clones the repository, and provisions the
 native dependencies required by `cargo check --workspace`.
 
@@ -22,7 +22,7 @@ Run the destructive, self-cleaning smoke test from the repository root on the
 OpenShell host:
 
 ```bash
-BIPP_VERIFY=1 ./openshell/codex/create-bipp-sandbox--Codex.sh
+BIPP_VERIFY=1 ./openshell/codex/create-bipp-sandbox.sh
 ```
 
 A successful provisioning run executes `cargo check --workspace` and prints

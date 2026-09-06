@@ -22,8 +22,8 @@
 
 set -euo pipefail
 
-readonly DEFAULT_SANDBOX_NAME="BIPP-codex"
-readonly VERIFY_SANDBOX_NAME="BIPP-codex-verify"
+readonly DEFAULT_SANDBOX_NAME="bipp-codex"
+readonly VERIFY_SANDBOX_NAME="bipp-codex-verify"
 
 readonly SANDBOX_NAME="${1:-$DEFAULT_SANDBOX_NAME}"
 
@@ -33,7 +33,7 @@ readonly SCRIPT_DIR="$(
 )"
 
 readonly IMAGE_DIR="$SCRIPT_DIR/image"
-readonly POLICY_FILE="$IMAGE_DIR/BIPP-project-policy.yaml"
+readonly POLICY_FILE="$IMAGE_DIR/bipp-project-policy.yaml"
 
 readonly GITHUB_PROVIDER="github-BIPP"
 readonly REPOSITORY_URL="https://github.com/GaryScottMartin/Boomaga-IPP.git"
