@@ -1,0 +1,38 @@
+Source --> IMPORT
+User --> ARCHIVAL
+User --> TRANSMISSION
+User --> REVIEW
+User --> DELIVER
+
+ARCHIVAL ..> IMPORT : <<include>>
+ARCHIVAL ..> ASSEMBLE : <<include>>
+ARCHIVAL ..> REVIEW : <<include>>
+ARCHIVAL ..> METADATA : <<include>>
+ARCHIVAL ..> NORMALIZE : <<include>>
+ARCHIVAL ..> VALIDATE : <<include>>
+ARCHIVAL ..> INTEGRITY : <<include>>
+ARCHIVAL ..> PACKAGE : <<include>>
+
+TRANSMISSION ..> IMPORT : <<include>>
+TRANSMISSION ..> ASSEMBLE : <<include>>
+TRANSMISSION ..> REVIEW : <<include>>
+TRANSMISSION ..> FORMAT : <<include>>
+TRANSMISSION ..> DELIVER : <<include>>
+
+EDIT ..> ASSEMBLE : <<extend>>
+MARKUP ..> ASSEMBLE : <<extend>>
+OPTIMIZE ..> FORMAT : <<extend>>
+SECURITY ..> TRANSMISSION : <<extend>>
+
+PACKAGE --> Destination
+Destination --> Archive
+DELIVER --> Destination
+Destination --> Recipient
+DELIVER ..> STATUS : <<include>>
+
+note bottom of ASSEMBLE
+  Archival and transmission share document assembly,
+  but remain separate user goals with different
+  validation, metadata, packaging, and delivery concerns.
+end note
+@enduml

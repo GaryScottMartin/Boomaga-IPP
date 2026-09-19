@@ -1,0 +1,72 @@
+@startuml
+title Boomaga-IPP — Use Case Diagram (3)\nDocument Archiving and Transmission
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Document owner /\nRecords user" as User
+actor "Source application" as Source
+actor "DestinationManager" as Destination
+actor "Document repository /\nArchive" as Archive
+actor "Transmission service /\nRecipient system" as Recipient
+
+rectangle "Boomaga-IPP\nPage-oriented Document Processing System" {
+  usecase "Prepare compound document\nfor archival" as ARCHIVAL
+  usecase "Prepare compound document\nfor transmission" as TRANSMISSION
+
+  usecase "Import or open\nsource documents" as IMPORT
+  usecase "Assemble compound\ndocument" as ASSEMBLE
+  usecase "Reorder, insert, delete,\nor rotate pages" as EDIT
+  usecase "Apply letterhead, page tags,\nor annotations" as MARKUP
+  usecase "Preview and verify\ndocument" as REVIEW
+
+  usecase "Record descriptive and\nprovenance metadata" as METADATA
+  usecase "Normalize to an\narchival format" as NORMALIZE
+  usecase "Validate preservation\nconformance" as VALIDATE
+  usecase "Create integrity data\n(checksum / manifest)" as INTEGRITY
+  usecase "Package archival\ndocument and metadata" as PACKAGE
+
+  usecase "Choose transmission\nformat and quality" as FORMAT
+  usecase "Optimize document size" as OPTIMIZE
+  usecase "Apply transmission\nsecurity" as SECURITY
+  usecase "Deliver document" as DELIVER
+  usecase "Report delivery result" as STATUS
+}
+
+Source --> IMPORT
+User --> ARCHIVAL
+User --> TRANSMISSION
+User --> REVIEW
+User --> DELIVER
+
+ARCHIVAL ..> IMPORT : <<include>>
+ARCHIVAL ..> ASSEMBLE : <<include>>
+ARCHIVAL ..> REVIEW : <<include>>
+ARCHIVAL ..> METADATA : <<include>>
+ARCHIVAL ..> NORMALIZE : <<include>>
+ARCHIVAL ..> VALIDATE : <<include>>
+ARCHIVAL ..> INTEGRITY : <<include>>
+ARCHIVAL ..> PACKAGE : <<include>>
+
+TRANSMISSION ..> IMPORT : <<include>>
+TRANSMISSION ..> ASSEMBLE : <<include>>
+TRANSMISSION ..> REVIEW : <<include>>
+TRANSMISSION ..> FORMAT : <<include>>
+TRANSMISSION ..> DELIVER : <<include>>
+
+EDIT ..> ASSEMBLE : <<extend>>
+MARKUP ..> ASSEMBLE : <<extend>>
+OPTIMIZE ..> FORMAT : <<extend>>
+SECURITY ..> TRANSMISSION : <<extend>>
+
+PACKAGE --> Destination
+Destination --> Archive
+DELIVER --> Destination
+Destination --> Recipient
+DELIVER ..> STATUS : <<include>>
+
+note bottom of ASSEMBLE
+  Archival and transmission share document assembly,
+  but remain separate user goals with different
+  validation, metadata, packaging, and delivery concerns.
+end note
+@enduml

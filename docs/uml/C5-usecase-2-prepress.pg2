@@ -1,0 +1,35 @@
+Operator --> PREPRESS
+Source --> IMPORT
+Resources --> CHECK
+Operator --> PREVIEW
+Operator --> RESOLVE
+Operator --> PDF
+Operator --> PRINT
+
+PREPRESS ..> IMPORT : <<include>>
+PREPRESS ..> ASSEMBLE : <<include>>
+PREPRESS ..> GEOMETRY : <<include>>
+PREPRESS ..> IMPOSE : <<include>>
+PREPRESS ..> PREFLIGHT : <<include>>
+PREPRESS ..> PREVIEW : <<include>>
+
+EDIT ..> ASSEMBLE : <<extend>>
+MARKUP ..> ASSEMBLE : <<extend>>
+PREFLIGHT ..> CHECK : <<include>>
+RESOLVE ..> PREFLIGHT : <<extend>>
+
+PDF ..> PREPRESS : <<extend>>
+PRINT ..> PREPRESS : <<extend>>
+PRINT ..> SELECT : <<include>>
+PRINT ..> OPTIONS : <<include>>
+PRINT ..> BATCH : <<include>>
+SELECT --> Destination
+PRINT --> Destination
+Destination --> Printer
+
+note bottom of PREPRESS
+  Compound-document assembly is a shared capability.
+  The pre-press outcome is distinguished by output intent,
+  preflight, imposition, and destination compatibility.
+end note
+@enduml
