@@ -10,3 +10,6 @@ target/
 .claude/task-history.md
 .claude/current-bug.md
 .claude/mode
+
+# All LaTeX .aux files
+**/*.aux
