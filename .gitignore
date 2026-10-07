@@ -11,5 +11,6 @@ target/
 .claude/current-bug.md
 .claude/mode
 
-# All LaTeX .aux files
+# All LaTeX .aux and .tex files
 **/*.aux
+**/*.tex
