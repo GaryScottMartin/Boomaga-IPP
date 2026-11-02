@@ -21,6 +21,10 @@
 
 set -euo pipefail
 
+export OPENSHELL_GATEWAY=openshell-docker
+export OPENSHELL_WORKSPACE=default
+unset OPENSHELL_GATEWAY_ENDPOINT OPENSHELL_GATEWAY_INSECURE
+
 readonly DEFAULT_SANDBOX_NAME="bipp-codex"
 readonly VERIFY_SANDBOX_NAME="bipp-codex-verify"
 
@@ -100,8 +104,12 @@ fi
 command -v openshell >/dev/null 2>&1 ||
     die "'openshell' is not available in PATH"
 
-[[ $(openshell --version) == "openshell 0.0.116" ]] ||
-    die "this script requires OpenShell 0.0.116"
+[[ $(openshell --version) == "openshell 0.1.6" ]] ||
+    die "this script requires OpenShell 0.1.6"
+
+(( ${#sandbox_name} <= 19 )) || die "sandbox name exceeds the 19-character limit"
+command -v docker >/dev/null 2>&1 || die "docker is not available"
+openshell sandbox list >/dev/null || die "cannot query the selected gateway"
 
 [[ -d $IMAGE_DIR ]] ||
     die "image directory does not exist: $IMAGE_DIR"
@@ -113,7 +121,14 @@ command -v openshell >/dev/null 2>&1 ||
     die "policy file does not exist: $POLICY_FILE"
 
 sandbox_exists() {
-    openshell sandbox get "$sandbox_name" >/dev/null 2>&1
+    local result
+    if result=$(openshell sandbox get "$sandbox_name" 2>&1); then
+        return 0
+    fi
+    if [[ $result == *"sandbox not found"* ]]; then
+        return 1
+    fi
+    die "sandbox lookup failed: $result"
 }
 
 sandbox_responds() {
@@ -154,8 +169,14 @@ ensure_sandbox_running() {
 }
 
 create_sandbox() {
-    printf 'Building a fresh sandbox image.\n'
-    "$IMAGE_BUILD_SCRIPT" "$SANDBOX_IMAGE"
+    if [[ $fresh == true || -n ${BIPP_VERIFY:-} ]]; then
+        printf 'Building a fresh sandbox image.\n'
+        "$IMAGE_BUILD_SCRIPT" "$SANDBOX_IMAGE"
+    else
+        docker image inspect "$SANDBOX_IMAGE" >/dev/null 2>&1 ||
+            die "local BIPP image is missing; build it explicitly before creating a sandbox"
+        printf 'Reusing existing local image: %s\n' "$SANDBOX_IMAGE"
+    fi
 
     printf 'Creating sandbox %s from %s.\n' \
         "$sandbox_name" \
